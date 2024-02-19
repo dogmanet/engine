@@ -547,6 +547,19 @@ IXRenderGraphNode* XMETHODCALLTYPE CNodeInstance::getNode()
 	return(m_pNode);
 }
 
+bool XMETHODCALLTYPE CNodeInstance::getNodeData(IXRenderTarget *pFinalTarget, IXRenderGraphNodeData **ppOut)
+{
+	CFinalTarget *pFT = (CFinalTarget*)pFinalTarget;
+	if(pFT->getGraph() == m_pGraph)
+	{
+		IXRenderGraphNodeData *pNodeData = pFT->getGraphData()->m_aNodeData[m_uNodeId].pNodeData;
+		add_ref(pNodeData);
+		*ppOut = pNodeData;
+		return(true);
+	}
+	return(false);
+}
+
 void XMETHODCALLTYPE CNodeInstance::setTexture(IXRenderTarget *pFinalTarget, UINT uIdx, IXTexture *pTexture)
 {
 	CFinalTarget *pFT = (CFinalTarget*)pFinalTarget;

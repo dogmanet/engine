@@ -225,7 +225,7 @@ void CAnimatedModelProvider::render(CRenderableVisibility *pVisibility)
 	m_pMaterialSystem->bindVS(NULL);
 }
 
-void CAnimatedModelProvider::computeVisibility(const IXFrustum *pFrustum, CRenderableVisibility *pVisibility, CRenderableVisibility *pReference)
+void CAnimatedModelProvider::computeVisibility(const IXFrustum *pFrustum, CRenderableVisibility *pVisibility, UINT bmLayerMask, CRenderableVisibility *pReference)
 {
 	XPROFILE_FUNCTION();
 	pVisibility->setItemCount(m_apModels.size());
@@ -236,7 +236,7 @@ void CAnimatedModelProvider::computeVisibility(const IXFrustum *pFrustum, CRende
 	for(UINT i = 0, l = m_apModels.size(); i < l; ++i)
 	{
 		pMdl = m_apModels[i];
-		if(pMdl->isEnabled())
+		if(pMdl->isEnabled() && ((1 << pMdl->getLayer()) & bmLayerMask))
 		{
 			float3 vDelta = pMdl->getPosition();
 			pVisibility->getItem(i)->isVisible = (pReference ? pReference->getItem(i)->isVisible : true)

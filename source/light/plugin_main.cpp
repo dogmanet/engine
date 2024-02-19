@@ -2,6 +2,7 @@
 #include "LightSystem.h"
 #include "GIGraphNode.h"
 #include "TonemappingGraphNode.h"
+#include "Updatable.h"
 
 
 class CLightSystemPlugin: public IXUnknownImplementation<IXPlugin>
@@ -17,7 +18,7 @@ public:
 
 	UINT XMETHODCALLTYPE getInterfaceCount() override
 	{
-		return(3);
+		return(4);
 	}
 	const XGUID* XMETHODCALLTYPE getInterfaceGUID(UINT id) override
 	{
@@ -30,6 +31,9 @@ public:
 		case 1:
 		case 2:
 			s_guid = IXRENDERGRAPHNODE_GUID;
+			break;
+		case 3:
+			s_guid = IXUPDATABLE_GUID;
 			break;
 		default:
 			return(NULL);
@@ -64,6 +68,15 @@ public:
 				getInterface(0, &ptr);
 			}
 			*ppOut = new CTonemappingGraphNode(m_pCore, m_pLightSystem);
+			break;
+
+		case 3:
+			if(!m_pLightSystem)
+			{
+				void *ptr;
+				getInterface(0, &ptr);
+			}
+			*ppOut = new CUpdatable(m_pLightSystem);
 			break;
 		
 		default:

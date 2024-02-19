@@ -88,7 +88,7 @@ private:
 class CParticlePlayer final: public IXUnknownImplementation<IXParticlePlayer>
 {
 public:
-	CParticlePlayer(CParticleEffect *pEffect);
+	CParticlePlayer(CParticleEffect *pEffect, CParticleSystem *pSystem);
 	~CParticlePlayer();
 
 	void XMETHODCALLTYPE play() override;
@@ -124,8 +124,11 @@ public:
 private:
 	//void simulateEmitter(UINT i, float fTime)
 
+	void XMETHODCALLTYPE FinalRelease() override;
+
 private:
 	CParticleEffect *m_pEffect;
+	CParticleSystem *m_pSystem;
 
 	Array<CParticlePlayerEmitter> m_aEmitters;
 

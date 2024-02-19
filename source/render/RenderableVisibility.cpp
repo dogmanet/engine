@@ -52,7 +52,7 @@ void CRenderableVisibility::updateForCamera(IXCamera *pCamera, const IXRenderabl
 	}
 }
 
-void CRenderableVisibility::updateForFrustum(const IXFrustum *pFrustum, const IXRenderableVisibility *pReference)
+void CRenderableVisibility::updateForFrustum(const IXFrustum *pFrustum, UINT bmLayers, const IXRenderableVisibility *pReference)
 {
 	CRenderableVisibility *pRef = NULL;
 	if(pReference)
@@ -65,7 +65,7 @@ void CRenderableVisibility::updateForFrustum(const IXFrustum *pFrustum, const IX
 	{
 		if(m_ppVisibilities[i])
 		{
-			m_ppVisibilities[i]->updateForFrustum(pFrustum, pRef ? pRef->getVisibility(i) : NULL);
+			m_ppVisibilities[i]->updateForFrustum(pFrustum, bmLayers, pRef ? pRef->getVisibility(i) : NULL);
 		}
 	}
 }

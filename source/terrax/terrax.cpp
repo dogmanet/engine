@@ -30,6 +30,7 @@ See the license in LICENSE
 #include "Tools.h"
 
 #include <xEngine/IXEngine.h>
+#include <xWindow/IXWindowSystem.h>
 #include "Editor.h"
 
 #include "ProxyObject.h"
@@ -39,12 +40,15 @@ See the license in LICENSE
 #include "TextureViewGraphNode.h"
 #include "TextureWindow.h"
 #include "MaterialBrowserGraphNode.h"
+#include "CurveEditorGraphNode.h"
 
 #include <xcommon/editor/IXEditorImporter.h>
 
 #ifdef _DEBUG
+#	pragma comment(lib, "xWindow_d.lib")
 #	pragma comment(lib, "xEngine_d.lib")
 #else
+#	pragma comment(lib, "xWindow.lib")
 #	pragma comment(lib, "xEngine.lib")
 #endif
 
@@ -602,6 +606,10 @@ int main(int argc, char **argv)
 	//SkyXEngine_Init(g_hTopLeftWnd, g_hWndMain, lpCmdLine);
 	IXEngine *pEngine = XEngineInit(argc, argv, "TerraX");
 	INIT_PROFILER_INTERNAL();
+
+	IXWindowSystem *pWindowSystem = XWindowInit();
+	pEngine->getCore()->getPluginManager()->registerInterface(IXWINDOWSYSTEM_GUID, pWindowSystem);
+
 	g_pEngine = pEngine;
 	CEngineCallback engineCb;
 	g_pEngineCallback = &engineCb;
@@ -611,6 +619,7 @@ int main(int argc, char **argv)
 	pEngine->getCore()->getPluginManager()->registerInterface(IXRENDERGRAPHNODE_GUID, p2DGraphNode);
 	pEngine->getCore()->getPluginManager()->registerInterface(IXRENDERGRAPHNODE_GUID, new CTextureViewGraphNode(pEngine->getCore()));
 	pEngine->getCore()->getPluginManager()->registerInterface(IXRENDERGRAPHNODE_GUID, new CMaterialBrowserGraphNode(pEngine->getCore()));
+	pEngine->getCore()->getPluginManager()->registerInterface(IXRENDERGRAPHNODE_GUID, new CCurveEditorGraphNode(pEngine->getCore()));
 	pEngine->initGraphics((XWINDOW_OS_HANDLE)g_hTopLeftWnd, &engineCb);
 	engineCb.setCore(pEngine->getCore());
 	pEngine->getCore()->getConsole()->registerCVar("terrax_detach_3d", false, "", FCVAR_NOTIFY);

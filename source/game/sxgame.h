@@ -201,7 +201,7 @@ SX_LIB_API gui::IGUI* SGame_GetGUI();
 */
 SX_LIB_API void SGame_PlayerSpawn();
 
-SX_LIB_API void SGame_Render();
+SX_LIB_API void SGame_Render(IXRenderTarget *pFinalTarget);
 SX_LIB_API void SGame_RenderHUD();
 
 SX_LIB_API void SGame_EditorRender(ID id, ID id_sel_tex, const float3 *pvRenderPos=NULL);

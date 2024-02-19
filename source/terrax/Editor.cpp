@@ -3,7 +3,8 @@
 #include "UndoManager.h"
 #include <core/sxcore.h>
 
-CEditor::CEditor(IXCore *pCore)
+CEditor::CEditor(IXCore *pCore):
+	m_curveEditor(hInst, (HWND)getMainWindow())
 {
 	IXRenderUtils *pUtils = (IXRenderUtils*)pCore->getPluginManager()->getInterface(IXRENDERUTILS_GUID);
 	pUtils->newGizmoRenderer(&m_pGizmoRenderer2D);
@@ -25,6 +26,10 @@ CEditor::CEditor(IXCore *pCore)
 	//pHandle->lockInDir(float3_t(1.0f, 1.0f, 1.0f));
 	//m_aGizmosHandle[0]->lockInPlane
 	//newGizmoRadius(&pRadius);
+	IXRender *pRender = (IXRender*)pCore->getPluginManager()->getInterface(IXRENDER_GUID);
+
+	m_curveEditor.initGraphics(pRender);
+	m_curveEditor.browse();
 }
 
 CEditor::~CEditor()

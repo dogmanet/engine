@@ -13,7 +13,7 @@ class CEditable final: public IXUnknownImplementation<IXEditable>
 	friend class CEditorObject;
 
 public:
-	CEditable(IXCore *pCore);
+	CEditable(IXCore *pCore, IXParticleSystem *pParticleSystem);
 	~CEditable();
 
 	XIMPLEMENT_VERSION(IXEDITABLE_VERSION);

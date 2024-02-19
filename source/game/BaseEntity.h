@@ -24,6 +24,8 @@ See the license in LICENSE
 #include <xcommon/physics/IXPhysics.h>
 #include <xcommon/IXSoundSystem.h>
 #include <xcommon/render/IXRenderUtils.h>
+#include <xcommon/render/IXRender.h>
+#include <xcommon/particles/IXParticleSystem.h>
 #include "physics_util.h"
 #include "EntityFactory.h"
 #include "EntityManager.h"
@@ -35,6 +37,12 @@ See the license in LICENSE
 #include <light/IXLightSystem.h>
 
 #pragma pointers_to_members(full_generality, virtual_inheritance)
+
+IXRender* GetRender();
+IXParticleSystem* GetParticleSystem();
+
+
+
 
 #pragma warning(push)
 #pragma warning(disable:4251)

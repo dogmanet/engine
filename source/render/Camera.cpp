@@ -551,8 +551,17 @@ void XMETHODCALLTYPE CCamera::updateProjection(UINT uTargetWidth, UINT uTargetHe
 	}
 	else if(m_projectionMode == XCPM_ORTHOGONAL)
 	{
-		m_mProj = SMMatrixOrthographicLH(fWinWidth * getScale(), fWinHeight * getScale(), getNear(), getFar());
+		m_mProj = SMMatrixTranslation(-0.5f, -0.5f, 0.0f) * SMMatrixOrthographicLH(fWinWidth * getScale(), fWinHeight * getScale(), getNear(), getFar());
 	}
 
 	updateFrustum(m_mProj);
+}
+
+void XMETHODCALLTYPE CCamera::setLayerMask(UINT bmLayerMask)
+{
+	m_bmLayerMask = bmLayerMask;
+}
+UINT XMETHODCALLTYPE CCamera::getLayerMask()
+{
+	return(m_bmLayerMask);
 }

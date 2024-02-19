@@ -62,6 +62,8 @@ public:
 		return(m_pRender);
 	}
 
+	void sync();
+
 private:
 	void showGICubes();
 

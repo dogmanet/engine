@@ -11,6 +11,7 @@
 #include "GizmoRotate.h"
 #include "GizmoScale.h"
 #include "EditorMaterialBrowser.h"
+#include "CurveEditorDialog.h"
 
 #define GIZMO_TYPES() \
 	GTO(Handle)\
@@ -92,6 +93,8 @@ private:
 	float3_t m_vOldCamPos;
 
 	CEditorMaterialBrowser m_matBrowser;
+
+	CCurveEditorDialog m_curveEditor;
 
 	Map<AAString, IXEditorResourceBrowser*> m_mapResourceBrowsers;
 };

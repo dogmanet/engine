@@ -39,7 +39,7 @@ public:
 	CCrosshair * m_pCrosshair;
 
 	void update();
-	void render();
+	void render(IXRenderTarget *pFinalTarget);
 	void renderHUD();
 	void sync();
 

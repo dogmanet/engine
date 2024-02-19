@@ -75,10 +75,11 @@ static UINT g_uFPS = 0;
 static IXPhysics *g_pPhysics = NULL;
 static IXPhysicsWorld *g_pPhysWorld = NULL;
 static IXRender *g_pRender = NULL;
+static IXParticleSystem *g_pParticleSystem = NULL;
 
 //##########################################################################
 
-static void RenderText(const wchar_t *szText)
+static void RenderText(const wchar_t *szText, UINT uMaxWidth)
 {
 	if(!g_pFont)
 	{
@@ -88,10 +89,8 @@ static void RenderText(const wchar_t *szText)
 	mem_release(g_pTextRenderBuffer);
 	mem_release(g_pTextIndexBuffer);
 
-	static const int *r_win_width = GET_PCVAR_INT("r_win_width");
-
 	g_pFont->buildString(szText, gui::IFont::DECORATION_NONE, gui::IFont::TEXT_ALIGN_LEFT,
-		&g_pTextRenderBuffer, &g_pTextIndexBuffer, &g_uVertexCount, &g_uIndexCount, NULL, *r_win_width, 0, 0);
+		&g_pTextRenderBuffer, &g_pTextIndexBuffer, &g_uVertexCount, &g_uIndexCount, NULL, uMaxWidth, 0, 0);
 }
 
 IXPhysics* GetPhysics()
@@ -105,6 +104,10 @@ IXPhysicsWorld* GetPhysWorld()
 IXRender* GetRender()
 {
 	return(g_pRender);
+}
+IXParticleSystem* GetParticleSystem()
+{
+	return(g_pParticleSystem);
 }
 
 //##########################################################################
@@ -480,6 +483,7 @@ m_hWnd(hWnd)
 	m_pLightSystem = (IXLightSystem*)Core_GetIXCore()->getPluginManager()->getInterface(IXLIGHTSYSTEM_GUID);
 	g_pPhysics = (IXPhysics*)Core_GetIXCore()->getPluginManager()->getInterface(IXPHYSICS_GUID);
 	g_pPhysWorld = g_pPhysics->getWorld();
+	g_pParticleSystem = (IXParticleSystem*)Core_GetIXCore()->getPluginManager()->getInterface(IXPARTICLESYSTEM_GUID);
 
 	if(m_pLightSystem && false)
 	{
@@ -1201,7 +1205,7 @@ m_hWnd(hWnd)
 	{
 		m_pMgr->setEditorMode(true);
 	}
-
+#if 0
 	IXParticleSystem *pPS = (IXParticleSystem*)Core_GetIXCore()->getPluginManager()->getInterface(IXPARTICLESYSTEM_GUID);
 	if(pPS)
 	{
@@ -1223,6 +1227,7 @@ m_hWnd(hWnd)
 			//mem_release(pEffect);
 		}
 	}
+#endif
 }
 GameData::~GameData()
 {
@@ -1305,7 +1310,7 @@ void GameData::update()
 	DWORD t1 = GetTickCount();
 	printf(COLOR_LRED "TIME: %.3fs\n" COLOR_RESET, (float)(t1 - t0) / 1000.0f);*/
 }
-void GameData::render()
+void GameData::render(IXRenderTarget *pFinalTarget)
 {
 	//g_pTracer->render();
 	//g_pTracer2->render();
@@ -1326,20 +1331,27 @@ void GameData::render()
 	}
 	if(pDev && *r_stats)
 	{
+		UINT uWinWidth, uWinHeight;
+		pFinalTarget->getSize(&uWinWidth, &uWinHeight);
+
 		const GXFrameStats *pFrameStats = pDev->getThreadContext()->getFrameStats();
 		const GXAdapterMemoryStats *pMemoryStats = pDev->getMemoryStats();
 
 		static GXFrameStats s_oldFrameStats = {0};
 		static GXAdapterMemoryStats s_oldMemoryStats = {0};
 		static UINT s_uOldFps = 0;
+		static UINT s_uOldWidth = 0;
 
 		if(s_uOldFps != g_uFPS 
 			|| memcmp(&s_oldFrameStats, pFrameStats, sizeof(s_oldFrameStats)) 
-			|| memcmp(&s_oldMemoryStats, pMemoryStats, sizeof(s_oldMemoryStats)))
+			|| memcmp(&s_oldMemoryStats, pMemoryStats, sizeof(s_oldMemoryStats))
+			|| s_uOldWidth != uWinWidth
+			)
 		{
 			s_uOldFps = g_uFPS;
 			s_oldFrameStats = *pFrameStats;
 			s_oldMemoryStats = *pMemoryStats;
+			s_uOldWidth = uWinWidth;
 
 			const GXAdapterDesc *pAdapterDesc = pDev->getAdapterDesc();
 			
@@ -1387,7 +1399,7 @@ void GameData::render()
 				swprintf_s(wszStats, L"FPS: %u", g_uFPS);
 			}
 
-			RenderText(wszStats);
+			RenderText(wszStats, uWinWidth);
 		}
 		if(g_pTextRenderBuffer)
 		{
@@ -1398,12 +1410,9 @@ void GameData::render()
 			pContext->setDepthStencilState(g_pTextDepthState);
 			pContext->setSamplerState(NULL, 0);
 
-			static const int *r_win_width = GET_PCVAR_INT("r_win_width");
-			static const int *r_win_height = GET_PCVAR_INT("r_win_height");
-
 			SMMATRIX m(
-				2.0f / (float)*r_win_width, 0.0f, 0.0f, 0.0f,
-				0.0f, -2.0f / (float)*r_win_height, 0.0f, 0.0f,
+				2.0f / (float)uWinWidth, 0.0f, 0.0f, 0.0f,
+				0.0f, -2.0f / (float)uWinHeight, 0.0f, 0.0f,
 				0.0f, 0.0f, 0.5f, 0.0f,
 				-1.0f, 1.0f, 0.5f, 1.0f);
 			m = SMMatrixTranslation(-0.5f, -0.5f, 0.0f) * m;

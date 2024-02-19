@@ -7,7 +7,7 @@
 enum XCAMERA_POJECTION_MODE
 {
 	XCPM_PERSPECTIVE,
-	XCPM_ORTHOGONAL
+	XCPM_ORTHOGONAL,
 };
 
 class IXRenderableVisibility;
@@ -81,6 +81,9 @@ public:
 	//! получаем матрицу проекции
 	virtual const SMMATRIX& XMETHODCALLTYPE getProjMatrix() const = 0;
 	virtual void XMETHODCALLTYPE updateProjection(UINT uTargetWidth, UINT uTargetHeight) = 0;
+
+	virtual void XMETHODCALLTYPE setLayerMask(UINT bmLayerMask) = 0;
+	virtual UINT XMETHODCALLTYPE getLayerMask() = 0;
 };
 
 #endif

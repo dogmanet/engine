@@ -21,7 +21,7 @@ public:
 	void XMETHODCALLTYPE setCamera(IXCamera *pCamera) override;
 	void XMETHODCALLTYPE getCamera(IXCamera **ppCamera) override;
 
-	void getSize(UINT *puWidth, UINT *puHeight) const;
+	void XMETHODCALLTYPE getSize(UINT *puWidth, UINT *puHeight) const override;
 
 	void swapChain();
 

@@ -877,6 +877,15 @@ bool XMETHODCALLTYPE CAnimatedModel::rayTest(const float3 &vStart, const float3 
 	return(false);
 }
 
+void XMETHODCALLTYPE CAnimatedModel::setLayer(UINT uLayer)
+{
+	m_uLayer = uLayer;
+}
+UINT XMETHODCALLTYPE CAnimatedModel::getLayer()
+{
+	return(m_uLayer);
+}
+
 UINT XMETHODCALLTYPE CAnimatedModel::getLayersCount() const
 {
 	return(m_aLayers.size());

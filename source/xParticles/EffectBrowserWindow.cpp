@@ -70,10 +70,11 @@ BOOL EnumLevels(CLevelInfo *pInfo)
 }
 #endif
 
-CEffectBrowserWindow::CEffectBrowserWindow(HINSTANCE hInstance, HWND hMainWnd, IFileSystem *pFS):
+CEffectBrowserWindow::CEffectBrowserWindow(HINSTANCE hInstance, HWND hMainWnd, IFileSystem *pFS, IXParticleSystem *pParticleSystem):
 	m_hInstance(hInstance),
 	m_hMainWnd(hMainWnd),
-	m_pFS(pFS)
+	m_pFS(pFS),
+	m_pParticleSystem(pParticleSystem)
 {
 	registerClass();
 	m_hContextMenu = LoadMenu(hInstance, MAKEINTRESOURCE(IDR_MENU1));
@@ -86,8 +87,36 @@ CEffectBrowserWindow::CEffectBrowserWindow(HINSTANCE hInstance, HWND hMainWnd, I
 
 CEffectBrowserWindow::~CEffectBrowserWindow()
 {
+	mem_release(m_pPlayer);
+	mem_release(m_pCamera);
+	mem_release(m_pFinalTarget);
 	DestroyWindow(m_hDlgWnd);
 	DestroyMenu(m_hContextMenu);
+}
+
+void CEffectBrowserWindow::setRender(IXRender *pRender)
+{
+	if(!pRender->newFinalTarget(m_hPreviewWnd, "xParticlesPreview", &m_pFinalTarget))
+	{
+		LogError("Could not create render target 'xParticlesPreview'\n");
+		return;
+	}
+
+	RECT rc;
+	GetClientRect(m_hPreviewWnd, &rc);
+	m_pFinalTarget->resize(rc.right - rc.left, rc.bottom - rc.top);
+
+	pRender->newCamera(&m_pCamera);
+	m_pCamera->setPosition(float3(0.0f, 2.0f, -2.0f));
+	m_pCamera->setOrientation(SMQuaternion(-SM_PIDIV4, 'x'));
+	m_pCamera->setLayerMask(0x2);
+
+	m_pFinalTarget->setCamera(m_pCamera);
+
+	IXRenderGraph *pGraph;
+	pRender->getGraph("xParticlePreview", &pGraph);
+	m_pFinalTarget->attachGraph(pGraph);
+	mem_release(pGraph);
 }
 
 UINT XMETHODCALLTYPE CEffectBrowserWindow::getResourceTypeCount()
@@ -184,6 +213,8 @@ INT_PTR CALLBACK CEffectBrowserWindow::dlgProc(HWND hWnd, UINT msg, WPARAM wPara
 				TreeView_SetImageList(m_hTreeWnd, himg, TVSIL_NORMAL);
 			}
 
+			m_hPreviewWnd = GetDlgItem(m_hDlgWnd, IDC_PREVIEW);
+
 			scanFileSystem();
 			createTree();
 		}
@@ -210,6 +241,26 @@ INT_PTR CALLBACK CEffectBrowserWindow::dlgProc(HWND hWnd, UINT msg, WPARAM wPara
 					Record *pRec = getRecordByHandle(pnmtv->itemNew.hItem);
 
 					Button_Enable(m_hOkButtonWnd, pRec && !pRec->isDir);
+
+					if(pRec && !pRec->isDir)
+					{
+						char szName[MAX_PATH];
+						szName[0] = 0;
+						makePath(szName, pRec);
+						strcat(szName, ".eff");
+
+						mem_release(m_pPlayer);
+						IXParticleEffect *pEffect;
+						if(m_pParticleSystem->getEffect(szName/* + strlen("effects/")*/, &pEffect))
+						{
+							IXParticlePlayer *pPlayer;
+							m_pParticleSystem->newEffectPlayer(pEffect, &m_pPlayer);
+
+							m_pPlayer->play();
+
+							mem_release(pEffect);
+						}
+					}
 				}
 			}
 			break;
@@ -433,7 +484,7 @@ INT_PTR CALLBACK CEffectBrowserWindow::dlgProc(HWND hWnd, UINT msg, WPARAM wPara
 					makePath(szFile, pRec);
 					strcat(szFile, ".eff");
 
-					// TODO Uncomment me!
+					TODO("Uncomment me!");
 				//	if(m_pFS->unlink(szFile))
 				//	{
 				//		m_aRecords.erase(uIndex);
@@ -452,10 +503,11 @@ INT_PTR CALLBACK CEffectBrowserWindow::dlgProc(HWND hWnd, UINT msg, WPARAM wPara
 			break;
 
 		case ID_EFFECT_EDIT:
-			// open edit dialog
+			TODO("open edit dialog");
 			break;
 
 		case IDOK:
+			if(HIWORD(wParam) == 0)
 			{
 				HTREEITEM hItem = TreeView_GetSelection(m_hTreeWnd);
 				Record *pRec = getRecordByHandle(hItem);
@@ -482,6 +534,15 @@ INT_PTR CALLBACK CEffectBrowserWindow::dlgProc(HWND hWnd, UINT msg, WPARAM wPara
 			ShowWindow(m_hDlgWnd, SW_HIDE);
 			break;
 		}
+		break;
+
+	case WM_SHOWWINDOW:
+		if(!wParam)
+		{
+			TreeView_SelectItem(m_hTreeWnd, 0);
+			mem_release(m_pPlayer);
+		}
+		break;
 		
 	default:
 		return(FALSE);
@@ -968,7 +1029,7 @@ bool CEffectBrowserWindow::renameItem(HTREEITEM hItem, const char *szName)
 		dirname(szNewName);
 		strcat(szNewName, szName);
 
-		// TODO Uncomment me!
+		TODO("Implement me!");
 	//	if(m_pFS->rename(szPrevName, szNewName))
 	//	{
 	//		pRec->sName = szName;

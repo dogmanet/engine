@@ -22,14 +22,17 @@ class CSceneObject final: public IXUnknownImplementation<IXSceneObject>
 	friend class CScene;
 public:
 
-	CSceneObject(CScene *pScene, const SMAABB &aabb, void *pUserData, NodeType bmType, NodeFeature bmFeatures);
+	CSceneObject(CScene *pScene, const SMAABB &aabb, void *pUserData, NodeType bmType, NodeFeature bmFeatures, UINT uLayer);
 	~CSceneObject();
 	
 	void XMETHODCALLTYPE update(const SMAABB &aabb) override;
 	void updateFeatures(NodeFeature bmFeatures);
+	void updateLayer(UINT bmLayer);
 
 	void XMETHODCALLTYPE setFeature(IXSceneFeature *pFeat, bool isSet) override;
 	void XMETHODCALLTYPE setFeatures(IXSceneFeature **ppFeatures) override;
+
+	void XMETHODCALLTYPE setLayer(UINT uLayer) override;
 
 	void setNode(CSceneNode *pNode);
 	CSceneNode* getNode();
@@ -46,6 +49,10 @@ public:
 	{
 		return(m_bmType);
 	}
+	UINT getLayer() const
+	{
+		return(m_bmLayer);
+	}
 
 private:
 	SMAABB m_aabb;
@@ -55,6 +62,7 @@ private:
 
 	NodeFeature m_bmFeatures;
 	NodeType m_bmType;
+	UINT m_bmLayer = 0x1;
 
 	void *m_pUserData;
 
@@ -100,6 +108,8 @@ public:
 	void XMETHODCALLTYPE setScreenSizeCulling(const float3 &vCamPos, float fFov, float fScreenHeightPx, float fThresholdPx = 4.0f) override;
 	void XMETHODCALLTYPE unsetScreenSizeCulling() override;
 
+	void XMETHODCALLTYPE setLayerMask(UINT bmLayerMask) override;
+
 private:
 	CScene *m_pScene;
 	NodeType m_bmType;
@@ -116,6 +126,7 @@ private:
 	float3 m_vCamPos;
 	float m_fThresholdPx;
 
+	UINT m_bmLayerMask = 0x01;
 private:
 	void queryObjectsInternal(CSceneNode *pNode, const IXFrustum *pFrustum, bool isFullyVisible = false, IXOcclusionCuller *pOcclusionCuller = NULL);
 	void queryObjectsLeaf(CSceneNode *pNode, const IXFrustum *pFrustum, bool isFullyVisible = false, IXOcclusionCuller *pOcclusionCuller = NULL);
@@ -131,7 +142,7 @@ public:
 	CSceneObjectType(CScene *pScene, UINT uId);
 	~CSceneObjectType();
 
-	IXSceneObject* XMETHODCALLTYPE newObject(const SMAABB &aabb, void *pUserData, IXSceneFeature **ppFeatures = NULL) override;
+	IXSceneObject* XMETHODCALLTYPE newObject(const SMAABB &aabb, void *pUserData, IXSceneFeature **ppFeatures = NULL, UINT uLayer = 0) override;
 	IXSceneQuery* XMETHODCALLTYPE newQuery() override;
 
 	NodeType getType()
@@ -176,6 +187,10 @@ public:
 	{
 		return(m_bmTypes);
 	}
+	UINT getLayerMask() const
+	{
+		return(m_bmLayerMask);
+	}
 
 	bool validate();
 	void print(UINT uLvl = 0, UINT *puNodesCount = NULL, UINT *puObjectsCount = NULL, UINT *puMaxDepth = NULL);
@@ -217,6 +232,7 @@ protected:
 
 	NodeFeature m_bmFeatures = 0;
 	NodeType m_bmTypes = 0;
+	UINT m_bmLayerMask = 0;
 };
 
 //##########################################################################
@@ -240,7 +256,7 @@ public:
 	IXSceneFeature* XMETHODCALLTYPE registerObjectFeature(const char *szName) override;
 	IXSceneFeature* XMETHODCALLTYPE getObjectFeature(const char *szName) override;
 
-	IXSceneObject* newObject(const SMAABB &aabb, void *pUserData, NodeType bmType, IXSceneFeature **ppFeatures);
+	IXSceneObject* newObject(const SMAABB &aabb, void *pUserData, NodeType bmType, IXSceneFeature **ppFeatures, UINT uLayer);
 
 	UINT XMETHODCALLTYPE getTreeHeight() override;
 
@@ -251,6 +267,7 @@ public:
 
 	void enqueueObjectUpdate(CSceneObject* pObject, const SMAABB &aabb);
 	void enqueueObjectUpdateFeatures(CSceneObject* pObject, NodeFeature bmFeatures);
+	void enqueueObjectUpdateLayer(CSceneObject* pObject, UINT bmLayer);
 	void enqueueObjectDelete(CSceneObject* pObject);
 
 	void sync();
@@ -274,11 +291,16 @@ private:
 	{
 		SMAABB aabbNew;
 		CSceneObject *pObject;
-		NodeFeature bmFeatures;
+		union
+		{
+			NodeFeature bmFeatures;
+			UINT bmLayer;
+		};
 		enum
 		{
 			UPDATE,
 			UPDATE_FEATURES,
+			UPDATE_LAYER,
 			REMOVE,
 			ADD
 		} action;

@@ -1,7 +1,9 @@
 #include "ParticlePlayer.h"
+#include "ParticleSystem.h"
 
-CParticlePlayer::CParticlePlayer(CParticleEffect *pEffect):
-	m_pEffect(pEffect)
+CParticlePlayer::CParticlePlayer(CParticleEffect *pEffect, CParticleSystem *pSystem):
+	m_pEffect(pEffect),
+	m_pSystem(pSystem)
 {
 	add_ref(pEffect);
 }
@@ -129,6 +131,11 @@ void CParticlePlayer::render()
 	{
 		m_aEmitters[i].render();
 	}
+}
+
+void XMETHODCALLTYPE CParticlePlayer::FinalRelease()
+{
+	m_pSystem->onEffectPlayerReleased(this);
 }
 
 //#############################################################################

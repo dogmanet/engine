@@ -3,10 +3,11 @@
 
 extern HINSTANCE g_hInstance;
 
-CEditorExtension::CEditorExtension(CEditable *pEditable, IXEditor *pEditor, IXCore *pCore):
+CEditorExtension::CEditorExtension(CEditable *pEditable, IXEditor *pEditor, IXCore *pCore, IXParticleSystem *pParticleSystem):
 	m_pEditable(pEditable)
 {
-	m_pEffectBrowserWindow = new CEffectBrowserWindow(g_hInstance, (HWND)pEditor->getMainWindow(), pCore->getFileSystem());
+	//pEditable->getRender
+	m_pEffectBrowserWindow = new CEffectBrowserWindow(g_hInstance, (HWND)pEditor->getMainWindow(), pCore->getFileSystem(), pParticleSystem);
 }
 CEditorExtension::~CEditorExtension()
 {
@@ -48,4 +49,9 @@ bool XMETHODCALLTYPE CEditorExtension::getResourceBrowser(UINT uId, IXEditorReso
 		return(true);
 	}
 	return(false);
+}
+
+void CEditorExtension::setRender(IXRender *pRender)
+{
+	m_pEffectBrowserWindow->setRender(pRender);
 }

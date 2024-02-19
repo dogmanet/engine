@@ -61,6 +61,9 @@ public:
 	virtual void XMETHODCALLTYPE render(UINT uLod, XMODEL_FEATURE bmFeatures) = 0;
 
 	virtual bool XMETHODCALLTYPE rayTest(const float3 &vStart, const float3 &vEnd, float3 *pvOut = NULL, float3 *pvNormal = NULL, bool isRayInWorldSpace = true, bool bReturnNearestPoint = false) = 0;
+
+	virtual void XMETHODCALLTYPE setLayer(UINT uLayer) = 0;
+	virtual UINT XMETHODCALLTYPE getLayer() = 0;
 };
 
 // Implemented in geom plugin

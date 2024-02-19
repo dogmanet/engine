@@ -46,6 +46,16 @@ public:
 		const float4_t &vColorB,
 		const float4_t &vColorC) override;
 
+	void XMETHODCALLTYPE setFont(IXFont *pFont) override;
+
+	void XMETHODCALLTYPE setFontParams(const XGizmoFontParams &params) override;
+
+	void XMETHODCALLTYPE drawString(
+		const char *szText,
+		const float3_t &vRefPoint,
+		UINT uAreaWidth = 0
+	) override;
+
 private:
 	IXRender *m_pRender;
 	IGXDevice *m_pDev;
@@ -111,6 +121,32 @@ private:
 	static ID s_idShaders[2][2][2]; // [isTextured][is3D][isFixed]
 
 	Array<PointVertex> m_aPolyVertices;
+
+	//**************************************************
+
+	IXFont *m_pCurrentFont = NULL;
+	byte m_u8CurrentFont = 0xFF;
+	XGizmoFontParams m_fontParams;
+
+	Array<PointRange> m_aTextRanges;
+
+	struct TextVertex
+	{
+		float4_t vPosTexUV;
+		float4_t vColor;
+		float3_t vRefPos;
+	};
+
+	Array<TextVertex> m_aTextVertices;
+
+	UINT m_uTextVBSize = 0;
+	static IGXVertexDeclaration *s_pTextVD;
+	IGXRenderBuffer *m_pTextRB = NULL;
+	IGXVertexBuffer *m_pTextVB = NULL;
+	IGXIndexBuffer *m_pTextIB = NULL;
+
+	static ID s_idTextShaders[2][2]; // [is3D][isFixed]
+
 private:
 	//void prepareLinesIB();
 	byte getTextureId();

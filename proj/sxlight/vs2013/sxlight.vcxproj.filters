@@ -29,6 +29,9 @@
     <ClCompile Include="..\..\..\source\light\TonemappingGraphNode.cpp">
       <Filter>Source Files\pipeline</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\source\light\Updatable.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Header Files">
@@ -74,6 +77,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\source\light\TonemappingGraphNode.h">
       <Filter>Header Files\pipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\light\Updatable.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

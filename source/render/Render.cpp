@@ -122,9 +122,7 @@ void XMETHODCALLTYPE CRender::updateVisibility()
 {
 	fora(i, m_aFinalTargets)
 	{
-		FinalTarget *pFinalTarget = m_aFinalTargets[i];
-
-		pFinalTarget->pFinalTarget->updateVisibility();
+		m_aFinalTargets[i]->pFinalTarget->updateVisibility();
 	}
 }
 

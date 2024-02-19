@@ -49,7 +49,7 @@ void XMETHODCALLTYPE CSceneFinalGraphNode::process(float fDeltaTime, IXRenderTar
 	pCtx->setColorTarget(ppOutputs[0]);
 
 	//@FIXME: Пока так
-	SGame_Render();
+	SGame_Render(pFinalTarget);
 }
 
 const XRenderGraphNodeInputDesc* XMETHODCALLTYPE CSceneFinalGraphNode::getInputsDesc(UINT *puCount)

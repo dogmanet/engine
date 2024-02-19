@@ -183,6 +183,15 @@
     <ClCompile Include="..\..\..\source\terrax\MaterialEditor.cpp">
       <Filter>Source Files\windows</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\source\terrax\CurveEditorDialog.cpp">
+      <Filter>Source Files\windows</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\terrax\CurveEditorGraphNodeData.cpp">
+      <Filter>Source Files\pipeline</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\terrax\CurveEditorGraphNode.cpp">
+      <Filter>Source Files\pipeline</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\..\..\source\terrax\terrax.rc">
@@ -342,6 +351,15 @@
     </ClInclude>
     <ClInclude Include="..\..\..\source\xcommon\editor\IXEditorImporter.h">
       <Filter>Header Files\xcommon\editor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\terrax\CurveEditorDialog.h">
+      <Filter>Header Files\windows</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\terrax\CurveEditorGraphNode.h">
+      <Filter>Header Files\pipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\terrax\CurveEditorGraphNodeData.h">
+      <Filter>Header Files\pipeline</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

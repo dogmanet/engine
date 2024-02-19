@@ -36,12 +36,12 @@ void CRenderableVisibility::updateForCamera(IXCamera *pCamera, const IXRenderabl
 	}
 
 	IXFrustum *pFrustum = pCamera->getFrustum();
-	m_pProviderAnimated->computeVisibility(pFrustum, this, pRef);
-	m_pProviderDynamic->computeVisibility(pFrustum, pCamera->getLook(), this, pRef, pCamera);
+	m_pProviderAnimated->computeVisibility(pFrustum, this, pCamera->getLayerMask(), pRef);
+	m_pProviderDynamic->computeVisibility(pFrustum, pCamera->getLook(), this, pCamera->getLayerMask(), pRef, pCamera);
 	mem_release(pFrustum);
 }
 
-void CRenderableVisibility::updateForFrustum(const IXFrustum *pFrustum, const IXRenderableVisibility *pReference)
+void CRenderableVisibility::updateForFrustum(const IXFrustum *pFrustum, UINT bmLayers, const IXRenderableVisibility *pReference)
 {
 	CRenderableVisibility *pRef = NULL;
 	if(pReference)
@@ -50,8 +50,8 @@ void CRenderableVisibility::updateForFrustum(const IXFrustum *pFrustum, const IX
 		pRef = (CRenderableVisibility*)pReference;
 	}
 
-	m_pProviderAnimated->computeVisibility(pFrustum, this, pRef);
-	m_pProviderDynamic->computeVisibility(pFrustum, float3(), this, pRef);
+	m_pProviderAnimated->computeVisibility(pFrustum, this, bmLayers, pRef);
+	m_pProviderDynamic->computeVisibility(pFrustum, float3(), this, bmLayers, pRef);
 }
 
 static void SortRenderList(Array<CDynamicModel*> &aList)

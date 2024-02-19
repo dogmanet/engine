@@ -28,7 +28,7 @@ public:
 	virtual void updateForCamera(IXCamera *pCamera, const IXRenderableVisibility *pReference = NULL) = 0;
 
 	//! Выполнение проверки видимости для заданного фрустума. Если pReference задан - проверка ограничивается только уже рассчитанным множеством
-	virtual void updateForFrustum(const IXFrustum *pFrustum, const IXRenderableVisibility *pReference = NULL) = 0;
+	virtual void updateForFrustum(const IXFrustum *pFrustum, UINT bmLayers, const IXRenderableVisibility *pReference = NULL) = 0;
 
 	/*! Выполнение проверки видимости для заданной камеры в режиме оптимизации для многопоточности. 
 	    Возвращает ID задачи из менеджера задач для отслеживания завершения внутренних задач

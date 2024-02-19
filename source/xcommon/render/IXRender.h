@@ -127,13 +127,16 @@ public:
 
 	virtual void XMETHODCALLTYPE setCamera(IXCamera *pCamera) = 0;
 	virtual void XMETHODCALLTYPE getCamera(IXCamera **ppCamera) = 0;
+
+	virtual void XMETHODCALLTYPE getSize(UINT *puWidth, UINT *puHeight) const = 0;
 };
 
 class IXRenderGraphNodeInstance: public IXUnknown
 {
 public:
 	virtual IXRenderGraphNode* XMETHODCALLTYPE getNode() = 0;
-
+	virtual bool XMETHODCALLTYPE getNodeData(IXRenderTarget *pFinalTarget, IXRenderGraphNodeData **ppOut) = 0;
+	
 	virtual void XMETHODCALLTYPE setTexture(IXRenderTarget *pFinalTarget, UINT uIdx, IXTexture *pTexture) = 0;
 	virtual void XMETHODCALLTYPE setProp(IXRenderTarget *pFinalTarget, UINT uIdx, const float4_t &vProp) = 0;
 	virtual void XMETHODCALLTYPE setFlag(IXRenderTarget *pFinalTarget, UINT uIdx, bool bVal) = 0;

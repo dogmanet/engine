@@ -100,7 +100,7 @@ void XMETHODCALLTYPE CFinalTarget::getCamera(IXCamera **ppCamera)
 	*ppCamera = m_pCamera;
 }
 
-void CFinalTarget::getSize(UINT *puWidth, UINT *puHeight) const
+void XMETHODCALLTYPE CFinalTarget::getSize(UINT *puWidth, UINT *puHeight) const
 {
 	if(puWidth)
 	{

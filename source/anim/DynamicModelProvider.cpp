@@ -537,13 +537,13 @@ void CDynamicModelProvider::renderEmissive(CRenderableVisibility *pVisibility)
 	render(pVisibility->getSelfillumList(), MF_SELFILLUM);
 }
 
-void CDynamicModelProvider::computeVisibility(const IXFrustum *pFrustum, const float3 &vHintDir, CRenderableVisibility *pVisibility, CRenderableVisibility *pReference, IXCamera *pCamera)
+void CDynamicModelProvider::computeVisibility(const IXFrustum *pFrustum, const float3 &vHintDir, CRenderableVisibility *pVisibility, UINT bmLayerMask, CRenderableVisibility *pReference, IXCamera *pCamera)
 {
 	XPROFILE_FUNCTION();
 
 	if(pCamera)
 	{
-		//! FIXME Use actual target width!
+		FIXME("Use actual target width!");
 		static const int *r_win_width = GET_PCVAR_INT("r_win_width");
 		//static const float *r_default_fov = GET_PCVAR_FLOAT("r_default_fov");
 		m_pOpaqueQuery->setScreenSizeCulling(pCamera->getPosition(), pCamera->getEffectiveFOV(), *r_win_width, 4.0f);
@@ -554,12 +554,15 @@ void CDynamicModelProvider::computeVisibility(const IXFrustum *pFrustum, const f
 	}
 
 	void **ppData;
+	m_pOpaqueQuery->setLayerMask(bmLayerMask);
 	UINT uCount = m_pOpaqueQuery->execute(pFrustum, vHintDir, &ppData, pVisibility->getCuller());
 	pVisibility->setRenderList(ppData, uCount);
 
+	m_pSelfillumQuery->setLayerMask(bmLayerMask);
 	uCount = m_pSelfillumQuery->execute(pFrustum, vHintDir, &ppData, pVisibility->getCuller());
 	pVisibility->setSelfillumList(ppData, uCount);
 
+	m_pTransparentQuery->setLayerMask(bmLayerMask);
 	uCount = m_pTransparentQuery->execute(pFrustum, vHintDir, &ppData, pVisibility->getCuller());
 	pVisibility->setTransparentList(ppData, uCount);
 

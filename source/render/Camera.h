@@ -104,7 +104,10 @@ public:
 	const SMMATRIX& XMETHODCALLTYPE getProjMatrix() const override;
 	void XMETHODCALLTYPE updateProjection(UINT uTargetWidth, UINT uTargetHeight) override;
 
-protected:
+	void XMETHODCALLTYPE setLayerMask(UINT bmLayerMask) override;
+	UINT XMETHODCALLTYPE getLayerMask() override;
+
+private:
 	CFrustum *m_pFrustum;	//!< фрустум этой камеры
 
 	IXRenderableVisibility *m_pVisibility = NULL;
@@ -122,7 +125,7 @@ protected:
 	mutable float4x4 m_mView;
 	float4x4 m_mProj;
 
-	float m_fFOV;
+	float m_fFOV = SM_PIDIV4;
 	float m_fFOVmultiplier = 1.0f;
 
 	float m_fNear = 0.025f;
@@ -130,6 +133,8 @@ protected:
 
 	float m_fScale = 1.0f;
 	XCAMERA_POJECTION_MODE m_projectionMode = XCPM_PERSPECTIVE;
+
+	UINT m_bmLayerMask = 0x1;
 };
 
 #endif

@@ -84,7 +84,12 @@ public:
 		case 3:
 			if(!m_pEditable)
 			{
-				m_pEditable = new CEditable(m_pCore);
+				if(!m_pParticleSystem)
+				{
+					void *ptr;
+					getInterface(0, &ptr);
+				}
+				m_pEditable = new CEditable(m_pCore, m_pParticleSystem);
 			}
 			*ppOut = m_pEditable;
 			break;

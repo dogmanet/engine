@@ -187,14 +187,17 @@ void CXLight::updateVisibility(IXCamera *pMainCamera, const float3 &vLPVmin, con
 {
 	updateFrustum();
 
-	if(useLPV && m_pFrustum->boxInFrustum(vLPVmin, vLPVmax))
+	if(!(m_renderType & LRT_LPV))
 	{
-		m_renderType |= LRT_LPV;
+		if(useLPV && m_pFrustum->boxInFrustum(vLPVmin, vLPVmax))
+		{
+			m_renderType |= LRT_LPV;
+		}
 	}
 
 	if(m_renderType != LRT_NONE)
 	{
-		m_pVisibility->updateForFrustum(m_pFrustum);
+		m_pVisibility->updateForFrustum(m_pFrustum, 1 << m_uLayer);
 	}
 }
 
@@ -250,15 +253,16 @@ void CXLightPoint::updateFrustum()
 
 void CXLightPoint::updateVisibility(IXCamera *pMainCamera, const float3 &vLPVmin, const float3 &vLPVmax, bool useLPV)
 {
-	m_renderType = LRT_NONE;
-	
-	float3 vOrigin = getPosition();
-	IXFrustum *pFrustum = pMainCamera->getFrustum();
-	if(pFrustum->sphereInFrustum(vOrigin, getMaxDistance()))
+	if(!(m_renderType & LRT_LIGHT))
 	{
-		m_renderType |= LRT_LIGHT;
+		float3 vOrigin = getPosition();
+		IXFrustum *pFrustum = pMainCamera->getFrustum();
+		if(pFrustum->sphereInFrustum(vOrigin, getMaxDistance()))
+		{
+			m_renderType |= LRT_LIGHT;
+		}
+		mem_release(pFrustum);
 	}
-	mem_release(pFrustum);
 
 	CXLight::updateVisibility(pMainCamera, vLPVmin, vLPVmax, useLPV);
 }
@@ -343,14 +347,14 @@ void CXLightSun::updateVisibility(IXCamera *pMainCamera, const float3 &vLPVmin, 
 
 	if(lpv_cascades_count > 0)
 	{
-		m_pReflectiveVisibility->updateForFrustum(m_pReflectiveFrustum);
+		m_pReflectiveVisibility->updateForFrustum(m_pReflectiveFrustum, 1 << m_uLayer);
 	}
 
 	static const int *r_pssm_splits = GET_PCVAR_INT("r_pssm_splits");
 
 	for(int i = 1; i < *r_pssm_splits; ++i)
 	{
-		m_pTempVisibility->updateForFrustum(m_pPSSMFrustum[i - 1]);
+		m_pTempVisibility->updateForFrustum(m_pPSSMFrustum[i - 1], 1 << m_uLayer);
 		m_pVisibility->append(m_pTempVisibility);
 	}
 }
@@ -641,16 +645,17 @@ void CXLightSpot::updateFrustum()
 
 void CXLightSpot::updateVisibility(IXCamera *pMainCamera, const float3 &vLPVmin, const float3 &vLPVmax, bool useLPV)
 {
-	m_renderType = LRT_NONE;
-
-	updateFrustum();
-	float3 vOrigin = getPosition();
-	IXFrustum *pFrustum = pMainCamera->getFrustum();
-	if(pFrustum->frustumInFrustum(m_pFrustum))
+	if(!(m_renderType & LRT_LIGHT))
 	{
-		m_renderType |= LRT_LIGHT;
+		updateFrustum();
+		float3 vOrigin = getPosition();
+		IXFrustum *pFrustum = pMainCamera->getFrustum();
+		if(pFrustum->frustumInFrustum(m_pFrustum))
+		{
+			m_renderType |= LRT_LIGHT;
+		}
+		mem_release(pFrustum);
 	}
-	mem_release(pFrustum);
 
 	CXLight::updateVisibility(pMainCamera, vLPVmin, vLPVmax, useLPV);
 }

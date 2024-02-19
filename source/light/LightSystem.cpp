@@ -678,7 +678,7 @@ void CLightSystem::renderGI(CGIGraphNodeData *pNodeData, IXRenderTarget *pFinalT
 		pLight = m_aLights[i];
 
 		//если свет виден фрустуму камеры (это надо было заранее просчитать) и если свет включен
-		if(pLight->isEnabled() && pLight->getRenderType() != LRT_NONE)
+		if(pLight->isEnabled() && pLight->getRenderType() != LRT_NONE && ((1 << pLight->getLayer()) & pCamera->getLayerMask()))
 		{
 			if(pLight->getRenderType() & LRT_LPV)
 			{
@@ -1659,4 +1659,12 @@ void CLightSystem::initShaders()
 	m_idSSAOShader[0] = m_pRender->createShaderKit(idResPos, m_pRender->loadShader(SHADER_TYPE_PIXEL, "ppe_ssao.ps", Defines_SSAO_Q_1));
 
 	m_idSSAOBlendShader = m_pRender->createShaderKit(idScreenOut, m_pRender->loadShader(SHADER_TYPE_PIXEL, "ppe_ssao_blur.ps"));
+}
+
+void CLightSystem::sync()
+{
+	for(UINT i = 0, l = m_aLights.size(); i < l; ++i)
+	{
+		m_aLights[i]->resetVisibility();
+	}
 }

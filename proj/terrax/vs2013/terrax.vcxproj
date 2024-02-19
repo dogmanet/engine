@@ -219,6 +219,9 @@
     <ClCompile Include="..\..\..\source\terrax\CommandRotate.cpp" />
     <ClCompile Include="..\..\..\source\terrax\CommandScale.cpp" />
     <ClCompile Include="..\..\..\source\terrax\CommandSelect.cpp" />
+    <ClCompile Include="..\..\..\source\terrax\CurveEditorDialog.cpp" />
+    <ClCompile Include="..\..\..\source\terrax\CurveEditorGraphNode.cpp" />
+    <ClCompile Include="..\..\..\source\terrax\CurveEditorGraphNodeData.cpp" />
     <ClCompile Include="..\..\..\source\terrax\Editor.cpp" />
     <ClCompile Include="..\..\..\source\terrax\EditorMaterialBrowser.cpp" />
     <ClCompile Include="..\..\..\source\terrax\GizmoHandle.cpp" />
@@ -268,6 +271,9 @@
     <ClInclude Include="..\..\..\source\terrax\CommandRotate.h" />
     <ClInclude Include="..\..\..\source\terrax\CommandScale.h" />
     <ClInclude Include="..\..\..\source\terrax\CommandSelect.h" />
+    <ClInclude Include="..\..\..\source\terrax\CurveEditorDialog.h" />
+    <ClInclude Include="..\..\..\source\terrax\CurveEditorGraphNode.h" />
+    <ClInclude Include="..\..\..\source\terrax\CurveEditorGraphNodeData.h" />
     <ClInclude Include="..\..\..\source\terrax\Editor.h" />
     <ClInclude Include="..\..\..\source\terrax\EditorMaterialBrowser.h" />
     <ClInclude Include="..\..\..\source\terrax\GizmoHandle.h" />

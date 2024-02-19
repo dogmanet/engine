@@ -46,6 +46,8 @@ public:
 
 	IXRenderGraphNode* XMETHODCALLTYPE getNode() override;
 
+	bool XMETHODCALLTYPE getNodeData(IXRenderTarget *pFinalTarget, IXRenderGraphNodeData **ppOut) override;
+
 	void XMETHODCALLTYPE setTexture(IXRenderTarget *pFinalTarget, UINT uIdx, IXTexture *pTexture) override;
 	void XMETHODCALLTYPE setProp(IXRenderTarget *pFinalTarget, UINT uIdx, const float4_t &vProp) override;
 	void XMETHODCALLTYPE setFlag(IXRenderTarget *pFinalTarget, UINT uIdx, bool bVal) override;

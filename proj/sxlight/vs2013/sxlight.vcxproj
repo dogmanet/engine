@@ -191,6 +191,7 @@
     <ClCompile Include="..\..\..\source\light\sxlight_dll.cpp" />
     <ClCompile Include="..\..\..\source\light\TonemappingGraphNode.cpp" />
     <ClCompile Include="..\..\..\source\light\TonemappingGraphNodeData.cpp" />
+    <ClCompile Include="..\..\..\source\light\Updatable.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\source\light\GIGraphNode.h" />
@@ -203,6 +204,7 @@
     <ClInclude Include="..\..\..\source\light\ShadowCache.h" />
     <ClInclude Include="..\..\..\source\light\TonemappingGraphNode.h" />
     <ClInclude Include="..\..\..\source\light\TonemappingGraphNodeData.h" />
+    <ClInclude Include="..\..\..\source\light\Updatable.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

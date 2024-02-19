@@ -10,6 +10,8 @@
 #include <common/aastring.h>
 #include <xcommon/IFileSystem.h>
 #include <xcommon/editor/IXEditorExtension.h>
+#include <xcommon/render/IXRender.h>
+#include <xcommon/particles/IXParticleSystem.h>
 
 class CEffectBrowserWindow final: public IXUnknownImplementation<IXEditorResourceBrowser>
 {
@@ -24,10 +26,11 @@ private:
 	WNDPROC m_pTreeViewPrevWndProc = NULL;
 
 public:
-	CEffectBrowserWindow(HINSTANCE hInstance, HWND hMainWnd, IFileSystem *pFS);
+	CEffectBrowserWindow(HINSTANCE hInstance, HWND hMainWnd, IFileSystem *pFS, IXParticleSystem *pParticleSystem);
 	~CEffectBrowserWindow();
 
 	//const char *getLevelName();
+	void setRender(IXRender *pRender);
 
 	UINT XMETHODCALLTYPE getResourceTypeCount() override;
 	const char* XMETHODCALLTYPE getResourceType(UINT uId) override;
@@ -87,17 +90,23 @@ private:
 	HWND m_hDlgWnd = NULL;
 	HMENU m_hContextMenu = NULL;
 
+	IXRenderTarget *m_pFinalTarget = NULL;
+	IXCamera *m_pCamera = NULL;
 
 	IFileSystem *m_pFS;
 
 	HWND m_hTreeWnd = NULL;
 	HWND m_hOkButtonWnd = NULL;
+	HWND m_hPreviewWnd = NULL;
 
 	bool m_hasFilter = false;
 
 	Array<Record> m_aRecords;
 
 	IXEditorResourceBrowserCallback *m_pCallback = NULL;
+
+	IXParticleSystem *m_pParticleSystem = NULL;
+	IXParticlePlayer *m_pPlayer = NULL;
 };
 
 #endif

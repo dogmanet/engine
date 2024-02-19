@@ -9,12 +9,13 @@
 #include <xcommon/render/IXRenderUtils.h>
 #include <queue>
 
-CSceneObject::CSceneObject(CScene *pScene, const SMAABB &aabb, void *pUserData, NodeType bmType, NodeFeature bmFeatures):
+CSceneObject::CSceneObject(CScene *pScene, const SMAABB &aabb, void *pUserData, NodeType bmType, NodeFeature bmFeatures, UINT uLayer):
 	m_pScene(pScene),
 	m_aabb(aabb),
 	m_pUserData(pUserData),
 	m_bmFeatures(bmFeatures),
-	m_bmType(bmType)
+	m_bmType(bmType),
+	m_bmLayer(1 << uLayer)
 {
 }
 CSceneObject::~CSceneObject()
@@ -56,6 +57,11 @@ void CSceneObject::updateFeatures(NodeFeature bmFeatures)
 	m_pScene->enqueueObjectUpdateFeatures(this, bmFeatures);
 }
 
+void CSceneObject::updateLayer(UINT bmLayer)
+{
+	m_pScene->enqueueObjectUpdateLayer(this, bmLayer);
+}
+
 void XMETHODCALLTYPE CSceneObject::setFeature(IXSceneFeature *pFeat, bool isSet)
 {
 	CSceneFeature *pFeature = (CSceneFeature*)pFeat;
@@ -85,6 +91,14 @@ void XMETHODCALLTYPE CSceneObject::setFeatures(IXSceneFeature **ppFeatures)
 	}
 
 	updateFeatures(bmFeatures);
+}
+
+void XMETHODCALLTYPE CSceneObject::setLayer(UINT uLayer)
+{
+	assert(uLayer < sizeof(m_bmLayer) * 8);
+	m_bmLayer = 1 << uLayer;
+
+	updateLayer(m_bmLayer);
 }
 
 //##########################################################################
@@ -191,6 +205,7 @@ void CSceneQuery::queryObjectsLeaf(CSceneNode *pNode, const IXFrustum *pFrustum,
 
 		if(
 			pObj->getType() == m_bmType && 
+			(pObj->getLayer() & m_bmLayerMask) &&
 			testFeatures(pObj->getFeatures()) && 
 			(isFullyVisible || (pOcclusionCuller ? pOcclusionCuller->isAABBvisible(pObj->getAABB()) : pFrustum->boxInFrustum(pObj->getAABB()))) &&
 			testSize(pObj->getAABB())
@@ -211,7 +226,7 @@ void CSceneQuery::queryObjectsInternal(CSceneNode *pNode, const IXFrustum *pFrus
 
 	XPROFILE_FUNCTION();
 
-	if((pNode->getTypes() & m_bmType) == 0 || !testFeatures(pNode->getFeatures(), false))
+	if((pNode->getTypes() & m_bmType) == 0 || (pNode->getLayerMask() & m_bmLayerMask) == 0 || !testFeatures(pNode->getFeatures(), false))
 	{
 		return;
 	}
@@ -287,6 +302,10 @@ void XMETHODCALLTYPE CSceneQuery::unsetScreenSizeCulling()
 	m_useScreenSizeCulling = false;
 }
 
+void XMETHODCALLTYPE CSceneQuery::setLayerMask(UINT uLayerMask)
+{
+	m_bmLayerMask = uLayerMask;
+}
 
 bool CSceneQuery::testFeatures(NodeFeature bmFeatures, bool isStrict)
 {
@@ -349,9 +368,9 @@ CSceneObjectType::~CSceneObjectType()
 {
 }
 
-IXSceneObject* XMETHODCALLTYPE CSceneObjectType::newObject(const SMAABB &aabb, void *pUserData, IXSceneFeature **ppFeatures)
+IXSceneObject* XMETHODCALLTYPE CSceneObjectType::newObject(const SMAABB &aabb, void *pUserData, IXSceneFeature **ppFeatures, UINT uLayer)
 {
-	return(m_pScene->newObject(aabb, pUserData, m_bmType, ppFeatures));
+	return(m_pScene->newObject(aabb, pUserData, m_bmType, ppFeatures, uLayer));
 }
 IXSceneQuery* XMETHODCALLTYPE CSceneObjectType::newQuery()
 {
@@ -438,11 +457,13 @@ void CSceneNode::updateFeatures()
 	CSceneNode *pNode = this;
 	NodeFeature bmNewFeatures;
 	NodeType bmNewTypes;
+	UINT bmNewLayer;
 
 	while(pNode)
 	{
 		bmNewFeatures = 0;
 		bmNewTypes = 0;
+		bmNewLayer = 0;
 
 		for(UINT i = 0; i < BVH_CHILD_COUNT; ++i)
 		{
@@ -450,6 +471,7 @@ void CSceneNode::updateFeatures()
 			{
 				bmNewFeatures |= pNode->m_pChildren[i]->m_bmFeatures;
 				bmNewTypes |= pNode->m_pChildren[i]->m_bmTypes;
+				bmNewLayer |= pNode->m_pChildren[i]->m_bmLayerMask;
 			}
 		}
 
@@ -457,15 +479,17 @@ void CSceneNode::updateFeatures()
 		{
 			bmNewFeatures |= pNode->m_aObjects[i]->getFeatures();
 			bmNewTypes |= pNode->m_aObjects[i]->getType();
+			bmNewLayer |= pNode->m_aObjects[i]->getLayer();
 		}
 
-		if(pNode->m_bmFeatures == bmNewFeatures && pNode->m_bmTypes == bmNewTypes)
+		if(pNode->m_bmFeatures == bmNewFeatures && pNode->m_bmTypes == bmNewTypes && pNode->m_bmLayerMask == bmNewLayer)
 		{
 			break;
 		}
 		
 		pNode->m_bmFeatures = bmNewFeatures;
 		pNode->m_bmTypes = bmNewTypes;
+		pNode->m_bmLayerMask = bmNewLayer;
 
 		pNode = pNode->m_pParent;
 	}
@@ -1384,7 +1408,7 @@ IXSceneFeature* XMETHODCALLTYPE CScene::getObjectFeature(const char *szName)
 	return(NULL);
 }
 
-IXSceneObject* CScene::newObject(const SMAABB &aabb, void *pUserData, NodeType bmType, IXSceneFeature **ppFeatures)
+IXSceneObject* CScene::newObject(const SMAABB &aabb, void *pUserData, NodeType bmType, IXSceneFeature **ppFeatures, UINT uLayer)
 {
 	NodeFeature bmFeatures = 0;
 	while(ppFeatures && *ppFeatures)
@@ -1396,7 +1420,7 @@ IXSceneObject* CScene::newObject(const SMAABB &aabb, void *pUserData, NodeType b
 	CSceneObject *pObject;
 	{
 		ScopedSpinLock lock(m_lockPoolObjects);
-		pObject = m_poolObjects.Alloc(this, aabb, pUserData, bmType, 0);
+		pObject = m_poolObjects.Alloc(this, aabb, pUserData, bmType, bmFeatures, uLayer);
 	}
 	m_qUpdate.emplace({SMAABB(), pObject, 0, UpdateItem::ADD});
 	return(pObject);
@@ -1409,6 +1433,10 @@ void CScene::enqueueObjectUpdate(CSceneObject* pObject, const SMAABB &aabb)
 void CScene::enqueueObjectUpdateFeatures(CSceneObject* pObject, NodeFeature bmFeatures)
 {
 	m_qUpdate.emplace({SMAABB(), pObject, bmFeatures, UpdateItem::UPDATE_FEATURES});
+}
+void CScene::enqueueObjectUpdateLayer(CSceneObject* pObject, UINT bmLayer)
+{
+	m_qUpdate.emplace({SMAABB(), pObject, bmLayer, UpdateItem::UPDATE_LAYER});
 }
 void CScene::enqueueObjectDelete(CSceneObject* pObject)
 {
@@ -1629,6 +1657,14 @@ void CScene::sync()
 
 		case UpdateItem::UPDATE_FEATURES:
 			item.pObject->m_bmFeatures = item.bmFeatures;
+			if(item.pObject->m_pNode)
+			{
+				item.pObject->m_pNode->updateFeatures();
+			}
+			break;
+
+		case UpdateItem::UPDATE_LAYER:
+			item.pObject->m_bmLayer = item.bmLayer;
 			if(item.pObject->m_pNode)
 			{
 				item.pObject->m_pNode->updateFeatures();

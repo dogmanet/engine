@@ -55,12 +55,12 @@ bool XMETHODCALLTYPE CParticleSystem::getEffect(const char *szName, IXParticleEf
 		return(false);
 	}
 
-	char szFile[MAX_PATH];
+	//char szFile[MAX_PATH];
 
-	sprintf(szFile, "effects/%s.eff", szName);
+	//sprintf(szFile, "effects/%s.eff", szName);
 
 	CEffectLoader loader(m_pCore);
-	if(loader.loadFromFile(szFile, pEffect))
+	if(loader.loadFromFile(szName, pEffect))
 	{
 		*ppOut = pEffect;
 		return(true);
@@ -76,7 +76,7 @@ void XMETHODCALLTYPE CParticleSystem::newEffectPlayer(IXParticleEffect *pEffect,
 	CParticlePlayer *pPlayer;
 	{
 		ScopedSpinLock lock(m_slPlayerPool);
-		pPlayer = m_poolPlayers.Alloc((CParticleEffect*)pEffect);
+		pPlayer = m_poolPlayers.Alloc((CParticleEffect*)pEffect, this);
 		*ppOut = pPlayer;
 	}
 	m_queuePlayers.emplace({PlayerQueueItem::PQI_ADD, pPlayer});
@@ -94,12 +94,12 @@ void CParticleSystem::onEffectPlayerReleased(CParticlePlayer *pPlayer)
 
 bool CParticleSystem::saveEffect(CParticleEffect *pEffect)
 {
-	char szFile[MAX_PATH];
+	//char szFile[MAX_PATH];
 
-	sprintf(szFile, "effects/%s.eff", pEffect->getName());
+	//sprintf(szFile, "effects/%s.eff", pEffect->getName());
 
 	CEffectLoader loader(m_pCore);
-	return(loader.saveToFile(szFile, pEffect));
+	return(loader.saveToFile(pEffect->getName(), pEffect));
 }
 
 void CParticleSystem::update(float fDelta)
@@ -180,7 +180,7 @@ void CParticleSystem::newVisData(IXRenderableVisibility **ppVisibility)
 }
 void CParticleSystem::render(IXRenderableVisibility *pVisibility)
 {
-	// TODO Use pVisibility
+	TODO("Use pVisibility");
 
 	if(m_pMaterialSystem)
 	{

@@ -4,13 +4,14 @@
 #include <xcommon/editor/IXEditable.h>
 #include <mtrl/IXMaterialSystem.h>
 #include <xcommon/IXCore.h>
+#include <xcommon/render/IXRender.h>
 #include "EffectBrowserWindow.h"
 
 class CEditable;
 class CEditorExtension final: public IXUnknownImplementation<IXEditorExtension>
 {
 public:
-	CEditorExtension(CEditable *pEditable, IXEditor *pEditor, IXCore *pCore);
+	CEditorExtension(CEditable *pEditable, IXEditor *pEditor, IXCore *pCore, IXParticleSystem *pParticleSystem);
 	~CEditorExtension();
 
 	UINT XMETHODCALLTYPE getPropertyTabCount() override;
@@ -23,6 +24,8 @@ public:
 
 	UINT XMETHODCALLTYPE getResourceBrowserCount() override;
 	bool XMETHODCALLTYPE getResourceBrowser(UINT uId, IXEditorResourceBrowser **ppOut) override;
+
+	void setRender(IXRender *pRender);
 
 private:
 	CEditable *m_pEditable = NULL;

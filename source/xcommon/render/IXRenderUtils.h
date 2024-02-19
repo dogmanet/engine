@@ -3,11 +3,27 @@
 
 #include <gdefines.h>
 #include <graphix/graphix.h>
+#include <xcommon/gui/IXFontManager.h>
 
 enum XGIZMO_POINT_MODE
 {
 	XGPM_SQUARE,
 	XGPM_ROUND
+};
+
+enum XGIZMO_TEXT_VERTICAL_ALIGN
+{
+	XGTVA_TOP,
+	XGTVA_BOTTOM,
+	XGTVA_MIDDLE
+};
+
+struct XGizmoFontParams
+{
+	XFONT_DECORATION decoration = XFONT_DECORATION_NONE;
+	XFONT_TEXT_ALIGN textAlign = XFONT_TEXT_ALIGN_LEFT;
+	XGIZMO_TEXT_VERTICAL_ALIGN verticalAlign = XGTVA_TOP;
+	UINT uFirstLineShift = 0;
 };
 
 //! 
@@ -60,6 +76,19 @@ public:
 		const float4_t &vColorA,
 		const float4_t &vColorB,
 		const float4_t &vColorC) = 0;
+
+	//! 
+	virtual void XMETHODCALLTYPE setFont(IXFont *pFont) = 0;
+
+	//! 
+	virtual void XMETHODCALLTYPE setFontParams(const XGizmoFontParams &params) = 0;
+
+	//! 
+	virtual void XMETHODCALLTYPE drawString(
+		const char *szText,
+		const float3_t &vRefPoint,
+		UINT uAreaWidth = 0
+	) = 0;
 };
 
 //#############################################################################

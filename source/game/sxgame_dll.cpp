@@ -146,11 +146,11 @@ SX_LIB_API gui::IGUI* SGame_GetGUI()
 	return(GameData::m_pGUI);
 }
 
-SX_LIB_API void SGame_Render()
+SX_LIB_API void SGame_Render(IXRenderTarget *pFinalTarget)
 {
 	SG_PRECOND(_VOID);
 	//GameData::m_pMgr->render();
-	g_pGameData->render();
+	g_pGameData->render(pFinalTarget);
 }
 
 SX_LIB_API void SGame_RenderHUD()

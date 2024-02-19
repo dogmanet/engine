@@ -87,6 +87,16 @@ public:
 		m_dirty |= type;
 	}
 
+	UINT getLayer()
+	{
+		return(m_uLayer);
+	}
+
+	void resetVisibility()
+	{
+		m_renderType = LRT_NONE;
+	}
+
 protected:
 	virtual SMMATRIX getWorldTM();
 	virtual void updatePSConstants(IGXDevice *pDevice) = 0;
@@ -123,6 +133,8 @@ protected:
 	LIGHT_RENDER_TYPE m_dirty = LRT_ALL;
 
 	IXMutationObserver *m_pMutationObserver = NULL;
+
+	UINT m_uLayer = 0;
 };
 
 #pragma warning(push)

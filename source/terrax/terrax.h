@@ -285,6 +285,8 @@ void CheckToolbarButton(int iCmd, BOOL isChecked);
 
 extern IXEngine *g_pEngine;
 
+extern HINSTANCE hInst;
+
 class CCommandMove;
 class CGizmoMoveCallback: public IXEditorGizmoMoveCallback
 {

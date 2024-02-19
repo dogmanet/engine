@@ -11,9 +11,12 @@ class CInfoParticlePlayer: public CPointEntity
 	DECLARE_PROPTABLE();
 public:
 	DECLARE_TRIVIAL_CONSTRUCTOR();
+	~CInfoParticlePlayer();
 
 	void setEffect(const char *szEffectFile);
 
+	void setPos(const float3 &pos) override;
+	void setOrient(const SMQuaternion &q) override;
 private:
 	const char *m_szEffect = "";
 	IXParticlePlayer *m_pPlayer = NULL;
