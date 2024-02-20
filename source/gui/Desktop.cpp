@@ -68,7 +68,7 @@ namespace gui
 
 		GetGUI()->getMaterialSystem()->addTexture(
 			(String("@gui/") + String(m_sName)).c_str(), 
-			GetGUI()->getDevice()->createTexture2D(m_iWidth, m_iHeight, 1, GX_TEXFLAG_RENDERTARGET, GXFMT_A8B8G8R8), 
+			GetGUI()->getDevice()->createTexture2D(m_iWidth, m_iHeight, 1, GX_TEXFLAG_RENDERTARGET, GXFMT_A8B8G8R8_SRGB), 
 			&m_txFinal
 		);
 

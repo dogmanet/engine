@@ -1448,7 +1448,7 @@ void GameData::render(IXRenderTarget *pFinalTarget)
 			pContext->drawIndexed(g_uVertexCount, g_uIndexCount / 3, 0, 0);
 
 			g_pTextVSConstantBuffer->update(&SMMatrixTranspose(m));
-			g_pTextPSConstantBuffer->update(&float4_t(0.3f, 1.0f, 0.3f, 1.0f));
+			g_pTextPSConstantBuffer->update(&float4_t(0.07f, 1.0f, 0.07f, 1.0f));
 			pContext->drawIndexed(g_uVertexCount, g_uIndexCount / 3, 0, 0);
 			g_pRender->unbindShader(pContext);
 		}
