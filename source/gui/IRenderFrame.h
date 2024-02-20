@@ -125,7 +125,7 @@ namespace gui
 				int textGetLineIdx();
 				UINT textFixUp();
 
-				void updateStyles();
+				IRenderFrame* updateStyles();
 
 				void updateBorderColor();
 
@@ -203,7 +203,7 @@ namespace gui
 					return(m_bFreezed);
 				}
 
-				void removeChild(IRenderFrame *prf);
+				void removeChild(IRenderFrame *prf, IRenderFrame *pReplaceWith = NULL);
 
 			protected:
 
@@ -366,9 +366,9 @@ namespace gui
 				void render(UINT lvl);
 
 				UINT getCaretPos();
-				void setCaretPos(int cp, bool force = false);
-				void moveCaretPos(int shift);
-				void moveCaretLine(int shift);
+				void setCaretPos(int cp, bool force = false, bool bPreserveSelection = false);
+				void moveCaretPos(int shift, bool bPreserveSelection = false);
+				void moveCaretLine(int shift, bool bPreserveSelection = false);
 				UINT getCaretMaxPos();
 
 
@@ -434,10 +434,20 @@ namespace gui
 			class IRenderSelectBlock: public IRenderBlock
 			{
 				DECLARE_CLASS(IRenderSelectBlock, IRenderBlock);
+				friend class ISELECT;
 			public:
 				IRenderSelectBlock(CDOMnode *pNode, IRenderFrame *pRootNode):
 					BaseClass(pNode, pRootNode)
 				{
+					//LogInfo("IRenderSelectBlock(%p)\n", this);
+				}
+				~IRenderSelectBlock() 
+				{
+					//LogInfo("~IRenderSelectBlock(%p)\n", this);
+					if(m_pOptionsFrame)
+					{
+						m_pOptionsFrame->getParent()->removeChild(m_pOptionsFrame);
+					}
 				}
 
 				UINT layout(bool changed = true);
@@ -451,8 +461,15 @@ namespace gui
 			class IRenderSelectOptionsBlock: public IRenderBlock
 			{
 				DECLARE_CLASS(IRenderSelectOptionsBlock, IRenderBlock);
+				friend class ISELECT;
 			public:
 				IRenderSelectOptionsBlock(IRenderFrame * pSelectFrame, IRenderFrame * pRootNode);
+
+				~IRenderSelectOptionsBlock()
+				{
+					//LogInfo("~IRenderSelectOptionsBlock(%p)\n", this);
+					//m_pParent->removeChild(this);
+				}
 
 				UINT layout(bool changed = true);
 				void render(UINT lvl);

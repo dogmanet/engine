@@ -63,6 +63,9 @@ namespace gui
 			virtual void classToggle(const StringW & cls, int set = -1) = 0;
 
 			virtual BOOL classExists(const StringW & cls) = 0;
+
+			virtual void setUserData(void *pData) = 0;
+			virtual void* getUserData() = 0;
 		};
 
 

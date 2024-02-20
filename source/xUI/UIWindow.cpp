@@ -1,5 +1,6 @@
 #include "UIWindow.h"
 #include "XUI.h"
+#include "UIWindowControl.h"
 
 INT_PTR XMETHODCALLTYPE CWindowCallback::onMessage(UINT msg, WPARAM wParam, LPARAM lParam, IXWindow *pWindow)
 {
@@ -43,6 +44,7 @@ INT_PTR XMETHODCALLTYPE CWindowCallback::onMessage(UINT msg, WPARAM wParam, LPAR
 	return(0);
 }
 
+
 //##########################################################################
 
 CUIWindow::CUIWindow(CXUI *pXUI, const XWINDOW_DESC *pWindowDesc, IUIWindow *pParent):
@@ -57,10 +59,18 @@ CUIWindow::CUIWindow(CXUI *pXUI, const XWINDOW_DESC *pWindowDesc, IUIWindow *pPa
 	m_pDefaultDesktop = m_pDesktopStack->createDesktopW(L"default", L"main.html");
 	m_pDesktopStack->setActiveDesktop(m_pDefaultDesktop);
 
+	m_pDesktopStack->registerCallbackDefault([](const WCHAR *cb_name, gui::IEvent *ev)
+	{
+		CUIWindow *win = (CUIWindow*)ev->pCallbackData;
+		win->callEventHandler(cb_name, ev);
+	}, true, this);
+
 	m_pXWindowCallback = new CWindowCallback(this, m_pDesktopStack);
 	m_pXWindow = pXUI->getWindowSystem()->createWindow(pWindowDesc, m_pXWindowCallback, pXParent);
 
 	createSwapChain((UINT)pWindowDesc->iSizeX, (UINT)pWindowDesc->iSizeY);
+
+	m_pControl = new CUIWindowControl(this, 0);
 }
 CUIWindow::~CUIWindow()
 {
@@ -69,6 +79,8 @@ CUIWindow::~CUIWindow()
 	mem_delete(m_pXWindowCallback);
 	mem_release(m_pDefaultDesktop);
 	mem_release(m_pDesktopStack);
+
+	mem_release(m_pControl);
 
 	m_pXUI->onDestroyWindow(this);
 }
@@ -124,6 +136,32 @@ const XWINDOW_DESC* XMETHODCALLTYPE CUIWindow::getDesc()
 	return(m_pXWindow->getDesc());
 }
 
+gui::IDesktop* XMETHODCALLTYPE CUIWindow::getDesktop() const
+{
+	return(m_pDefaultDesktop);
+}
+
+/*IUIControl* XMETHODCALLTYPE CUIWindow::getControlByID(ULONG uid) const
+{
+	int index = m_ChildControls.indexOf(uid, [&](const IUIControl* control, ULONG uid) -> bool{ return control->getElementID() == uid; });
+	return index == -1 ? NULL : m_ChildControls[index];
+}*/
+
+void CUIWindow::callEventHandler(const WCHAR *cb_name, gui::IEvent *ev)
+{
+	IUIControl *pControl = (IUIControl*)ev->target->getUserData();
+
+	if(m_pfnCallback)
+	{
+		m_pfnCallback(m_pCallbackContext, pControl, ev);
+	}
+
+	if(!ev->preventDefault)
+	{
+		SAFE_CALL(pControl, dispatchEvent, ev);
+	}
+}
+
 IXWindow* CUIWindow::getXWindow()
 {
 	return(m_pXWindow);
@@ -143,4 +181,28 @@ void CUIWindow::render(IGXContext *pContext)
 void CUIWindow::present()
 {
 	m_pGuiSwapChain->swapBuffers();
+}
+
+UINT XMETHODCALLTYPE CUIWindow::getChildrenCount() const
+{
+	return(m_pControl->getChildrenCount());
+}
+IUIControl* XMETHODCALLTYPE CUIWindow::getChild(UINT uIdx) const
+{
+	return(m_pControl->getChild(uIdx));
+}
+
+void XMETHODCALLTYPE CUIWindow::insertChild(IUIControl *pChild, UINT uPos)
+{
+	m_pControl->insertChild(pChild, uPos);
+}
+void XMETHODCALLTYPE CUIWindow::removeChild(IUIControl *pChild)
+{
+	m_pControl->removeChild(pChild);
+}
+
+void XMETHODCALLTYPE CUIWindow::setCallback(XUIWINDOW_PROC pfnCallback, void *pCtx)
+{
+	m_pfnCallback = pfnCallback;
+	m_pCallbackContext = pCtx;
 }

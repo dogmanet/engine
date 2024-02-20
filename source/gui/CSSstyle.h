@@ -1,4 +1,4 @@
-﻿#ifndef _CCSSstyle_H_
+#ifndef _CCSSstyle_H_
 #define _CCSSstyle_H_
 
 

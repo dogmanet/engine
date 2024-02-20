@@ -5,6 +5,9 @@
 #include "IRenderFrame.h"
 #include "IDOMdocument.h"
 
+#define SCROLL_SPEED 32
+#define SCROLL_SPEED_MAX 64
+
 namespace gui
 {
 	class CDesktop;
@@ -132,6 +135,7 @@ namespace gui
 			IDOMnode* getRootNode();
 
 			void forgotNode(IDOMnode *pNode);
+			void forgotRenderFrame(render::IRenderFrame *pRF);
 			bool isDirty();
 			void markDirty();
 

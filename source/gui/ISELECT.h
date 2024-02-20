@@ -13,8 +13,9 @@ namespace gui
 			DECLARE_CLASS(ISELECT, IDOMnodeTag);
 			DECLARE_DOM_NODE(ISELECT);
 
-			void dispatchClientEvent(IEvent ev, bool * preventDefault);
-			void setAttribute(const StringW & name, const StringW & value);
+			void dispatchClientEvent(IEvent ev, bool *preventDefault) override;
+			void setAttribute(const StringW & name, const StringW & value) override;
+			void dispatchEvent(IEvent &ev) override;
 		};
 	};
 };

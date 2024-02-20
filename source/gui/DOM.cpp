@@ -126,6 +126,7 @@ namespace gui
 
 		void CDOMnode::resetStyleChanges()
 		{
+			m_bSkipStructureChanges = false;
 			m_css.resetChanges();
 			for(int i = 0, s = m_vChilds.size(); i < s; i++)
 			{

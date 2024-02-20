@@ -252,6 +252,8 @@
     <ClCompile Include="..\..\..\source\game\TriggerHurt.cpp" />
     <ClCompile Include="..\..\..\source\game\TriggerItemUse.cpp" />
     <ClCompile Include="..\..\..\source\game\TriggerTeleport.cpp" />
+    <ClCompile Include="..\..\..\source\game\UICalcContainer.cpp" />
+    <ClCompile Include="..\..\..\source\game\UIDemoContainer.cpp" />
     <ClCompile Include="..\..\..\source\game\ZombieHands.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -334,6 +336,8 @@
     <ClInclude Include="..\..\..\source\game\TriggerHurt.h" />
     <ClInclude Include="..\..\..\source\game\TriggerItemUse.h" />
     <ClInclude Include="..\..\..\source\game\TriggerTeleport.h" />
+    <ClInclude Include="..\..\..\source\game\UICalcContainer.h" />
+    <ClInclude Include="..\..\..\source\game\UIDemoContainer.h" />
     <ClInclude Include="..\..\..\source\game\ZombieHands.h" />
     <ClInclude Include="..\..\..\source\game\resource.h" />
   </ItemGroup>

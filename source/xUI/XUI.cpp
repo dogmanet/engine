@@ -1,6 +1,14 @@
 #include "XUI.h"
 #include "UIWindow.h"
 
+#include "UIButton.h"
+#include "UITextBox.h"
+#include "UIComboBox.h"
+#include "UICheckbox.h"
+#include "UIPicture.h"
+#include "UIPanel.h"
+#include "UISpoiler.h"
+
 CXUI::CXUI(IGXDevice *pDev, IXWindowSystem *pWindowSystem, gui::IGUI *pGUI):
 	m_pDev(pDev),
 	m_pWindowSystem(pWindowSystem),
@@ -13,6 +21,41 @@ IUIWindow* XMETHODCALLTYPE CXUI::createWindow(const XWINDOW_DESC *pWindowDesc, I
 	CUIWindow *pWindow = new CUIWindow(this, pWindowDesc, pParent);
 	m_pWindows.push_back(pWindow);
 	return(pWindow);
+}
+
+IUIButton* XMETHODCALLTYPE CXUI::createButton()
+{
+	return(new CUIButton(++m_elemendID));
+}
+
+IUITextBox* XMETHODCALLTYPE CXUI::createTextBox()
+{
+	return(new CUITextBox(++m_elemendID));
+}
+
+IUIComboBox* XMETHODCALLTYPE CXUI::createComboBox()
+{
+	return(new CUIComboBox(++m_elemendID));
+}
+
+IUICheckbox* XMETHODCALLTYPE CXUI::createCheckBox()
+{
+	return(new CUICheckBox(++m_elemendID));
+}
+
+/*IUIPicture* XMETHODCALLTYPE CXUI::createPicture()
+{
+	return(new CUIPicture(++m_elemendID));
+}*/
+
+IUIPanel* XMETHODCALLTYPE CXUI::createPanel()
+{
+	return(new CUIPanel(++m_elemendID));
+}
+
+IUISpoiler* XMETHODCALLTYPE CXUI::createSpoiler()
+{
+	return(new CUISpoiler(++m_elemendID));
 }
 
 void CXUI::onDestroyWindow(CUIWindow *pWindow)

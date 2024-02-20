@@ -13,6 +13,20 @@ public:
 
 	IUIWindow* XMETHODCALLTYPE createWindow(const XWINDOW_DESC *pWindowDesc, IUIWindow *pParent = NULL) override;
 
+	IUIButton* XMETHODCALLTYPE createButton() override;
+
+	IUITextBox* XMETHODCALLTYPE createTextBox() override;
+
+	IUIComboBox* XMETHODCALLTYPE createComboBox() override;
+
+	IUICheckbox* XMETHODCALLTYPE createCheckBox() override;
+
+	//IUIPicture* XMETHODCALLTYPE createPicture() override;
+
+	IUIPanel* XMETHODCALLTYPE createPanel() override;
+
+	IUISpoiler* XMETHODCALLTYPE createSpoiler() override;
+
 	void onDestroyWindow(CUIWindow *pWindow);
 
 	IXWindowSystem* getWindowSystem();
@@ -28,6 +42,8 @@ private:
 	IGXDevice *m_pDev = NULL;
 	IXWindowSystem *m_pWindowSystem = NULL;
 	gui::IGUI *m_pGUI = NULL;
+
+	ULONG m_elemendID = 0;
 };
 
 #endif

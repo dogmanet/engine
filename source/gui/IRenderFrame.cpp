@@ -216,6 +216,8 @@ namespace gui
 
 			IRenderFrame::~IRenderFrame()
 			{
+				m_pDoc->forgotRenderFrame(this);
+
 				for(UINT i = 0, l = m_pChilds.size(); i < l; i++)
 				{
 					mem_delete(m_pChilds[i]);
@@ -223,7 +225,9 @@ namespace gui
 				}
 				for(UINT i = 0, l = m_pChildsOutFlow.size(); i < l; i++)
 				{
-					mem_delete(m_pChildsOutFlow[i]);
+					IRenderFrame *pToDelete = m_pChildsOutFlow[i];
+					m_pChildsOutFlow[i] = NULL;
+					mem_delete(pToDelete);
 					//m_pChildsOutFlow.erase(0);
 				}
 				mem_delete(m_pScrollBarVert);
@@ -316,23 +320,35 @@ namespace gui
 				pChild->m_pParent = this;
 			}
 
-			void IRenderFrame::removeChild(IRenderFrame * pEl)
+			void IRenderFrame::removeChild(IRenderFrame * pEl, IRenderFrame *pReplaceWith)
 			{
+				/*if(pReplaceWith)
+				{
+					LogInfo("IRenderFrame[0x%p]::removeChild(0x%p, 0x%p);\n", this, pEl, pReplaceWith);
+				}*/
 				for(UINT i = 0, l = m_pChilds.size(); i < l; ++i)
 				{
 					if(m_pChilds[i] == pEl)
 					{
 						if(i > 0)
 						{
-							m_pChilds[i - 1]->m_pNext = m_pChilds[i]->m_pNext;
+							m_pChilds[i - 1]->m_pNext = pReplaceWith ? pReplaceWith : m_pChilds[i]->m_pNext;
 						}
 						if(i + 1 < m_pChilds.size())
 						{
-							m_pChilds[i + 1]->m_pPrev = m_pChilds[i]->m_pPrev;
+							m_pChilds[i + 1]->m_pPrev = pReplaceWith ? pReplaceWith : m_pChilds[i]->m_pPrev;
 						}
 						textClear();
 						mem_delete(m_pChilds[i]);
-						m_pChilds.erase(i);
+						if(pReplaceWith)
+						{
+							m_pChilds[i] = pReplaceWith;
+							pReplaceWith->m_pParent = this;
+						}
+						else
+						{
+							m_pChilds.erase(i);
+						}
 						return;
 					}
 				}
@@ -343,14 +359,23 @@ namespace gui
 					{
 						if(i > 0)
 						{
-							m_pChildsOutFlow[i - 1]->m_pNext = m_pChildsOutFlow[i]->m_pNext;
+							m_pChildsOutFlow[i - 1]->m_pNext = pReplaceWith ? pReplaceWith : m_pChildsOutFlow[i]->m_pNext;
 						}
 						if(i + 1 < m_pChildsOutFlow.size())
 						{
-							m_pChildsOutFlow[i + 1]->m_pPrev = m_pChildsOutFlow[i]->m_pPrev;
+							m_pChildsOutFlow[i + 1]->m_pPrev = pReplaceWith ? pReplaceWith : m_pChildsOutFlow[i]->m_pPrev;
 						}
-						mem_delete(m_pChildsOutFlow[i]);
-						m_pChildsOutFlow.erase(i);
+						IRenderFrame *pToDelete = m_pChildsOutFlow[i];
+						if(pReplaceWith)
+						{
+							m_pChildsOutFlow[i] = pReplaceWith;
+							pReplaceWith->m_pParent = this;
+						}
+						else
+						{
+							m_pChildsOutFlow.erase(i);
+						}
+						mem_delete(pToDelete);
 						return;
 					}
 				}
@@ -1383,11 +1408,28 @@ namespace gui
 				mem_release(pOldSampler);
 			}
 
-			void IRenderFrame::updateStyles()
+			IRenderFrame* IRenderFrame::updateStyles()
 			{
 				if(m_pNode)
 				{
 					UINT flags = ((css::CCSSstyle*)m_pNode->getStyle())->getChangesFlags();
+
+					if(!(flags & css::ICSSproperty::FLAG_UPDATE_STRUCTURE))
+					{
+						const IDOMnodeCollection *pNodeChildren = m_pNode->getChilds();
+						for(UINT i = 0, l = pNodeChildren->size(); i < l; ++i)
+						{
+							IDOMnode *pChildNode = pNodeChildren[0][i];
+							if(
+								!((CDOMnode*)pChildNode)->getRenderFrame() &&
+								(((css::CCSSstyle*)pChildNode->getStyle())->getChangesFlags() & css::ICSSproperty::FLAG_UPDATE_STRUCTURE)
+								)
+							{
+								flags |= css::ICSSproperty::FLAG_UPDATE_STRUCTURE;
+							}
+						}
+					}
+
 					if(flags)
 					{
 						if(flags & css::ICSSproperty::FLAG_UPDATE_MASK)
@@ -1399,7 +1441,36 @@ namespace gui
 						{
 							//TODO: Make structure changes
 							//m_pNode->getDocument()->
-							return;
+
+							//LogInfo("IRenderFrame[0x%p]::updateStyles()\n", this);
+
+							IRenderFrame *pNewFrame;
+							CDOMdocument *pDoc = m_pDoc;
+							IRenderFrame *pParent = m_pParent;
+
+							IRenderFrame *pReplacedFrame = this;
+							if(m_pNode->parentNode()->parentNode())
+							{
+								pReplacedFrame = ((CDOMnode*)m_pNode->parentNode())->getRenderFrame();
+							}
+
+							pParent = pReplacedFrame->m_pParent;
+
+							if(!pReplacedFrame->m_pNode->isStructureChangesSkipped())
+							{
+								pReplacedFrame->m_pNode->skipStructureChanges();
+
+								pNewFrame = createNode(pReplacedFrame->m_pNode, m_pRootNode);
+
+								pParent->removeChild(pReplacedFrame, pNewFrame);
+
+								if(pNewFrame)
+								{
+									pNewFrame->onCreated();
+								}
+								pDoc->addReflowItem(pNewFrame ? pNewFrame : pParent);
+								return(pParent);
+							}
 						}
 						if(flags & css::ICSSproperty::FLAG_UPDATE_LAYOUT)
 						{
@@ -1429,14 +1500,33 @@ namespace gui
 						}
 					}
 				}
+				IRenderFrame *pChanged = NULL;
 				for(UINT i = 0; i < m_pChilds.size(); i++)
 				{
-					m_pChilds[i]->updateStyles();
+					pChanged = m_pChilds[i]->updateStyles();
+					if(pChanged == this)
+					{
+						--i;
+					}
+					else if(pChanged)
+					{
+						return(pChanged);
+					}
 				}
 				for(UINT i = 0; i < m_pChildsOutFlow.size(); i++)
 				{
-					m_pChildsOutFlow[i]->updateStyles();
+					pChanged = m_pChildsOutFlow[i]->updateStyles();
+					if(pChanged == this)
+					{
+						--i;
+					}
+					else if(pChanged)
+					{
+						return(pChanged);
+					}
 				}
+				
+				return(NULL);
 			}
 
 			RECT IRenderFrame::getClientRect()
@@ -1833,6 +1923,8 @@ namespace gui
 					{
 						auto shader = GetGUI()->getShaders()->m_baseColored;
 						GetGUI()->getRender()->bindShader(pCtx, shader.m_idShaderKit);
+
+						pCtx->setStencilRef(lvl + 1);
 
 						pCtx->setDepthStencilState(GetGUI()->getDepthStencilStates()->m_pStencilDecr);
 					//	pCtx->SetRenderState(D3DRS_COLORWRITEENABLE, FALSE);
@@ -2394,10 +2486,11 @@ namespace gui
 				//GetGUI()->getDevice()->SetTransform(D3DTS_WORLD, reinterpret_cast<D3DMATRIX*>(&m));
 				
 				auto shader = GetGUI()->getShaders()->m_baseTexturedColored;
-				GetGUI()->getRender()->bindShader(pCtx, shader.m_idShaderKit);
 			//	CTextureManager::bindShader(shText);
 				m_pDoc->getDesktopStack()->getTextureManager()->bindTexture(texWhite);
 				renderSelection();
+
+				GetGUI()->getRender()->bindShader(pCtx, shader.m_idShaderKit);
 
 				float4_t vColor = m_pStyle->color->getColor();
 				float4_t vShadowColor = m_pStyle->text_shadow_color->isSet() ? m_pStyle->text_shadow_color->getColor() : vColor;
@@ -2749,7 +2842,7 @@ namespace gui
 				m_iSelectionEnd = cp;
 			}
 
-			void IRenderTextNew::setCaretPos(int cp, bool force)
+			void IRenderTextNew::setCaretPos(int cp, bool force, bool bPreserveSelection)
 			{
 				int maxPos = m_vCharRects.size();
 				if(cp > maxPos && !force)
@@ -2760,7 +2853,7 @@ namespace gui
 				{
 					cp = 0;
 				}
-				if(m_bInSelection)
+				if(m_bInSelection || bPreserveSelection)
 				{
 					m_iSelectionEnd = cp;
 				}
@@ -2776,9 +2869,9 @@ namespace gui
 				return(m_vCharRects.size());
 			}
 
-			void IRenderTextNew::moveCaretPos(int shift)
+			void IRenderTextNew::moveCaretPos(int shift, bool bPreserveSelection)
 			{
-				setCaretPos((int)m_iCaretPos + shift);
+				setCaretPos((int)m_iCaretPos + shift, false, bPreserveSelection);
 			}
 
 			void IRenderTextNew::drawCaret()
@@ -2842,7 +2935,12 @@ namespace gui
 					float op = sinf((float)GetTickCount() * 0.003f);
 					op *= op;
 					color.w = op;
-					SGCore_ShaderSetVRF(SHADER_TYPE_PIXEL, shader.m_idPS, "g_vColor", (float*)&color, 1);
+
+					static IGXConstantBuffer *s_pColorConstant = GetGUI()->getDevice()->createConstantBuffer(sizeof(float4));
+					s_pColorConstant->update(&color);
+					pCtx->setPSConstant(s_pColorConstant);
+
+				//	SGCore_ShaderSetVRF(SHADER_TYPE_PIXEL, shader.m_idPS, "g_vColor", (float*)&color, 1);
 				//	DX_CALL(GetGUI()->getDevice()->SetPixelShaderConstantF(0, (float*)&color, 1));
 					m_pDoc->getTranslationManager()->pushMatrix(SMMatrixTranslation(_x - 1.0f, _y, 0.0f));
 				//	DX_CALL(GetGUI()->getDevice()->SetFVF(D3DFVF_XYZ));
@@ -2951,9 +3049,11 @@ namespace gui
 				return(m_szClearText.substr(getSelectionStart(), getSelectionEnd() - getSelectionStart()));
 			}
 
-			void IRenderTextNew::moveCaretLine(int shift)
+			void IRenderTextNew::moveCaretLine(int shift, bool bPreserveSelection)
 			{
+				selectionStart();
 				placeCaretByXY(m_iCaretX, m_iCaretY + m_iTextSize * shift);
+				selectionEnd();
 			}
 
 			void IRenderTextNew::renderSelection()
@@ -3001,7 +3101,11 @@ namespace gui
 					auto shader = GetGUI()->getShaders()->m_baseColored;
 					GetGUI()->getRender()->bindShader(pCtx, shader.m_idShaderKit);
 
-					SGCore_ShaderSetVRF(SHADER_TYPE_PIXEL, shader.m_idPS, "g_vColor", (float*)&color, 1);
+					static IGXConstantBuffer *s_pColorConstant = GetGUI()->getDevice()->createConstantBuffer(sizeof(float4));
+					s_pColorConstant->update(&color);
+					pCtx->setPSConstant(s_pColorConstant);
+
+				//	SGCore_ShaderSetVRF(SHADER_TYPE_PIXEL, shader.m_idPS, "g_vColor", (float*)&color, 1);
 				//	DX_CALL(GetGUI()->getDevice()->SetPixelShaderConstantF(0, (float*)&color, 1));
 				//	DX_CALL(GetGUI()->getDevice()->SetFVF(D3DFVF_XYZ));
 					
@@ -3219,18 +3323,37 @@ namespace gui
 
 			void IRenderSelectBlock::onCreated()
 			{
-				IRenderSelectOptionsBlock * pFrame = new IRenderSelectOptionsBlock(this, m_pRootNode);
+				assert(!m_pOptionsFrame);
 
-				for(UINT i = 0, l = m_pChilds.size(); i < l; ++i)
+				IRenderSelectOptionsBlock *pFrame = new IRenderSelectOptionsBlock(this, m_pRootNode);
+
+				getNode()->setRenderFrame(this);
+
+				CDOMnode *pTextNode = NULL;
+
+				bool bAppend = false;
+				if(m_pNode->getChilds()->size())
+				{
+					pTextNode = (CDOMnode*)m_pNode->getChilds()[0][0];
+				}
+				if(!pTextNode || !pTextNode->isTextNode())
+				{
+					pTextNode = (CDOMnode*)CDOMnode::createNode(L"text");
+					pTextNode->setDocument(m_pNode->getDocument());
+					bAppend = true;
+				}
+
+				for(int i = (int)m_pChilds.size() - 1; i >= (bAppend ? 0 : 1); --i)
 				{
 					mem_delete(m_pChilds[i]);
-					//pFrame->addChild(m_pChilds[i]);
+					m_pChilds.erase(i);
 				}
-				m_pChilds.clear();
 
-
-				CDOMnode * pTextNode = (CDOMnode*)CDOMnode::createNode(L"text");
-				pTextNode->setDocument(m_pNode->getDocument());
+				if(!bAppend)
+				{
+					pFrame->removeChild(pFrame->getChild(0));
+					pTextNode->setRenderFrame(m_pChilds[0]->getNode() ? m_pChilds[0] : m_pChilds[0]->getChild(0));
+				}
 
 				const IDOMnodeCollection &nodeChildren = *(m_pNode->getChilds());
 				StringW sCurrentValue = m_pNode->getAttribute(L"value");
@@ -3249,11 +3372,14 @@ namespace gui
 					pTextNode->setText(nodeChildren[0]->getText());
 				}
 
-				m_pNode->appendChild(pTextNode, false, nodeChildren[0]);
+				if(bAppend)
+				{
+					m_pNode->appendChild(pTextNode, false, nodeChildren.size() ? nodeChildren[0] : NULL);
 
-				IRenderTextNew * pTextFrame = new IRenderTextNew(pTextNode, m_pRootNode);
+					IRenderTextNew * pTextFrame = new IRenderTextNew(pTextNode, m_pRootNode);
 
-				addChild(pTextFrame);
+					addChild(pTextFrame);
+				}
 
 				IRenderFrame * pCur = this;
 				while(pCur->getParent() && pCur->getNode()->getStyle()->position->getInt() == css::ICSSproperty::POSITION_STATIC)
@@ -3273,6 +3399,7 @@ namespace gui
 				BaseClass(pSelectFrame->getNode(), pRootFrame),
 				m_pSelectFrame(pSelectFrame)
 			{
+				//LogInfo("IRenderSelectOptionsBlock(%p)\n", this);
 			}
 
 			UINT IRenderSelectOptionsBlock::layout(bool changed)
@@ -3290,10 +3417,10 @@ namespace gui
 				}
 				else
 				{
-					if(m_iHeight > 300)
+					if(m_iHeight > 200)
 					{
-						m_iScrollTopMax = m_iHeight - 250;
-						m_iHeight = 250;
+						m_iScrollTopMax = m_iHeight - 200;
+						m_iHeight = 200;
 						m_bNeedCut = true;
 					}
 				}
@@ -3311,6 +3438,8 @@ namespace gui
 				{
 					return;
 				}*/
+				IGXContext *pCtx = GetGUI()->getDevice()->getThreadContext();
+				pCtx->setDepthStencilState(GetGUI()->getDepthStencilStates()->m_pDefault);
 				BaseClass::render(lvl);
 			}
 		};

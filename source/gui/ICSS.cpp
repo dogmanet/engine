@@ -694,7 +694,7 @@ namespace gui
 			p_min_width.setFlags(ICSSproperty::FLAG_UPDATE_LAYOUT | ICSSproperty::FLAG_ALLOW_TRANSITION);
 			p_min_height.setFlags(ICSSproperty::FLAG_UPDATE_LAYOUT | ICSSproperty::FLAG_ALLOW_TRANSITION);
 
-			p_position.setFlags(ICSSproperty::FLAG_UPDATE_LAYOUT);
+			p_position.setFlags(ICSSproperty::FLAG_UPDATE_LAYOUT | ICSSproperty::FLAG_UPDATE_STRUCTURE);
 
 			p_visibility.setFlags(ICSSproperty::FLAG_UPDATE_VIEW);
 

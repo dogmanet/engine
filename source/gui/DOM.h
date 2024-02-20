@@ -175,16 +175,13 @@ namespace gui
 			{
 				return(m_pRenderFrame);
 			}
-			void setRenderFrame(render::IRenderFrame * prf)
-			{
-				m_pRenderFrame = prf;
-			}
+			void setRenderFrame(render::IRenderFrame *prf);
 			void updateStyles();
 			void updateLayout(bool bForce=false);
 
 
-			void dispatchEvent(IEvent &ev);
-			void dispatchClientEvent(IEvent ev, bool *preventDefault);
+			void dispatchEvent(IEvent &ev) override;
+			void dispatchClientEvent(IEvent ev, bool *preventDefault) override;
 
 			static void applyCSSrules(const css::ICSSstyle *style, CDOMnode *pNode);
 
@@ -201,6 +198,19 @@ namespace gui
 
 			BOOL classExists(const StringW &cls);
 			//BOOL ClassExists(UINT cls);
+
+			void setUserData(void *pData) override;
+			void* getUserData() override;
+
+			void skipStructureChanges()
+			{
+				m_bSkipStructureChanges = true;
+			}
+
+			bool isStructureChangesSkipped()
+			{
+				return(m_bSkipStructureChanges);
+			}
 
 		protected:
 			IDOMnode *m_pParent;
@@ -232,6 +242,11 @@ namespace gui
 			bool m_bIgnHotkeys;
 
 			bool m_bDelegateEvents;
+
+		private:
+			void *m_pUserData = NULL;
+
+			bool m_bSkipStructureChanges = false;
 		};
 
 

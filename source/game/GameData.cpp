@@ -22,6 +22,9 @@ See the license in LICENSE
 #include "FuncTrain.h"
 #include "LogicAuto.h"
 
+#include "UICalcContainer.h"
+#include "UIDemoContainer.h"
+
 #include <common/file_utils.h>
 
 #include <xcommon/XEvents.h>
@@ -377,8 +380,8 @@ const char* XMETHODCALLTYPE CLevelLoadTask::getName()
 //##########################################################################
 
 GameData::GameData(HWND hWnd, bool isGame):
-m_hWnd(hWnd)
-{
+	m_hWnd(hWnd)
+ {
 	IXSoundSystem *pSound = (IXSoundSystem*)(Core_GetIXCore()->getPluginManager()->getInterface(IXSOUNDSYSTEM_GUID));
 	m_pGameLayer = pSound->findLayer("xGame");
 	m_pGuiLayer = pSound->findLayer("xGUI");
@@ -1063,7 +1066,7 @@ m_hWnd(hWnd)
 			(const wchar_t*)CMB2WC("Отмена"),
 			L"bind_cancel",
 			NULL
-			);
+		);
 
 		GameData::m_pCell = ev->target;
 
@@ -1140,6 +1143,20 @@ m_hWnd(hWnd)
 		wdesc.flags = XWF_BUTTON_CLOSE | XWF_BUTTON_MINIMIZE | XWF_BUTTON_MAXIMIZE | /*XWF_NORESIZE | */XWF_TRANSPARENT;
 		IXUI *pXUI = (IXUI*)Core_GetIXCore()->getPluginManager()->getInterface(IXUI_GUID);
 		IUIWindow *pWindow = pXUI->createWindow(&wdesc);
+		IUIButton *pButton = pXUI->createButton();
+		pWindow->insertChild(pButton);
+	});
+
+	Core_0RegisterConcmd("calc", []()
+	{
+		IXUI *pXUI = (IXUI*)Core_GetIXCore()->getPluginManager()->getInterface(IXUI_GUID);
+		UICalcContainer* pContainer = new UICalcContainer(pXUI);
+	});
+
+	Core_0RegisterConcmd("demo", []()
+	{
+		IXUI *pXUI = (IXUI*)Core_GetIXCore()->getPluginManager()->getInterface(IXUI_GUID);
+		UIDemoContainer* pContainer = new UIDemoContainer(pXUI);
 	});
 
 	//gui::IDesktop * pDesk = m_pGUI->createDesktopA("ingame", "ingame.html");
