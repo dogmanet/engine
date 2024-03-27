@@ -303,7 +303,24 @@ namespace gui
 
 			void IRenderFrame::addChild(IRenderFrame * pChild, bool bOutFlow)
 			{
-				Array<IRenderFrame*> * pArr = bOutFlow ? &m_pChildsOutFlow : &m_pChilds;
+				IRenderFrame *pTarget = this;
+				if(pChild->getNode())
+				{
+					css::ICSSstyle *pStyle = pChild->getNode()->getStyle();
+					if(pStyle->position->getInt() == css::CCSSproperty::POSITION_FIXED)
+					{
+						bOutFlow = true;
+					}
+					else if(pStyle->position->getInt() == css::CCSSproperty::POSITION_ABSOLUTE)
+					{
+						bOutFlow = true;
+						while(pTarget->m_pParent && pTarget->getNode()->getStyle()->position->getInt() == css::CCSSproperty::POSITION_STATIC)
+						{
+							pTarget = pTarget->m_pParent;
+						}
+					}
+				}
+				Array<IRenderFrame*> * pArr = bOutFlow ? &pTarget->m_pChildsOutFlow : &pTarget->m_pChilds;
 				pChild->isOutOfFlow(bOutFlow);
 				pChild->m_pPrev = pChild->m_pNext = NULL;
 				if(pArr->size() > 0)
@@ -313,7 +330,7 @@ namespace gui
 					pChild->m_pPrev = last;
 				}
 				pArr->push_back(pChild);
-				pChild->m_pParent = this;
+				pChild->m_pParent = pTarget;
 			}
 
 			void IRenderFrame::removeChild(IRenderFrame * pEl)

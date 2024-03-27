@@ -77,6 +77,8 @@ public:
 	void toggleFlashlight();
 	//! Переключает режим стрельбы активного оружия
 	void nextFireMode();
+	//! Выкинуть предмет из инвентаря
+	void dropItem(CBaseItem *pItem);
 
 	//! Находится ли игрок на земле
 	bool onGround();

@@ -23,6 +23,7 @@ namespace gui
 			virtual void appendHTML(const StringW &wsHTML, bool regen = true, IDOMnode *pInsertBefore = NULL) = 0;
 			virtual void setHTML(const StringW &wsHTML, bool regen = true) = 0;
 			virtual void removeChild(IDOMnode * pEl, bool regen = true) = 0;
+			virtual void takeChild(IDOMnode * pEl, bool regen = true) = 0;
 			virtual IDOMnode * parentNode() = 0;
 
 			virtual void setText(const StringW & text, BOOL build=FALSE) = 0;
@@ -32,7 +33,6 @@ namespace gui
 
 			virtual void setAttribute(const StringW & name, const StringW & value) = 0;
 			virtual const StringW & getAttribute(const StringW & name) = 0;
-
 			
 			virtual bool isChildOf(IDOMnode * pNode) = 0;
 			virtual bool isAfter(IDOMnode * pNode) = 0;
@@ -54,7 +54,7 @@ namespace gui
 			virtual void dispatchEvent(IEvent & ev) = 0;
 			virtual void dispatchClientEvent(IEvent ev, bool * preventDefault) = 0;
 
-			virtual void updateStyles() = 0;
+			virtual void updateStyles(bool forceUpdate = false) = 0;
 
 			virtual void classAdd(const StringW & cls) = 0;
 
@@ -63,6 +63,8 @@ namespace gui
 			virtual void classToggle(const StringW & cls, int set = -1) = 0;
 
 			virtual BOOL classExists(const StringW & cls) = 0;
+
+			virtual RECT getClientRect() = 0;
 		};
 
 

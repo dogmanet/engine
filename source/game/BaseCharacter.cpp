@@ -183,6 +183,17 @@ void CBaseCharacter::nextFireMode()
 	}
 }
 
+void CBaseCharacter::dropItem(CBaseItem *pItem)
+{
+	m_pInventory->takeItem(pItem);
+
+	//TODO: Добавить проверку на стены и не только
+	pItem->setPos(getPos() + (SMQuaternion(m_vPitchYawRoll.y, 'y') * float3(0.0f, 0.0f, 3.0f)));
+	pItem->setOwner(NULL);
+	pItem->setParent(NULL);
+	pItem->setMode(IIM_WORLD);
+}
+
 bool CBaseCharacter::onGround()
 {
 	return(m_pCharacter->onGround());

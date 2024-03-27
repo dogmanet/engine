@@ -43,6 +43,7 @@ gui::dom::IDOMnode* GameData::m_pCell;
 IXLightSystem* GameData::m_pLightSystem;
 bool GameData::m_isLevelLoaded = false;
 IXSoundPlayer* GameData::m_pSoundPlayer = NULL;
+CGUIInventoryController* GameData::m_pGuiInventory = NULL;
 IXSoundLayer* GameData::m_pGameLayer = NULL;
 IXSoundLayer* GameData::m_pGuiLayer = NULL;
 CEditable* g_pEditable = NULL;
@@ -507,6 +508,7 @@ GameData::GameData(HWND hWnd, bool isGame):
 	Core_0RegisterConcmd("flashlight", ccmd_toggleflashlight);
 	Core_0RegisterConcmd("+use", ccmd_use_on);
 	Core_0RegisterConcmd("-use", ccmd_use_off);
+	Core_0RegisterConcmd("inventory", ccmd_inventory);
 
 
 	Core_0RegisterConcmdArg("gui_load", [](int argc, const char ** argv){
@@ -1098,6 +1100,41 @@ GameData::GameData(HWND hWnd, bool isGame):
 		});
 	});
 
+	m_pGUIStack->registerCallback("close_inventory", [](gui::IEvent * ev){
+		if(ev->key == KEY_ESCAPE || ev->key == KEY_LBUTTON)
+		{
+			ccmd_inventory();
+		}
+		if(ev->key == KEY_LBUTTON)
+		{
+			m_pGUIStack->popDesktop();
+		}
+	});
+
+	m_pGUIStack->registerCallback("open_menu", [](gui::IEvent * ev){
+		m_pGuiInventory->openContextMenu(ev);
+	});
+
+	m_pGUIStack->registerCallback("global_click", [](gui::IEvent * ev){
+		m_pGuiInventory->closeContextMenu(ev);
+	});
+
+	m_pGUIStack->registerCallback("begin_drag", [](gui::IEvent * ev){
+		m_pGuiInventory->beginDrag(ev);
+	});
+
+	m_pGUIStack->registerCallback("drag_move", [](gui::IEvent * ev){
+		m_pGuiInventory->dragMove(ev);
+	});
+
+	m_pGUIStack->registerCallback("end_drag", [](gui::IEvent * ev){
+		m_pGuiInventory->endDrag(ev);
+	});
+
+	m_pGUIStack->registerCallback("drop_item", [](gui::IEvent * ev){
+		m_pGuiInventory->dropItem(ev);
+	});
+
 	Core_0RegisterConcmdArg("text", [](int argc, const char ** argv)
 	{
 		if(argc != 2)
@@ -1164,7 +1201,9 @@ GameData::GameData(HWND hWnd, bool isGame):
 		pTool->setPos(m_pPlayer->getHead()->getPos() + float3(1.0f, 0.0f, 1.0f));
 		pTool->setOrient(m_pPlayer->getHead()->getOrient());
 		pTool->setParent(m_pPlayer->getHead());
-		pTool->setMode(IIM_EQUIPPED);
+		pTool->setMode(IIM_IN_HANDS);
+
+		m_pPlayer->getInventory()->putItem(pTool);
 
 		CBaseAmmo *pAmmo = (CBaseAmmo*)CREATE_ENTITY("ammo_5.45x39ps", m_pMgr);
 		pAmmo->setMode(IIM_INVENTORY);
@@ -1178,6 +1217,8 @@ GameData::GameData(HWND hWnd, bool isGame):
 		((CBaseWeapon*)pTool)->attachMag(pMag);
 
 		m_pPlayer->setActiveTool(pTool);
+
+		m_pGuiInventory = new CGUIInventoryController(m_pPlayer->getInventory());
 	}
 	else
 	{
@@ -1201,6 +1242,8 @@ GameData::~GameData()
 	mem_delete(g_pTracer);
 	mem_delete(g_pTracer2);
 	mem_delete(m_pMgr);
+
+	mem_delete(m_pGuiInventory);
 
 	for(int i = 0; i < MPT_COUNT; ++i)
 	{
@@ -1633,4 +1676,16 @@ void GameData::ccmd_use_on()
 void GameData::ccmd_use_off()
 {
 	m_pPlayer->use(FALSE);
+}
+
+void GameData::ccmd_inventory()
+{
+	if(m_pGuiInventory->isActive())
+	{
+		m_pGuiInventory->hideScreen();
+	}
+	else
+	{
+		m_pGuiInventory->showScreen();
+	}
 }
