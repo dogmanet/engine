@@ -59,6 +59,8 @@ CMaterialBrowser *g_pMaterialBrowser = NULL;
 // Global Variables:
 HINSTANCE hInst;								// current instance
 HWND g_hWndMain = NULL;
+UINT g_uWndMainDpi = 96;
+HFONT g_hWndMainFont = NULL;
 HWND g_hTopRightWnd = NULL;
 HWND g_hTopLeftWnd = NULL;
 HWND g_hBottomRightWnd = NULL;
@@ -148,6 +150,16 @@ void XUpdateStatusGrid();
 void XUpdateStatusMPos();
 void XUpdateUndoRedo();
 HWND CreateToolbar(HWND hWndParent);
+HBITMAP StretchBitmap(HDC hDC, HBITMAP hBitmap);
+
+UINT GetWindowDPI(HWND hWnd);
+int DivDpi(int iUnscaled, UINT uCurrentDpi);
+int MulDpi(int iUnscaled, UINT uCurrentDpi);
+void DivDpiRect(RECT *pRc, UINT uCurrentDpi);
+void MulDpiRect(RECT *pRc, UINT uCurrentDpi);
+
+HFONT GetDefaultFont(UINT uDpi);
+void ReleaseDefaultFont(HFONT hFont);
 
 class CPropertyCallback: public CPropertyWindow::ICallback
 {
@@ -498,10 +510,10 @@ LRESULT CALLBACK StatusBarWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 		// Calculate the right edge coordinate for each part, and
 		// copy the coordinates to the array.
 		paParts[0] = 0;
-		paParts[1] = 200;
-		paParts[2] = 100;
-		paParts[3] = 100;
-		paParts[4] = 150;
+		paParts[1] = MulDpi(200, g_uWndMainDpi);
+		paParts[2] = MulDpi(100, g_uWndMainDpi);
+		paParts[3] = MulDpi(100, g_uWndMainDpi);
+		paParts[4] = MulDpi(150, g_uWndMainDpi);
 		int iTotal = 0;
 		for(int i = 0; i < iParts; ++i)
 		{
@@ -944,6 +956,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	{
 	case WM_CREATE:
 	{
+		g_uWndMainDpi = GetWindowDPI(hWnd);
+		g_hWndMainFont = GetDefaultFont(g_uWndMainDpi);
+
 		hcSizeEW = LoadCursor(NULL, IDC_SIZEWE);
 		hcSizeNS = LoadCursor(NULL, IDC_SIZENS);
 		hcSizeNESW = LoadCursor(NULL, IDC_SIZEALL);
@@ -968,28 +983,28 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 		// Creates the left window using the width and height read from the XML 
 		// files
-		g_hTopLeftWnd = CreateWindowExA(WS_EX_CLIENTEDGE, RENDER_WINDOW_CLASS, "", WS_CHILD | WS_VISIBLE | SS_SUNKEN, rect.left, rect.top, iLeftWidth, iTopHeight, hWnd, NULL, hInst, NULL);
+		g_hTopLeftWnd = CreateWindowExA(WS_EX_CLIENTEDGE, RENDER_WINDOW_CLASS, "", WS_CHILD | WS_VISIBLE | SS_SUNKEN, MulDpi(rect.left, g_uWndMainDpi), MulDpi(rect.top, g_uWndMainDpi), MulDpi(iLeftWidth, g_uWndMainDpi), MulDpi(iTopHeight, g_uWndMainDpi), hWnd, NULL, hInst, NULL);
 		if(g_hTopLeftWnd)
 		{
 			ShowWindow(g_hTopLeftWnd, SW_SHOW);
 			//	UpdateWindow(g_hTopLeftWnd);
 		}
 
-		g_hBottomLeftWnd = CreateWindowExA(WS_EX_CLIENTEDGE, RENDER_WINDOW_CLASS, "", WS_CHILD | WS_VISIBLE | SS_SUNKEN, rect.left, rect.top + iTopHeight + SPLITTER_BAR_WIDTH, iLeftWidth, iTopHeight, hWnd, NULL, hInst, NULL);
+		g_hBottomLeftWnd = CreateWindowExA(WS_EX_CLIENTEDGE, RENDER_WINDOW_CLASS, "", WS_CHILD | WS_VISIBLE | SS_SUNKEN, MulDpi(rect.left, g_uWndMainDpi), MulDpi(rect.top + iTopHeight + SPLITTER_BAR_WIDTH, g_uWndMainDpi), MulDpi(iLeftWidth, g_uWndMainDpi), MulDpi(iTopHeight, g_uWndMainDpi), hWnd, NULL, hInst, NULL);
 		if(g_hTopLeftWnd)
 		{
 			ShowWindow(g_hTopLeftWnd, SW_SHOW);
 			//	UpdateWindow(g_hTopLeftWnd);
 		}
 
-		g_hTopRightWnd = CreateWindowExA(WS_EX_CLIENTEDGE, RENDER_WINDOW_CLASS, "", WS_CHILD | WS_VISIBLE | SS_SUNKEN, rect.left + iLeftWidth + SPLITTER_BAR_WIDTH, rect.top, iLeftWidth, iTopHeight, hWnd, NULL, hInst, NULL);
+		g_hTopRightWnd = CreateWindowExA(WS_EX_CLIENTEDGE, RENDER_WINDOW_CLASS, "", WS_CHILD | WS_VISIBLE | SS_SUNKEN, MulDpi(rect.left + iLeftWidth + SPLITTER_BAR_WIDTH, g_uWndMainDpi), MulDpi(rect.top, g_uWndMainDpi), MulDpi(iLeftWidth, g_uWndMainDpi), MulDpi(iTopHeight, g_uWndMainDpi), hWnd, NULL, hInst, NULL);
 		if(g_hTopRightWnd)
 		{
 			ShowWindow(g_hTopRightWnd, SW_SHOW);
 			//	UpdateWindow(g_hTopLeftWnd);
 		}
 
-		g_hBottomRightWnd = CreateWindowExA(WS_EX_CLIENTEDGE, RENDER_WINDOW_CLASS, "", WS_CHILD | WS_VISIBLE | SS_SUNKEN, rect.left + iLeftWidth + SPLITTER_BAR_WIDTH, rect.top + iTopHeight + SPLITTER_BAR_WIDTH, iLeftWidth, iTopHeight, hWnd, NULL, hInst, NULL);
+		g_hBottomRightWnd = CreateWindowExA(WS_EX_CLIENTEDGE, RENDER_WINDOW_CLASS, "", WS_CHILD | WS_VISIBLE | SS_SUNKEN, MulDpi(rect.left + iLeftWidth + SPLITTER_BAR_WIDTH, g_uWndMainDpi), MulDpi(rect.top + iTopHeight + SPLITTER_BAR_WIDTH, g_uWndMainDpi), MulDpi(iLeftWidth, g_uWndMainDpi), MulDpi(iTopHeight, g_uWndMainDpi), hWnd, NULL, hInst, NULL);
 		if(g_hBottomRightWnd)
 		{
 			ShowWindow(g_hBottomRightWnd, SW_SHOW);
@@ -1005,7 +1020,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 		g_uABNextTop = rect.top;
 		g_uABNextLeft = rect.left - MARGIN_LEFT;
-		g_hABArrowButton = CreateWindow("Button", "", WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_BITMAP | BS_PUSHLIKE | BS_CHECKBOX, g_uABNextLeft, g_uABNextTop, AB_BUTTON_WIDTH, AB_BUTTON_HEIGHT, hWnd, (HMENU)IDC_AB_ARROW, hInst, NULL);
+		g_hABArrowButton = CreateWindow("Button", "", WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_BITMAP | BS_PUSHLIKE | BS_CHECKBOX, MulDpi(g_uABNextLeft, g_uWndMainDpi), MulDpi(g_uABNextTop, g_uWndMainDpi), MulDpi(AB_BUTTON_WIDTH, g_uWndMainDpi), MulDpi(AB_BUTTON_HEIGHT, g_uWndMainDpi), hWnd, (HMENU)IDC_AB_ARROW, hInst, NULL);
 		{
 			SetWindowTheme(g_hABArrowButton, L" ", L" ");
 			HBITMAP hBitmap = LoadBitmap(hInst, MAKEINTRESOURCE(IDB_BITMAP30));
@@ -1016,7 +1031,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		//WS_EX_DLGMODALFRAME
 
 		g_uABNextTop += AB_BUTTON_HEIGHT;
-		g_hABCameraButton = CreateWindow("Button", "", WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_BITMAP | BS_PUSHLIKE | BS_CHECKBOX, g_uABNextLeft, g_uABNextTop, AB_BUTTON_WIDTH, AB_BUTTON_HEIGHT, hWnd, (HMENU)IDC_AB_CAMERA, hInst, NULL);
+		g_hABCameraButton = CreateWindow("Button", "", WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_BITMAP | BS_PUSHLIKE | BS_CHECKBOX, MulDpi(g_uABNextLeft, g_uWndMainDpi), MulDpi(g_uABNextTop, g_uWndMainDpi), MulDpi(AB_BUTTON_WIDTH, g_uWndMainDpi), MulDpi(AB_BUTTON_HEIGHT, g_uWndMainDpi), hWnd, (HMENU)IDC_AB_CAMERA, hInst, NULL);
 		{
 			SetWindowTheme(g_hABCameraButton, L" ", L" ");
 			HBITMAP hBitmap = LoadBitmap(hInst, MAKEINTRESOURCE(IDB_BITMAP31));
@@ -1024,7 +1039,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 
 		g_uABNextTop += AB_BUTTON_HEIGHT;
-		g_hABCreateButton = CreateWindow("Button", "", WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_BITMAP | BS_PUSHLIKE | BS_CHECKBOX, g_uABNextLeft, g_uABNextTop, AB_BUTTON_WIDTH, AB_BUTTON_HEIGHT, hWnd, (HMENU)IDC_AB_CREATE, hInst, NULL);
+		g_hABCreateButton = CreateWindow("Button", "", WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_BITMAP | BS_PUSHLIKE | BS_CHECKBOX, MulDpi(g_uABNextLeft, g_uWndMainDpi), MulDpi(g_uABNextTop, g_uWndMainDpi), MulDpi(AB_BUTTON_WIDTH, g_uWndMainDpi), MulDpi(AB_BUTTON_HEIGHT, g_uWndMainDpi), hWnd, (HMENU)IDC_AB_CREATE, hInst, NULL);
 		{
 			SetWindowTheme(g_hABCreateButton, L" ", L" ");
 			HBITMAP hBitmap = LoadBitmap(hInst, MAKEINTRESOURCE(IDB_BITMAP34));
@@ -1033,34 +1048,34 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		g_uABNextTop += AB_BUTTON_HEIGHT;
 
 
-		g_hStaticCurrentMatWnd = CreateWindowExA(0, WC_STATIC, "Current material", WS_VISIBLE | WS_CHILD, rect.right, rect.top, MARGIN_RIGHT, 15, hWnd, 0, hInst, NULL);
+		g_hStaticCurrentMatWnd = CreateWindowExA(0, WC_STATIC, "Current material", WS_VISIBLE | WS_CHILD, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(15, g_uWndMainDpi), hWnd, 0, hInst, NULL);
 		{
-			SetWindowFont(g_hStaticCurrentMatWnd, GetStockObject(DEFAULT_GUI_FONT), FALSE);
+			SetWindowFont(g_hStaticCurrentMatWnd, g_hWndMainFont, FALSE);
 		}
 
-		g_hComboCurrentMatWnd = CreateWindowExA(WS_EX_RIGHT, WC_COMBOBOX, "", WS_VISIBLE | WS_CHILD | WS_BORDER | /*CBS_SORT | */CBS_DROPDOWNLIST | CBS_HASSTRINGS, rect.right, rect.top + 15, MARGIN_RIGHT, OBJECT_TREE_HEIGHT, hWnd, (HMENU)ID_CMB_MAT, hInst, NULL);
+		g_hComboCurrentMatWnd = CreateWindowExA(WS_EX_RIGHT, WC_COMBOBOX, "", WS_VISIBLE | WS_CHILD | WS_BORDER | /*CBS_SORT | */CBS_DROPDOWNLIST | CBS_HASSTRINGS, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(OBJECT_TREE_HEIGHT, g_uWndMainDpi), hWnd, (HMENU)ID_CMB_MAT, hInst, NULL);
 		{
-			SetWindowFont(g_hComboCurrentMatWnd, GetStockObject(DEFAULT_GUI_FONT), FALSE);
+			SetWindowFont(g_hComboCurrentMatWnd, g_hWndMainFont, FALSE);
 
 			//g_pfnClassesComboOldWndproc = (WNDPROC)GetWindowLongPtr(g_hComboTypesWnd, GWLP_WNDPROC);
 			//SetWindowLongPtr(g_hComboCurrentMatWnd, GWLP_WNDPROC, (LONG_PTR)ClassesComboWndProc);
 		}
 
-		g_hCurMatWnd = CreateWindowExA(WS_EX_CLIENTEDGE, RENDER_NONINTERACTIVE_WINDOW_CLASS, "", WS_CHILD | WS_VISIBLE | SS_SUNKEN, rect.right, rect.top + 15 + 25, MARGIN_RIGHT, MARGIN_RIGHT, hWnd, NULL, hInst, NULL);
+		g_hCurMatWnd = CreateWindowExA(WS_EX_CLIENTEDGE, RENDER_NONINTERACTIVE_WINDOW_CLASS, "", WS_CHILD | WS_VISIBLE | SS_SUNKEN, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15 + 25, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), hWnd, NULL, hInst, NULL);
 		if(g_hCurMatWnd)
 		{
 			ShowWindow(g_hCurMatWnd, SW_SHOW);
 			//	UpdateWindow(g_hTopLeftWnd);
 		}
 
-		g_hStaticCurrentMatSizeWnd = CreateWindowExA(0, WC_STATIC, "16384x16384", WS_VISIBLE | WS_CHILD, rect.right, rect.top + 15 + 25 + MARGIN_RIGHT, MARGIN_RIGHT, 15, hWnd, 0, hInst, NULL);
+		g_hStaticCurrentMatSizeWnd = CreateWindowExA(0, WC_STATIC, "16384x16384", WS_VISIBLE | WS_CHILD, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15 + 25 + MARGIN_RIGHT, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(15, g_uWndMainDpi), hWnd, 0, hInst, NULL);
 		{
-			SetWindowFont(g_hStaticCurrentMatSizeWnd, GetStockObject(DEFAULT_GUI_FONT), FALSE);
+			SetWindowFont(g_hStaticCurrentMatSizeWnd, g_hWndMainFont, FALSE);
 		}
 
-		g_hButtonCurrentMatBrowseWnd = CreateWindowExA(0, WC_BUTTON, "Browse", WS_VISIBLE | WS_CHILD, rect.right, rect.top + 15 + 25 + MARGIN_RIGHT + 15, MARGIN_RIGHT, 25, hWnd, (HMENU)ID_MAT_BROWSER, hInst, NULL);
+		g_hButtonCurrentMatBrowseWnd = CreateWindowExA(0, WC_BUTTON, "Browse", WS_VISIBLE | WS_CHILD, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15 + 25 + MARGIN_RIGHT + 15, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(25, g_uWndMainDpi), hWnd, (HMENU)ID_MAT_BROWSER, hInst, NULL);
 		{
-			SetWindowFont(g_hButtonCurrentMatBrowseWnd, GetStockObject(DEFAULT_GUI_FONT), FALSE);
+			SetWindowFont(g_hButtonCurrentMatBrowseWnd, g_hWndMainFont, FALSE);
 		}
 
 		/*g_hObjectTreeWnd = CreateWindowExA(0, WC_TREEVIEW, "", WS_VISIBLE | WS_CHILD | WS_BORDER | TVS_HASLINES | TVS_HASBUTTONS | TVS_LINESATROOT | TVS_SHOWSELALWAYS | TVS_DISABLEDRAGDROP | TVS_CHECKBOXES | TVS_NOHSCROLL, rect.right, rect.top, MARGIN_RIGHT, OBJECT_TREE_HEIGHT, hWnd, 0, hInst, NULL);
@@ -1069,51 +1084,51 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			SetWindowLongPtr(g_hObjectTreeWnd, GWLP_WNDPROC, (LONG_PTR)TreeViewWndProc);
 		}*/
 		
-		g_hStaticTypesWnd = CreateWindowExA(0, WC_STATIC, "Object type", WS_VISIBLE | WS_CHILD, rect.right, rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10, MARGIN_RIGHT, 15, hWnd, 0, hInst, NULL);
+		g_hStaticTypesWnd = CreateWindowExA(0, WC_STATIC, "Object type", WS_VISIBLE | WS_CHILD, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(15, g_uWndMainDpi), hWnd, 0, hInst, NULL);
 		{
-			SetWindowFont(g_hStaticTypesWnd, GetStockObject(DEFAULT_GUI_FONT), FALSE);
+			SetWindowFont(g_hStaticTypesWnd, g_hWndMainFont, FALSE);
 		}
 
-		g_hComboTypesWnd = CreateWindowExA(0, WC_COMBOBOX, "", WS_VISIBLE | WS_CHILD | WS_BORDER | CBS_SORT | CBS_DROPDOWNLIST | CBS_HASSTRINGS, rect.right, rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15, MARGIN_RIGHT, OBJECT_TREE_HEIGHT, hWnd, (HMENU)IDC_CMB_TYPE, hInst, NULL);
+		g_hComboTypesWnd = CreateWindowExA(0, WC_COMBOBOX, "", WS_VISIBLE | WS_CHILD | WS_BORDER | CBS_SORT | CBS_DROPDOWNLIST | CBS_HASSTRINGS, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(OBJECT_TREE_HEIGHT, g_uWndMainDpi), hWnd, (HMENU)IDC_CMB_TYPE, hInst, NULL);
 		{
-			SetWindowFont(g_hComboTypesWnd, GetStockObject(DEFAULT_GUI_FONT), FALSE);
+			SetWindowFont(g_hComboTypesWnd, g_hWndMainFont, FALSE);
 
 			//g_pfnClassesComboOldWndproc = (WNDPROC)GetWindowLongPtr(g_hComboTypesWnd, GWLP_WNDPROC);
 			SetWindowLongPtr(g_hComboTypesWnd, GWLP_WNDPROC, (LONG_PTR)ClassesComboWndProc);
 		}
 
-		g_hStaticClassesWnd = CreateWindowExA(0, WC_STATIC, "Object class", WS_VISIBLE | WS_CHILD, rect.right, rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 25, MARGIN_RIGHT, 15, hWnd, 0, hInst, NULL);
+		g_hStaticClassesWnd = CreateWindowExA(0, WC_STATIC, "Object class", WS_VISIBLE | WS_CHILD, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 25, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(15, g_uWndMainDpi), hWnd, 0, hInst, NULL);
 		{
-			SetWindowFont(g_hStaticClassesWnd, GetStockObject(DEFAULT_GUI_FONT), FALSE);
+			SetWindowFont(g_hStaticClassesWnd, g_hWndMainFont, FALSE);
 		}
 
-		g_hComboClassesWnd = CreateWindowExA(0, WC_COMBOBOX, "", WS_VISIBLE | WS_CHILD | WS_BORDER | CBS_SORT | CBS_DROPDOWNLIST | CBS_HASSTRINGS | WS_VSCROLL, rect.right, rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 15 + 25, MARGIN_RIGHT, OBJECT_TREE_HEIGHT, hWnd, (HMENU)IDC_CMB_CLASS, hInst, NULL);
+		g_hComboClassesWnd = CreateWindowExA(0, WC_COMBOBOX, "", WS_VISIBLE | WS_CHILD | WS_BORDER | CBS_SORT | CBS_DROPDOWNLIST | CBS_HASSTRINGS | WS_VSCROLL, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 15 + 25, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(OBJECT_TREE_HEIGHT, g_uWndMainDpi), hWnd, (HMENU)IDC_CMB_CLASS, hInst, NULL);
 		{
-			SetWindowFont(g_hComboClassesWnd, GetStockObject(DEFAULT_GUI_FONT), FALSE);
+			SetWindowFont(g_hComboClassesWnd, g_hWndMainFont, FALSE);
 
 			g_pfnClassesComboOldWndproc = (WNDPROC)GetWindowLongPtr(g_hComboClassesWnd, GWLP_WNDPROC);
 			SetWindowLongPtr(g_hComboClassesWnd, GWLP_WNDPROC, (LONG_PTR)ClassesComboWndProc);
 		}
 
 		//g_hCheckboxRandomScaleYawWnd
-		g_hCheckboxRandomScaleYawWnd = CreateWindowExA(0, WC_BUTTON, "Random scale and yaw", WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX, rect.right, rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 15 + 25 + 25, MARGIN_RIGHT, 15, hWnd, (HMENU)IDC_RAND_SCALE_YAW, hInst, NULL);
+		g_hCheckboxRandomScaleYawWnd = CreateWindowExA(0, WC_BUTTON, "Random scale and yaw", WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 15 + 25 + 25, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(15, g_uWndMainDpi), hWnd, (HMENU)IDC_RAND_SCALE_YAW, hInst, NULL);
 		{
-			SetWindowFont(g_hCheckboxRandomScaleYawWnd, GetStockObject(DEFAULT_GUI_FONT), FALSE);
+			SetWindowFont(g_hCheckboxRandomScaleYawWnd, g_hWndMainFont, FALSE);
 		}
 
-		g_hStaticMoveSelectedToWnd = CreateWindowExA(0, WC_STATIC, "Move selected", WS_VISIBLE | WS_CHILD, rect.right, rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 15 + 25 + 25 + 25, MARGIN_RIGHT, 15, hWnd, 0, hInst, NULL);
+		g_hStaticMoveSelectedToWnd = CreateWindowExA(0, WC_STATIC, "Move selected", WS_VISIBLE | WS_CHILD, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 15 + 25 + 25 + 25, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(15, g_uWndMainDpi), hWnd, 0, hInst, NULL);
 		{
-			SetWindowFont(g_hStaticMoveSelectedToWnd, GetStockObject(DEFAULT_GUI_FONT), FALSE);
+			SetWindowFont(g_hStaticMoveSelectedToWnd, g_hWndMainFont, FALSE);
 		}
 
-		g_hButtonToWorldWnd = CreateWindowExA(0, WC_BUTTON, "To World", WS_VISIBLE | WS_CHILD, rect.right, rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 15 + 25 + 25 + 25 + 15, MARGIN_RIGHT / 2, 25, hWnd, (HMENU)IDC_BACK_TO_WORLD, hInst, NULL);
+		g_hButtonToWorldWnd = CreateWindowExA(0, WC_BUTTON, "To World", WS_VISIBLE | WS_CHILD, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 15 + 25 + 25 + 25 + 15, g_uWndMainDpi), MulDpi(MARGIN_RIGHT / 2, g_uWndMainDpi), MulDpi(25, g_uWndMainDpi), hWnd, (HMENU)IDC_BACK_TO_WORLD, hInst, NULL);
 		{
-			SetWindowFont(g_hButtonToWorldWnd, GetStockObject(DEFAULT_GUI_FONT), FALSE);
+			SetWindowFont(g_hButtonToWorldWnd, g_hWndMainFont, FALSE);
 		}
 
-		g_hButtonToEntityWnd = CreateWindowExA(0, WC_BUTTON, "To Object", WS_VISIBLE | WS_CHILD, rect.right + MARGIN_RIGHT / 2, rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 15 + 25 + 25 + 25 + 15, MARGIN_RIGHT / 2, 25, hWnd, (HMENU)IDC_TIE_TO_OBJECT, hInst, NULL);
+		g_hButtonToEntityWnd = CreateWindowExA(0, WC_BUTTON, "To Object", WS_VISIBLE | WS_CHILD, MulDpi(rect.right + MARGIN_RIGHT / 2, g_uWndMainDpi), MulDpi(rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 15 + 25 + 25 + 25 + 15, g_uWndMainDpi), MulDpi(MARGIN_RIGHT / 2, g_uWndMainDpi), MulDpi(25, g_uWndMainDpi), hWnd, (HMENU)IDC_TIE_TO_OBJECT, hInst, NULL);
 		{
-			SetWindowFont(g_hButtonToEntityWnd, GetStockObject(DEFAULT_GUI_FONT), FALSE);
+			SetWindowFont(g_hButtonToEntityWnd, g_hWndMainFont, FALSE);
 			EnableWindow(g_hButtonToEntityWnd, FALSE);
 		}
 
@@ -1164,6 +1179,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	}
 		break;
 
+	case WM_DPICHANGED:
+		g_uWndMainDpi = LOWORD(wParam);
+		ReleaseDefaultFont(g_hWndMainFont);
+		g_hWndMainFont = GetDefaultFont(g_uWndMainDpi);
+		// no break!
 	case WM_SIZE:
 	{
 #if 0
@@ -1183,6 +1203,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 #endif
 		GetClientRect(hWnd, &rect);
+		DivDpiRect(&rect, g_uWndMainDpi);
 
 		rect.top += MARGIN_TOP;
 		rect.bottom -= MARGIN_BOTTOM;
@@ -1193,7 +1214,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 			RECT rcTopLeft, rcBottomRight;
 			GetClientRect(g_hTopLeftWnd, &rcTopLeft);
+			DivDpiRect(&rcTopLeft, g_uWndMainDpi);
 			GetClientRect(g_hBottomRightWnd, &rcBottomRight);
+			DivDpiRect(&rcBottomRight, g_uWndMainDpi);
 
 			UINT uLeftWidth = rcTopLeft.right - rcTopLeft.left;
 			UINT uRightWidth = rcBottomRight.right - rcBottomRight.left;
@@ -1209,26 +1232,65 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				iLeftWidth = (UINT)(fCoeffWidth * (float)(rect.right - rect.left));
 			}
 		}
-		MoveWindow(g_hTopLeftWnd, rect.left, rect.top, iLeftWidth, iTopHeight, FALSE);
-		MoveWindow(g_hBottomLeftWnd, rect.left, rect.top + iTopHeight + SPLITTER_BAR_WIDTH, iLeftWidth, rect.bottom - rect.top - SPLITTER_BAR_WIDTH - iTopHeight, FALSE);
-		MoveWindow(g_hTopRightWnd, rect.left + iLeftWidth + SPLITTER_BAR_WIDTH, rect.top, rect.right - rect.left - iLeftWidth - SPLITTER_BAR_WIDTH, iTopHeight, FALSE);
-		MoveWindow(g_hBottomRightWnd, rect.left + iLeftWidth + SPLITTER_BAR_WIDTH, rect.top + iTopHeight + SPLITTER_BAR_WIDTH, rect.right - rect.left - iLeftWidth - SPLITTER_BAR_WIDTH, rect.bottom - rect.top - SPLITTER_BAR_WIDTH - iTopHeight, FALSE);
+		MoveWindow(g_hTopLeftWnd, MulDpi(rect.left, g_uWndMainDpi), MulDpi(rect.top, g_uWndMainDpi), MulDpi(iLeftWidth, g_uWndMainDpi), MulDpi(iTopHeight, g_uWndMainDpi), FALSE);
+		MoveWindow(g_hBottomLeftWnd, MulDpi(rect.left, g_uWndMainDpi), MulDpi(rect.top + iTopHeight + SPLITTER_BAR_WIDTH, g_uWndMainDpi), MulDpi(iLeftWidth, g_uWndMainDpi), MulDpi(rect.bottom - rect.top - SPLITTER_BAR_WIDTH - iTopHeight, g_uWndMainDpi), FALSE);
+		MoveWindow(g_hTopRightWnd, MulDpi(rect.left + iLeftWidth + SPLITTER_BAR_WIDTH, g_uWndMainDpi), MulDpi(rect.top, g_uWndMainDpi), MulDpi(rect.right - rect.left - iLeftWidth - SPLITTER_BAR_WIDTH, g_uWndMainDpi), MulDpi(iTopHeight, g_uWndMainDpi), FALSE);
+		MoveWindow(g_hBottomRightWnd, MulDpi(rect.left + iLeftWidth + SPLITTER_BAR_WIDTH, g_uWndMainDpi), MulDpi(rect.top + iTopHeight + SPLITTER_BAR_WIDTH, g_uWndMainDpi), MulDpi(rect.right - rect.left - iLeftWidth - SPLITTER_BAR_WIDTH, g_uWndMainDpi), MulDpi(rect.bottom - rect.top - SPLITTER_BAR_WIDTH - iTopHeight, g_uWndMainDpi), FALSE);
 		//MoveWindow(g_hObjectTreeWnd, rect.right, rect.top, MARGIN_RIGHT, OBJECT_TREE_HEIGHT, FALSE);
-		MoveWindow(g_hStaticCurrentMatWnd, rect.right, rect.top, MARGIN_RIGHT, 15, FALSE);
-		MoveWindow(g_hComboCurrentMatWnd, rect.right, rect.top + 15, MARGIN_RIGHT, 15, FALSE);
-		MoveWindow(g_hCurMatWnd, rect.right, rect.top + 15 + 25, MARGIN_RIGHT, MARGIN_RIGHT, FALSE);
-		MoveWindow(g_hStaticCurrentMatSizeWnd, rect.right, rect.top + 15 + 25 + MARGIN_RIGHT, MARGIN_RIGHT, 15, FALSE);
-		MoveWindow(g_hButtonCurrentMatBrowseWnd, rect.right, rect.top + 15 + 25 + MARGIN_RIGHT + 15, MARGIN_RIGHT, 25, FALSE);
+		MoveWindow(g_hStaticCurrentMatWnd, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(15, g_uWndMainDpi), FALSE);
+		MoveWindow(g_hComboCurrentMatWnd, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(15, g_uWndMainDpi), FALSE);
+		MoveWindow(g_hCurMatWnd, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15 + 25, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), FALSE);
+		MoveWindow(g_hStaticCurrentMatSizeWnd, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15 + 25 + MARGIN_RIGHT, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(15, g_uWndMainDpi), FALSE);
+		MoveWindow(g_hButtonCurrentMatBrowseWnd, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15 + 25 + MARGIN_RIGHT + 15, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(25, g_uWndMainDpi), FALSE);
 
-		MoveWindow(g_hStaticTypesWnd, rect.right, rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10, MARGIN_RIGHT, 15, FALSE);
-		MoveWindow(g_hComboTypesWnd, rect.right, rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15, MARGIN_RIGHT, OBJECT_TREE_HEIGHT, FALSE);
-		MoveWindow(g_hStaticClassesWnd, rect.right, rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 25, MARGIN_RIGHT, 15, FALSE);
-		MoveWindow(g_hComboClassesWnd, rect.right, rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 15 + 25, MARGIN_RIGHT, OBJECT_TREE_HEIGHT, FALSE);
-		MoveWindow(g_hCheckboxRandomScaleYawWnd, rect.right, rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 15 + 25 + 25, MARGIN_RIGHT, 15, FALSE);
-		MoveWindow(g_hStaticMoveSelectedToWnd, rect.right, rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 15 + 25 + 25 + 25, MARGIN_RIGHT, 15, FALSE);
-		MoveWindow(g_hButtonToWorldWnd, rect.right, rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 15 + 25 + 25 + 25 + 15, MARGIN_RIGHT / 2, 25, FALSE);
-		MoveWindow(g_hButtonToEntityWnd, rect.right + MARGIN_RIGHT / 2, rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 15 + 25 + 25 + 25 + 15, MARGIN_RIGHT / 2, 25, FALSE);
+		MoveWindow(g_hStaticTypesWnd, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(15, g_uWndMainDpi), FALSE);
+		MoveWindow(g_hComboTypesWnd, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(OBJECT_TREE_HEIGHT, g_uWndMainDpi), FALSE);
+		MoveWindow(g_hStaticClassesWnd, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 25, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(15, g_uWndMainDpi), FALSE);
+		MoveWindow(g_hComboClassesWnd, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 15 + 25, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(OBJECT_TREE_HEIGHT, g_uWndMainDpi), FALSE);
+		MoveWindow(g_hCheckboxRandomScaleYawWnd, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 15 + 25 + 25, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(15, g_uWndMainDpi), FALSE);
+		MoveWindow(g_hStaticMoveSelectedToWnd, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 15 + 25 + 25 + 25, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(15, g_uWndMainDpi), FALSE);
+		MoveWindow(g_hButtonToWorldWnd, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 15 + 25 + 25 + 25 + 15, g_uWndMainDpi), MulDpi(MARGIN_RIGHT / 2, g_uWndMainDpi), MulDpi(25, g_uWndMainDpi), FALSE);
+		MoveWindow(g_hButtonToEntityWnd, MulDpi(rect.right + MARGIN_RIGHT / 2, g_uWndMainDpi), MulDpi(rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 15 + 25 + 25 + 25 + 15, g_uWndMainDpi), MulDpi(MARGIN_RIGHT / 2, g_uWndMainDpi), MulDpi(25, g_uWndMainDpi), FALSE);
 		
+
+		GetClientRect(hWnd, &rect);
+
+		if(message == WM_DPICHANGED)
+		{
+			g_uABNextTop = rect.top + MARGIN_TOP;
+			g_uABNextLeft = rect.left;
+			MoveWindow(g_hABArrowButton, MulDpi(g_uABNextLeft, g_uWndMainDpi), MulDpi(g_uABNextTop, g_uWndMainDpi), MulDpi(AB_BUTTON_WIDTH, g_uWndMainDpi), MulDpi(AB_BUTTON_HEIGHT, g_uWndMainDpi), FALSE);
+			g_uABNextTop += AB_BUTTON_HEIGHT;
+
+			MoveWindow(g_hABCameraButton, MulDpi(g_uABNextLeft, g_uWndMainDpi), MulDpi(g_uABNextTop, g_uWndMainDpi), MulDpi(AB_BUTTON_WIDTH, g_uWndMainDpi), MulDpi(AB_BUTTON_HEIGHT, g_uWndMainDpi), FALSE);
+			g_uABNextTop += AB_BUTTON_HEIGHT;
+
+			MoveWindow(g_hABCreateButton, MulDpi(g_uABNextLeft, g_uWndMainDpi), MulDpi(g_uABNextTop, g_uWndMainDpi), MulDpi(AB_BUTTON_WIDTH, g_uWndMainDpi), MulDpi(AB_BUTTON_HEIGHT, g_uWndMainDpi), FALSE);
+			g_uABNextTop += AB_BUTTON_HEIGHT;
+
+			for(UINT i = 0, l = g_aTools.size(); i < l; ++i)
+			{
+				HWND hBtn = GetDlgItem(hWnd, IDC_AB_FIRST + i);
+
+				MoveWindow(hBtn, MulDpi(g_uABNextLeft, g_uWndMainDpi), MulDpi(g_uABNextTop, g_uWndMainDpi), MulDpi(AB_BUTTON_WIDTH, g_uWndMainDpi), MulDpi(AB_BUTTON_HEIGHT, g_uWndMainDpi), FALSE);
+				g_uABNextTop += AB_BUTTON_HEIGHT;
+			}
+
+
+			SetWindowFont(g_hStaticCurrentMatWnd, g_hWndMainFont, FALSE);
+			SetWindowFont(g_hComboCurrentMatWnd, g_hWndMainFont, FALSE);
+			SetWindowFont(g_hStaticCurrentMatSizeWnd, g_hWndMainFont, FALSE);
+			SetWindowFont(g_hButtonCurrentMatBrowseWnd, g_hWndMainFont, FALSE);
+			SetWindowFont(g_hStaticTypesWnd, g_hWndMainFont, FALSE);
+			SetWindowFont(g_hComboTypesWnd, g_hWndMainFont, FALSE);
+			SetWindowFont(g_hStaticClassesWnd, g_hWndMainFont, FALSE);
+			SetWindowFont(g_hComboClassesWnd, g_hWndMainFont, FALSE);
+			SetWindowFont(g_hCheckboxRandomScaleYawWnd, g_hWndMainFont, FALSE);
+			SetWindowFont(g_hStaticMoveSelectedToWnd, g_hWndMainFont, FALSE);
+			SetWindowFont(g_hButtonToWorldWnd, g_hWndMainFont, FALSE);
+			SetWindowFont(g_hButtonToEntityWnd, g_hWndMainFont, FALSE);
+		}
+
 		InvalidateRect(hWnd, &rect, TRUE);
 
 		if(g_pEngine)
@@ -1265,6 +1327,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 		XUpdateUndoRedo();
 
+		{
+			const XEditorMenuItem *pItem;
+			HMENU hMenu;
+			MENUITEMINFOA mii = {sizeof(mii)};
+			mii.fMask = MIIM_STATE;
+			fora(i, g_aExtMenuItems)
+			{
+				pItem = g_aExtMenuItems[i].pItem;
+				hMenu = g_aExtMenuItems[i].hMenu;
+				mii.fState = (pItem->isChecked ? MFS_CHECKED : MFS_UNCHECKED) | 
+					(pItem->isDisabled ? MFS_DISABLED : MFS_ENABLED);
+
+				SetMenuItemInfoA(hMenu, ID_EXT_MENU_FIRST + i, FALSE, &mii);
+			}
+		}
 		break;
 
 	case WM_COMMAND:
@@ -1307,6 +1384,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 			IXEditorImporter *pImporter = g_pEditorImporters[LOWORD(wParam) - IDC_FILE_IMPORT_FIRST];
 			pImporter->startImport();
+		}
+		if(LOWORD(wParam) >= ID_EXT_MENU_FIRST && LOWORD(wParam) < ID_EXT_MENU_FIRST + g_aExtMenuItems.size())
+		{
+			const XEditorMenuItem *pMenuItem = g_aExtMenuItems[LOWORD(wParam) - ID_EXT_MENU_FIRST].pItem;
+			if(pMenuItem->pfnCallback)
+			{
+				pMenuItem->pfnCallback(pMenuItem->pContext);
+			}
 		}
 		switch(LOWORD(wParam))
 		{
@@ -1409,6 +1494,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 		case ID_VIEW_AUTOSIZEVIEWS:
 			GetClientRect(hWnd, &rect);
+			DivDpiRect(&rect, g_uWndMainDpi);
 
 			rect.top += MARGIN_TOP;
 			rect.bottom -= MARGIN_BOTTOM;
@@ -2097,8 +2183,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		int                 yPos;
 
 		// Varible used to get the mouse cursor x and y co-ordinates
-		xPos = GET_X_LPARAM(lParam);
-		yPos = GET_Y_LPARAM(lParam);
+		xPos = DivDpi(GET_X_LPARAM(lParam), g_uWndMainDpi);
+		yPos = DivDpi(GET_Y_LPARAM(lParam), g_uWndMainDpi);
 
 		// Checks whether the mouse is over the splitter window
 		xSizing = g_isXResizeable && (xPos > iLeftWidth + MARGIN_LEFT - SPLITTER_BAR_WIDTH && xPos < iLeftWidth + MARGIN_LEFT + SPLITTER_BAR_WIDTH);
@@ -2135,6 +2221,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			// Get the main window dc to draw a focus rectangle
 			hdc = GetDC(hWnd);
 			GetClientRect(hWnd, &rect);
+			DivDpiRect(&rect, g_uWndMainDpi);
 
 			rect.top += MARGIN_TOP;
 			rect.bottom -= MARGIN_BOTTOM;
@@ -2147,6 +2234,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			if(xSizing)
 			{
 				SetRect(&focusrect, iLeftWidth - (WIDTH_ADJUST * 2), rect.top, iLeftWidth + WIDTH_ADJUST, rect.bottom);
+				MulDpiRect(&focusrect, g_uWndMainDpi);
 
 				// Call api to vanish the dragging rectangle 
 				DrawFocusRect(hdc, &focusrect);
@@ -2156,6 +2244,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			if(ySizing)
 			{
 				SetRect(&focusrect, rect.left, iTopHeight - (WIDTH_ADJUST * 2), rect.right, iTopHeight + WIDTH_ADJUST);
+				MulDpiRect(&focusrect, g_uWndMainDpi);
 
 				// Call api to vanish the dragging rectangle 
 				DrawFocusRect(hdc, &focusrect);
@@ -2176,10 +2265,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 		// Get the x and y co-ordinates of the mouse
 
-		xPos = GET_X_LPARAM(lParam);
-		yPos = GET_Y_LPARAM(lParam);
-
+		xPos = DivDpi(GET_X_LPARAM(lParam), g_uWndMainDpi);
+		yPos = DivDpi(GET_Y_LPARAM(lParam), g_uWndMainDpi);
+		
 		GetClientRect(hWnd, &rect);
+		DivDpiRect(&rect, g_uWndMainDpi);
 
 		rect.top += MARGIN_TOP;
 		rect.bottom -= MARGIN_BOTTOM;
@@ -2217,6 +2307,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 
 				SetRect(&focusrect, iLeftWidth + MARGIN_LEFT - (WIDTH_ADJUST * 2), rect.top, iLeftWidth + MARGIN_LEFT + WIDTH_ADJUST, rect.bottom);
+				MulDpiRect(&focusrect, g_uWndMainDpi);
 
 				DrawFocusRect(hdc, &focusrect);
 
@@ -2225,6 +2316,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 				// Draws a focus rectangle
 				SetRect(&focusrect, iLeftWidth + MARGIN_LEFT - (SPLITTER_BAR_WIDTH * 2), rect.top, iLeftWidth + MARGIN_LEFT + SPLITTER_BAR_WIDTH, rect.bottom);
+				MulDpiRect(&focusrect, g_uWndMainDpi);
 
 				DrawFocusRect(hdc, &focusrect);
 
@@ -2237,9 +2329,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				HDC hdc;
 				hdc = GetDC(hWnd);
 				SetRect(&focusrect, rect.left, iTopHeight + MARGIN_TOP - (WIDTH_ADJUST * 2), rect.right, iTopHeight + MARGIN_TOP + WIDTH_ADJUST);
+				MulDpiRect(&focusrect, g_uWndMainDpi);
 				DrawFocusRect(hdc, &focusrect);
 				iTopHeight = yPos - MARGIN_TOP;
 				SetRect(&focusrect, rect.left, iTopHeight + MARGIN_TOP - (SPLITTER_BAR_WIDTH * 2), rect.right, iTopHeight + MARGIN_TOP + SPLITTER_BAR_WIDTH);
+				MulDpiRect(&focusrect, g_uWndMainDpi);
 				DrawFocusRect(hdc, &focusrect);
 				ReleaseDC(hWnd, hdc);
 			}
@@ -2270,16 +2364,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 		GetClientRect(hWnd, &rect);
 
-		rect.top += MARGIN_TOP;
-		rect.bottom -= MARGIN_BOTTOM;
-		rect.left += MARGIN_LEFT;
-		rect.right -= MARGIN_RIGHT;
+		rect.top += MulDpi(MARGIN_TOP, g_uWndMainDpi);
+		rect.bottom -= MulDpi(MARGIN_BOTTOM, g_uWndMainDpi);
+		rect.left += MulDpi(MARGIN_LEFT, g_uWndMainDpi);
+		rect.right -= MulDpi(MARGIN_RIGHT, g_uWndMainDpi);
 		if(pt.x < rect.left || pt.x > rect.right || pt.y < rect.top || pt.y > rect.bottom)
 		{
 			return(TRUE);
 		}
-		BOOL isLeft = (pt.x < rect.left + iLeftWidth),
-			isTop = (pt.y < rect.top + iTopHeight);
+		BOOL isLeft = (pt.x < rect.left + MulDpi(iLeftWidth, g_uWndMainDpi)),
+			isTop = (pt.y < rect.top + MulDpi(iTopHeight, g_uWndMainDpi));
 		ICamera *pCamera = NULL;
 		X_2D_VIEW x2dView;
 		HWND hTargetWnd;
@@ -2381,6 +2475,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 		mem_delete(g_pPropWindow);
 		DestroyMenu(g_hMenu);
+		ReleaseDefaultFont(g_hWndMainFont);
 		DeleteObject(hcSizeEW);
 		DeleteObject(hcSizeNS);
 		DeleteObject(hcSizeNESW);
@@ -4416,12 +4511,29 @@ HWND CreateToolbar(HWND hWndParent)
 		return NULL;
 
 	// Create the image list.
-	g_hImageList = ImageList_Create(bitmapSize, bitmapSize - 1,   // Dimensions of individual bitmaps.
+	g_hImageList = ImageList_Create(MulDpi(bitmapSize, g_uWndMainDpi), MulDpi(bitmapSize - 1, g_uWndMainDpi),   // Dimensions of individual bitmaps.
 		ILC_COLOR16 | ILC_MASK,   // Ensures transparent background.
 		numButtons, 0);
 
 	HBITMAP hbToolbar = LoadBitmap(hInst, MAKEINTRESOURCE(IDR_TOOLBAR1));
 	HBITMAP hbToolbarA = LoadBitmap(hInst, MAKEINTRESOURCE(IDR_TOOLBAR_A));
+	
+	if(g_uWndMainDpi != USER_DEFAULT_SCREEN_DPI)
+	{
+		HDC hDC = GetDC(hWndToolbar);
+
+		HBITMAP hbToolbarScaled = StretchBitmap(hDC, hbToolbar);
+		HBITMAP hbToolbarAScaled = StretchBitmap(hDC, hbToolbarA);
+
+		DeleteBitmap(hbToolbar);
+		DeleteBitmap(hbToolbarA);
+
+		hbToolbar = hbToolbarScaled;
+		hbToolbarA = hbToolbarAScaled;
+
+		ReleaseDC(hWndToolbar, hDC);
+	}
+
 	ImageList_Add(g_hImageList, hbToolbar, hbToolbarA);
 	DeleteBitmap(hbToolbar);
 	DeleteBitmap(hbToolbarA);
@@ -4430,6 +4542,7 @@ HWND CreateToolbar(HWND hWndParent)
 	SendMessage(hWndToolbar, TB_SETIMAGELIST,
 		(WPARAM)ImageListID,
 		(LPARAM)g_hImageList);
+
 
 	// Load the button images.
 	//SendMessage(hWndToolbar, TB_LOADIMAGES,
@@ -4476,7 +4589,7 @@ void XSetXformType(X_2DXFORM_TYPE type)
 void XInitTool(IXEditorTool *pTool, IXEditable *pEditable)
 {
 	HWND hBtn = CreateWindow("Button", "", WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_BITMAP | BS_PUSHLIKE | BS_CHECKBOX,
-		g_uABNextLeft, g_uABNextTop, AB_BUTTON_WIDTH, AB_BUTTON_HEIGHT, g_hWndMain, (HMENU)(IDC_AB_FIRST + g_aTools.size()), hInst, NULL
+		MulDpi(g_uABNextLeft, g_uWndMainDpi), MulDpi(g_uABNextTop, g_uWndMainDpi), MulDpi(AB_BUTTON_WIDTH, g_uWndMainDpi), MulDpi(AB_BUTTON_HEIGHT, g_uWndMainDpi), g_hWndMain, (HMENU)(IDC_AB_FIRST + g_aTools.size()), hInst, NULL
 	);
 	{
 		SetWindowTheme(hBtn, L" ", L" ");
@@ -4593,4 +4706,119 @@ void XInitTypesCombo()
 	}
 
 	ComboBox_Enable(g_hComboTypesWnd, iTypes > 1);
+}
+
+UINT GetWindowDPI(HWND hWnd)
+{
+	typedef HRESULT(WINAPI *PGetDpiForMonitor)(HMONITOR hmonitor, int dpiType, UINT* dpiX, UINT* dpiY);
+
+	// Try to get the DPI setting for the monitor where the given window is located.
+	// This API is Windows 8.1+.
+	HMODULE hSHcore = LoadLibraryW(L"shcore");
+	if(hSHcore)
+	{
+		PGetDpiForMonitor pGetDpiForMonitor = (PGetDpiForMonitor)GetProcAddress(hSHcore, "GetDpiForMonitor");
+		if(pGetDpiForMonitor)
+		{
+			HMONITOR hMonitor = MonitorFromWindow(hWnd, MONITOR_DEFAULTTOPRIMARY);
+			UINT uDpiX;
+			UINT uDpiY;
+			HRESULT hr = pGetDpiForMonitor(hMonitor, /*MDT_EFFECTIVE_DPI*/ 0, &uDpiX, &uDpiY);
+			if(SUCCEEDED(hr))
+			{
+				return(uDpiX);
+			}
+		}
+	}
+
+	// We couldn't get the window's DPI above, so get the DPI of the primary monitor
+	// using an API that is available in all Windows versions.
+	HDC hScreenDC = GetDC(0);
+	int iDpiX = GetDeviceCaps(hScreenDC, LOGPIXELSX);
+	ReleaseDC(0, hScreenDC);
+
+	return((UINT)iDpiX);
+}
+
+int MulDpi(int iUnscaled, UINT uCurrentDpi)
+{
+	return(MulDiv(iUnscaled, uCurrentDpi, USER_DEFAULT_SCREEN_DPI));
+}
+
+int DivDpi(int iUnscaled, UINT uCurrentDpi)
+{
+	return(MulDiv(iUnscaled, USER_DEFAULT_SCREEN_DPI, uCurrentDpi));
+}
+
+void DivDpiRect(RECT *pRc, UINT uCurrentDpi)
+{
+	pRc->top = DivDpi(pRc->top, uCurrentDpi);
+	pRc->bottom = DivDpi(pRc->bottom, uCurrentDpi);
+	pRc->left = DivDpi(pRc->left, uCurrentDpi);
+	pRc->right = DivDpi(pRc->right, uCurrentDpi);
+}
+
+void MulDpiRect(RECT *pRc, UINT uCurrentDpi)
+{
+	pRc->top = MulDpi(pRc->top, uCurrentDpi);
+	pRc->bottom = MulDpi(pRc->bottom, uCurrentDpi);
+	pRc->left = MulDpi(pRc->left, uCurrentDpi);
+	pRc->right = MulDpi(pRc->right, uCurrentDpi);
+}
+
+HFONT GetDefaultFont(UINT uDpi)
+{
+	NONCLIENTMETRICSW nonClientMetrics = {sizeof(nonClientMetrics)};
+	if(SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, sizeof(nonClientMetrics), &nonClientMetrics, 0))
+	{
+		HDC hScreenDC = GetDC(0);
+		int iDpiX = GetDeviceCaps(hScreenDC, LOGPIXELSX);
+		ReleaseDC(0, hScreenDC);
+
+		//nonClientMetrics.lfMenuFont.lfHeight = -12 * (int)uDpi / 72;
+		nonClientMetrics.lfMenuFont.lfHeight = MulDiv(nonClientMetrics.lfMenuFont.lfHeight, uDpi, iDpiX);
+		HFONT hFont = CreateFontIndirectW(&nonClientMetrics.lfMenuFont);
+		if(hFont)
+		{
+			return(hFont);
+		}
+	}
+
+	return((HFONT)GetStockObject(DEFAULT_GUI_FONT));
+}
+
+void ReleaseDefaultFont(HFONT hFont)
+{
+	if(hFont != GetStockObject(DEFAULT_GUI_FONT))
+	{
+		DeleteObject(hFont);
+	}
+}
+
+HBITMAP StretchBitmap(HDC hDC, HBITMAP hBitmap)
+{
+	BITMAP bm1, bm2;
+	HBITMAP hBitmapNew;
+	HDC hDC1, hDC2;
+	hDC1 = CreateCompatibleDC(hDC);
+	hDC2 = CreateCompatibleDC(hDC);
+	
+	GetObject(hBitmap, sizeof(BITMAP), (PSTR)&bm1);
+
+	bm2 = bm1;
+	bm2.bmWidth = MulDpi(bm1.bmWidth, g_uWndMainDpi);
+	bm2.bmHeight = MulDpi(bm1.bmHeight, g_uWndMainDpi);
+	bm2.bmWidthBytes = MulDpi(bm1.bmWidthBytes, g_uWndMainDpi);
+	hBitmapNew = CreateBitmapIndirect(&bm2);
+
+	SelectObject(hDC1, hBitmap);
+	SelectObject(hDC2, hBitmapNew);
+
+	SetStretchBltMode(hDC1, HALFTONE);
+	StretchBlt(hDC2, 0, 0, bm2.bmWidth, bm2.bmHeight, hDC1, 0, 0, bm1.bmWidth, bm1.bmHeight, SRCCOPY);
+
+	DeleteDC(hDC1);
+	DeleteDC(hDC2);
+
+	return(hBitmapNew);
 }
