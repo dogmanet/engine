@@ -1027,9 +1027,13 @@ namespace gui
 			//GetGUI()->
 		//}
 
-		void CDOMnode::updateStyles()
+		void CDOMnode::updateStyles(bool forceUpdate)
 		{
 			m_pDocument->updateStyleSubtree(this);
+			if(forceUpdate)
+			{
+				m_pDocument->updateStyles(0.0f);
+			}
 		}
 
 		void CDOMnode::dispatchEvent(IEvent & ev)
@@ -1775,6 +1779,11 @@ namespace gui
 
 		}*/
 
+		RECT CDOMnode::getClientRect()
+		{
+			return(m_pRenderFrame->getClientRect());
+		}
+
 		void CDOMnode::removeChild(IDOMnode * _pEl, bool regen)
 		{
 			CDOMnode * pEl = (CDOMnode*)_pEl;
@@ -1820,6 +1829,36 @@ namespace gui
 			}
 		}
 		
+		void CDOMnode::takeChild(IDOMnode * _pEl, bool regen)
+		{
+			CDOMnode * pEl = (CDOMnode*)_pEl;
+			for(UINT i = 0, l = m_vChilds.size(); i < l; ++i)
+			{
+				if(m_vChilds[i] == pEl)
+				{
+					if(getDocument()->getFocus() == pEl)
+					{
+						getDocument()->requestFocus(getDocument()->getElementsByTag(L"body")[0][0]);
+					}
+					if(i > 0)
+					{
+						((CDOMnode*)m_vChilds[i - 1])->m_pNextSibling = ((CDOMnode*)m_vChilds[i])->m_pNextSibling;
+					}
+					if(i + 1 < m_vChilds.size())
+					{
+						((CDOMnode*)m_vChilds[i + 1])->m_pPrevSibling = ((CDOMnode*)m_vChilds[i])->m_pPrevSibling;
+					}
+					if(pEl->getRenderFrame() && regen)
+					{
+						pEl->getRenderFrame()->getParent()->removeChild(pEl->getRenderFrame());
+					}
+					m_pDocument->forgotNode(m_vChilds[i]);
+					m_vChilds.erase(i);
+					break;
+				}
+			}
+		}
+
 		void CDOMnode::addPseudoclass(UINT id)
 		{
 			if(!(m_pseudoclasses & id))

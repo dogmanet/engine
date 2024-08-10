@@ -53,10 +53,11 @@ namespace gui
 				m_bIgnHotkeys(false)
 			{};
 			~CDOMnode();
-			void appendChild(IDOMnode * pEl, bool regen = true, IDOMnode *pInsertBefore = NULL);
-			void appendHTML(const StringW &wsHTML, bool regen = true, IDOMnode *pInsertBefore = NULL);
-			void setHTML(const StringW &wsHTML, bool regen = true);
-			void removeChild(IDOMnode * pEl, bool regen = true);
+			void appendChild(IDOMnode * pEl, bool regen = true, IDOMnode *pInsertBefore = NULL) override;
+			void appendHTML(const StringW &wsHTML, bool regen = true, IDOMnode *pInsertBefore = NULL) override;
+			void setHTML(const StringW &wsHTML, bool regen = true) override;
+			void removeChild(IDOMnode * pEl, bool regen = true) override;
+			void takeChild(IDOMnode * pEl, bool regen = true) override;
 			IDOMnode * parentNode();
 
 			void setDocument(CDOMdocument * doc);
@@ -179,7 +180,7 @@ namespace gui
 			{
 				m_pRenderFrame = prf;
 			}
-			void updateStyles();
+			void updateStyles(bool forceUpdate = false) override;
 			void updateLayout(bool bForce=false);
 
 
@@ -202,6 +203,7 @@ namespace gui
 			BOOL classExists(const StringW &cls);
 			//BOOL ClassExists(UINT cls);
 
+			RECT getClientRect() override;
 		protected:
 			IDOMnode *m_pParent;
 			IDOMnode *m_pPrevSibling;

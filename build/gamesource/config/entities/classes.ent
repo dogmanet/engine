@@ -5,7 +5,8 @@ inv_stackable = 1
 inv_stack_cur = 60
 inv_stack_max = 300
 ; model = "models/ammo/ammo_5.45x39.dse"
-inv_name = "Патроны 5.45x39ps"
+inv_name = "5.45x39ПС"
+inv_icon = "ammo"
 ;начальная скорость пули, ее масса, бронепробиваемость, останавливающее действие
 start_speed = 900 ; м/с
 bullet_mass = 3.4 ; г
@@ -15,6 +16,7 @@ is_bursting = 0 ; разрывная
 model = "meshes/boxes/box_mtl_small.dse"
 is_static = 1
 scale = 0.3
+inv_weight = 0.013
 ; коэффициент формы 
 ; наличие/отсутствие сердечника
 ; вращение об/с - зависит от шачальной скорости, шага нареза
@@ -41,6 +43,10 @@ inv_name = "Ключ-карта"
 inv_stackable = 0
 
 [weapon_ak74]
+inv_name = "AK-47"
+inv_icon = "ak74"
+inv_icon_size_x = 2
+inv_icon_size_y = 1
 base_class = base_riffle
 show_in_listing = 1
 model = "models/weapons/ak74/ak74.dse"

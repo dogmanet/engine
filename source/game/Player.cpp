@@ -74,6 +74,7 @@ CPlayer::~CPlayer()
 	REMOVE_ENTITY(m_pCamera);
 }
 
+// TODO: убрать блять, что б я этого не видел
 static float GetAngleBetweenVectors(const float3 &v1, const float3 &v2, const float3 &vRotationAxis)
 {
 	float fAngle = SMVector3Dot(v1, v2);
@@ -95,7 +96,7 @@ void CPlayer::setOrient(const SMQuaternion &q)
 	if(SMIsZero(1.0f - fabsf(fAng)))
 	{
 		m_vPitchYawRoll.x = SM_PIDIV2 * fAng;
-		m_vPitchYawRoll.y = GetAngleBetweenVectors(q * -vUp, vBase, vUp);
+		m_vPitchYawRoll.y = SMRightAngleBetweenVectors(q * -vUp, vBase, vUp);
 	}
 	else
 	{

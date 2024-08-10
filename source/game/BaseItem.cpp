@@ -14,6 +14,8 @@ See the license in LICENSE
 */
 
 BEGIN_PROPTABLE(CBaseItem)
+	//! Иконка в инвентаре (только имя файла, без расширения и пути)
+	DEFINE_FIELD_STRING(m_szInvIcon, PDFF_NOEDIT | PDFF_NOEXPORT, "inv_icon", "", EDITOR_NONE)
 	//! Имя в инвентаре
 	DEFINE_FIELD_STRING(m_szInvName, PDFF_NOEDIT | PDFF_NOEXPORT, "inv_name", "", EDITOR_NONE)
 	//! Может ли стакаться
@@ -26,6 +28,10 @@ BEGIN_PROPTABLE(CBaseItem)
 	DEFINE_FIELD_FLOAT(m_iInvWeight, PDFF_NOEDIT | PDFF_NOEXPORT, "inv_weight", "", EDITOR_NONE)
 	//! Можно ли поднимать объект
 	DEFINE_FIELD_BOOLFN(m_bPickable, PDFF_NOEDIT | PDFF_NOEXPORT, "inv_pickable", "", onIsPickableChanged, EDITOR_NONE)
+	//! Размер иконки по X
+	DEFINE_FIELD_INT(m_iIconSizeX, PDFF_NOEDIT | PDFF_NOEXPORT, "inv_icon_size_x", "", EDITOR_NONE)
+	//! Размер иконки по Y
+	DEFINE_FIELD_INT(m_iIconSizeY, PDFF_NOEDIT | PDFF_NOEXPORT, "inv_icon_size_y", "", EDITOR_NONE)
 
 	DEFINE_OUTPUT(m_onPickUp, "OnPickUp", "On pickup")
 	DEFINE_OUTPUT(m_onDrop, "OnDrop", "On drop")
@@ -97,6 +103,11 @@ void CBaseItem::setMode(INVENTORY_ITEM_MODE mode)
 	onModeChanged(oldMode, mode);
 }
 
+INVENTORY_ITEM_MODE CBaseItem::getMode()
+{
+	return(m_inventoryMode);
+}
+
 void CBaseItem::onModeChanged(INVENTORY_ITEM_MODE oldMode, INVENTORY_ITEM_MODE newMode)
 {
 	if(m_pModel)
@@ -105,8 +116,8 @@ void CBaseItem::onModeChanged(INVENTORY_ITEM_MODE oldMode, INVENTORY_ITEM_MODE n
 	}
 	if(m_pViewModel)
 	{
-		m_pViewModel->enable(newMode == IIM_EQUIPPED);
-		if(newMode == IIM_EQUIPPED)
+		m_pViewModel->enable(newMode == IIM_IN_HANDS);
+		if(newMode == IIM_IN_HANDS)
 		{
 			m_pViewModel->startActivity("ACT_HOLSTER");
 		}
@@ -195,7 +206,7 @@ void CBaseItem::onModelChanged()
 		if(pProvider->createModel(2, pAnimatedResources, &m_pViewModel))
 		{
 			m_pViewModel->play("IDLE");
-			m_pViewModel->enable(m_inventoryMode == IIM_EQUIPPED);
+			m_pViewModel->enable(m_inventoryMode == IIM_IN_HANDS);
 			m_pViewModel->setScale(m_fBaseScale);
 		}
 	}
@@ -214,6 +225,36 @@ void CBaseItem::setOrient(const SMQuaternion &q)
 	BaseClass::setOrient(q);
 
 	SAFE_CALL(m_pViewModel, setOrientation, q);
+}
+
+int CBaseItem::getIconSizeX()
+{
+	return(m_iIconSizeX);
+}
+
+int CBaseItem::getIconSizeY()
+{
+	return(m_iIconSizeY);
+}
+
+int CBaseItem::getStackCount()
+{
+	return(m_iInvStackCurSize);
+}
+
+bool CBaseItem::isStackable()
+{
+	return(m_bInvStackable);
+}
+
+const char* CBaseItem::getItemName()
+{
+	return(m_szInvName);
+}
+
+const char* CBaseItem::getIcon()
+{
+	return(m_szInvIcon);
 }
 
 void CBaseItem::onIsPickableChanged(bool isPickable)

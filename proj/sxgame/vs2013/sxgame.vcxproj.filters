@@ -333,6 +333,9 @@
     <ClCompile Include="..\..\..\source\game\PointChangelevel.cpp">
       <Filter>Source Files\ents\point</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\source\game\GUIInventoryController.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\source\game\sxgame.h">
@@ -574,6 +577,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\source\game\PointChangelevel.h">
       <Filter>Header Files\ents\point</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\game\GUIInventoryController.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

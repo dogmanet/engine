@@ -61,7 +61,7 @@ void CNPCZombie::onPostLoad()
 	m_pActiveTool = (CBaseTool*)CREATE_ENTITY("wpn_zombie_hands", m_pMgr);
 	m_pActiveTool->setOwner(this);
 	m_pActiveTool->setPos(getPos() + float3(1.0f, m_fCapsHeight - 0.1f, 1.0f));
-	m_pActiveTool->setMode(IIM_EQUIPPED);
+	m_pActiveTool->setMode(IIM_IN_HANDS);
 	m_pActiveTool->setOrient(m_pHeadEnt->getOrient());
 	m_pActiveTool->setParent(m_pHeadEnt);
 

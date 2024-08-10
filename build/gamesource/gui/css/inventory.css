@@ -1,0 +1,135 @@
+.rectangle {
+	background-color: #000000D2; 
+	border-width: 2px;
+	border-style: solid;
+	border-color: #C6F0FD;
+	position: absolute;
+	top: 15vh;
+	left: 5vw;
+	right: 5vw;
+	height: 75vh;
+}
+
+#inventory_area {
+	border-width: 2px;
+	border-style: solid;
+	border-color: #C6F0FD;
+	position: absolute;
+	top: 2px;
+	bottom: -2px;
+	left: 2px;
+	right: 17vw;
+}
+
+#equip_area {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	right: 0;
+	width: 13.5vw;
+	padding-top: 0.5vh;
+}
+
+#frame {
+	position: absolute;
+	top: 1vw;
+	bottom: 1vw;
+	left: 1vw;
+	right: 0;
+}
+
+.icon {
+	position: absolute;
+	background-size-x: 100%;
+	background-position-x: 50%;
+	background-position-y: 50%;
+	background-repeat: no-repeat;
+	background-color: #000000;
+	border-color: #C6F0FD;
+	border-width: 1px;
+}	
+
+.equip_unit_title {
+	margin-top: 0.5vh;
+	margin-bottom: 0.5vh;
+	font-size: 0.7vw;
+}
+
+.item_name {
+	padding: 0.1vw;
+	font-size: 0.58vw;
+}
+
+.item_count {
+	font-size: 0.6vw;
+	top: 4vw;
+	right: 0;
+	text-align: right;
+	position: absolute;
+}
+
+.cell, .weapon_one_cell, .weapon_two_cell, .armor_cell, .fast_acess_cell {
+    display: inline-block;
+	width: 5vw; 
+	height: 5vw; 
+	background-color: #000000;
+	border-color: #C6F0FD;
+	border-width: 1px;
+}
+
+.title, .close {
+	bottom: 85vh;
+	left: 5vw;
+	right: 5vw;
+	height: 4vh;
+	position: absolute;
+	font-size: 3vh;
+}
+
+.capacity {
+	top: 90.5vh;
+	left: 5vw;
+	right: 5vw;
+	height: 4vh;
+	text-align:center;
+	position: absolute;
+	font-size: 2vh;
+}
+
+.close {
+	text-align: right;
+	font-name: seguisym;
+	left: 93vw;
+}
+
+.close:hover {
+	color: #FFFFFF;
+}
+
+#context_menu {
+	background-color: #001020D2;
+	border-width: 2px;
+	border-style: solid;
+	border-color: #C6F0FD;
+	position: absolute;
+	width: 20vh; 
+}
+
+#context_menu > div {
+	padding: 0.5vh;
+	font-size: 1.5vh;
+}
+
+#context_menu > div:hover {
+	color: #FFFFFF;
+	background-color:#304050D2;
+}
+
+html, body {
+	height: 100%;
+	width: 100%;
+	margin: 0;
+	padding: 0;
+	font-name: quick-junky-regular;
+	color: #c6f0fd;
+}
