@@ -486,6 +486,11 @@ void CTaskManager::workerIO()
 
 ID CTaskManager::forLoop(int iStart, int iEnd, const IParallelForBody *pBody, int iMaxChunkSize)
 {
+	if(iStart >= iEnd)
+	{
+		return(-1);
+	}
+
 	if(m_isSingleThreaded)
 	{
 		pBody->forLoop(iStart, iEnd);

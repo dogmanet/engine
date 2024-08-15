@@ -456,6 +456,7 @@ protected:
 	AssotiativeArray<AAString, Array<MaterialLoader>> m_mapMaterialLoaders;
 	Array<XFormatName> m_aMaterialExts;
 	Map<String, CMaterial*> m_mapMaterials;
+	SpinLock m_slMaterials;
 
 	IEventChannel<XEventMaterialChanged> *m_pNotifyChannel = NULL;
 

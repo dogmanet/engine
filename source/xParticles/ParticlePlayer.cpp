@@ -168,6 +168,8 @@ void CParticlePlayer::update(float fDelta)
 		return;
 	}
 
+	XPROFILE_FUNCTION();
+
 	m_fTime += fDelta;
 
 	UINT uEmCount = m_pEffect->getEmitterCount();

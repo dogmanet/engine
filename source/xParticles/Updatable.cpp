@@ -18,9 +18,7 @@ void CUpdatable::shutdown()
 
 ID CUpdatable::run(float fDelta)
 {
-	m_pSystem->update(fDelta);
-
-	return(-1);
+	return(m_pSystem->update(fDelta));
 }
 
 void CUpdatable::sync()

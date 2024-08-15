@@ -428,9 +428,12 @@ bool CEngine::runFrame()
 
 			m_pRender->updateVisibility();
 
-			m_pRender->endFrame();
-			//m_pDevice->swapBuffers();
-			SAFE_CALL(m_pXUI, present);
+			{
+				XPROFILE_SECTION("Present");
+				m_pRender->endFrame();
+				//m_pDevice->swapBuffers();
+				SAFE_CALL(m_pXUI, present);
+			}
 
 			showProfile();
 

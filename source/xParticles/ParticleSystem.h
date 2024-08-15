@@ -24,6 +24,22 @@ protected:
 	CParticleSystem *m_pSystem;
 };
 
+//##########################################################################
+
+class CUpdateForLoop final: public IParallelForBody
+{
+public:
+	CUpdateForLoop(CParticleSystem *pSystem);
+	void forLoop(int iStart, int iEnd) const override;
+	void setDelta(float fDelta);
+
+protected:
+	CParticleSystem *m_pSystem;
+	float m_fDelta;
+};
+
+//##########################################################################
+
 class CParticleSystem final: public IXUnknownImplementation<IXParticleSystem>
 {
 	friend class CMaterialChangedEventListener;
@@ -46,7 +62,8 @@ public:
 
 	bool saveEffect(CParticleEffect *pEffect);
 
-	void update(float fDelta);
+	ID update(float fDelta);
+	void updateRange(int iStart, int iEnd, float fDelta);
 	void sync();
 
 	CParticleEffectEmitter* allocEmitter();
@@ -76,7 +93,7 @@ private:
 	void onMaterialEmissivityChanged(const IXMaterial *pMaterial);
 	void onMaterialTransparencyChanged(const IXMaterial *pMaterial);
 
-protected:
+private:
 	IXCore *m_pCore;
 
 	Map<String, CParticleEffect> m_mapEffects;
@@ -118,6 +135,8 @@ protected:
 	IXSceneQuery *m_pOpaqueQuery = NULL;
 	IXSceneQuery *m_pTransparentQuery = NULL;
 	IXSceneQuery *m_pSelfillumQuery = NULL;
+
+	CUpdateForLoop m_updateLoop;
 };
 
 #endif

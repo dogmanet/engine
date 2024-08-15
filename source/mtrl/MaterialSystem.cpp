@@ -188,22 +188,26 @@ CMaterialSystem::~CMaterialSystem()
 void XMETHODCALLTYPE CMaterialSystem::loadMaterial(const char *szName, IXMaterial **ppMaterial, const char *szDefaultShader)
 {
 	String sName(szName);
+	CMaterial *pNewMaterial = NULL;
 
-	const AssotiativeArray<String, CMaterial*>::Node *pNode;
-	if(m_mapMaterials.KeyExists(sName, &pNode))
 	{
-		*ppMaterial = *(pNode->Val);
-		(*ppMaterial)->AddRef();
-		return/*(true)*/;
+		ScopedSpinLock lock(m_slMaterials);
+
+		const AssotiativeArray<String, CMaterial*>::Node *pNode;
+		if(m_mapMaterials.KeyExists(sName, &pNode))
+		{
+			*ppMaterial = *(pNode->Val);
+			(*ppMaterial)->AddRef();
+			return/*(true)*/;
+		}
+
+		m_mapMaterials[sName] = NULL;
+		m_mapMaterials.KeyExists(sName, &pNode);
+
+		pNewMaterial = new CMaterial(this, pNode->Key.c_str());
+		*ppMaterial = pNewMaterial;
+		m_mapMaterials[sName] = pNewMaterial;
 	}
-
-	m_mapMaterials[sName] = NULL;
-	m_mapMaterials.KeyExists(sName, &pNode);
-
-	CMaterial *pNewMaterial = new CMaterial(this, pNode->Key.c_str());
-	*ppMaterial = pNewMaterial;
-	m_mapMaterials[sName] = pNewMaterial;
-
 	if(!loadMaterial(szName, pNewMaterial))
 	{
 		pNewMaterial->setShader(szDefaultShader ? szDefaultShader : "Default");

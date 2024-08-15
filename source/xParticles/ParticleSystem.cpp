@@ -4,7 +4,8 @@
 #include <xcommon/IPluginManager.h>
 
 CParticleSystem::CParticleSystem(IXCore *pCore):
-	m_pCore(pCore)
+	m_pCore(pCore),
+	m_updateLoop(this)
 {
 	m_pMaterialChangedEventListener = new CMaterialChangedEventListener(this);
 	pCore->getEventChannel<XEventMaterialChanged>(EVENT_MATERIAL_CHANGED_GUID)->addListener(m_pMaterialChangedEventListener);
@@ -130,9 +131,20 @@ bool CParticleSystem::saveEffect(CParticleEffect *pEffect)
 	return(loader.saveToFile(pEffect->getName(), pEffect));
 }
 
-void CParticleSystem::update(float fDelta)
+ID CParticleSystem::update(float fDelta)
 {
-	fora(i, m_aPlayers)
+	XPROFILE_FUNCTION();
+
+	m_updateLoop.setDelta(fDelta);
+
+	return(m_pCore->forLoop(0, m_aPlayers.size(), &m_updateLoop, 1));
+}
+
+void CParticleSystem::updateRange(int iStart, int iEnd, float fDelta)
+{
+	XPROFILE_FUNCTION();
+
+	for(int i = iStart; i < iEnd; ++i)
 	{
 		m_aPlayers[i]->update(fDelta);
 	}
@@ -140,6 +152,8 @@ void CParticleSystem::update(float fDelta)
 
 void CParticleSystem::sync()
 {
+	XPROFILE_FUNCTION();
+
 	PlayerQueueItem item;
 	while(m_queuePlayers.pop(&item))
 	{
@@ -392,3 +406,19 @@ void CMaterialChangedEventListener::onEvent(const XEventMaterialChanged *pData)
 	}
 }
 
+//##########################################################################
+
+CUpdateForLoop::CUpdateForLoop(CParticleSystem *pSystem):
+	m_pSystem(pSystem)
+{
+}
+
+void CUpdateForLoop::forLoop(int iStart, int iEnd) const
+{
+	m_pSystem->updateRange(iStart, iEnd, m_fDelta);
+}
+
+void CUpdateForLoop::setDelta(float fDelta)
+{
+	m_fDelta = fDelta;
+}
