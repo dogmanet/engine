@@ -3,14 +3,13 @@
 
 //#include <Windows.h>
 #include <graphix/graphix.h>
-#include <gcore/sxgcore.h>
 
-#ifndef SX_STATIC_BUILD
+#define SGCore_ShaderSetVRF(...) assert(!"Deprecated!")
+
 #if defined(_DEBUG)
-#	pragma comment(lib, "sxgcore_d.lib")
+#	pragma comment(lib, "sxcore_d.lib")
 #else
-#	pragma comment(lib, "sxgcore.lib")
-#endif
+#	pragma comment(lib, "sxcore.lib")
 #endif
 
 #if defined(_WINDOWS)

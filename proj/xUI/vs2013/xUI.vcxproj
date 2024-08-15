@@ -19,13 +19,70 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\source\xUI\CurvePreviewGraphNode.h" />
+    <ClInclude Include="..\..\..\source\xUI\CurvePreviewGraphNodeData.h" />
+    <ClInclude Include="..\..\..\source\xUI\GradientPreviewGraphNodeData.h" />
+    <ClInclude Include="..\..\..\source\xUI\IUI2ColorGradient.h" />
+    <ClInclude Include="..\..\..\source\xUI\IUICheckbox.h" />
+    <ClInclude Include="..\..\..\source\xUI\IUIColor.h" />
+    <ClInclude Include="..\..\..\source\xUI\IUIComboBox.h" />
+    <ClInclude Include="..\..\..\source\xUI\IUICommand.h" />
+    <ClInclude Include="..\..\..\source\xUI\IUIGrid.h" />
+    <ClInclude Include="..\..\..\source\xUI\IUIMaterialBox.h" />
+    <ClInclude Include="..\..\..\source\xUI\IUIMinMaxCurve.h" />
+    <ClInclude Include="..\..\..\source\xUI\IUIMultiTrackbar.h" />
+    <ClInclude Include="..\..\..\source\xUI\IUIPanel.h" />
+    <ClInclude Include="..\..\..\source\xUI\IUIPicture.h" />
+    <ClInclude Include="..\..\..\source\xUI\IUISpoiler.h" />
+    <ClInclude Include="..\..\..\source\xUI\IUITextBox.h" />
+    <ClInclude Include="..\..\..\source\xUI\IUIViewport.h" />
     <ClInclude Include="..\..\..\source\xUI\IUIWindow.h" />
+    <ClInclude Include="..\..\..\source\xUI\IUIButton.h" />
+    <ClInclude Include="..\..\..\source\xUI\IUIControl.h" />
     <ClInclude Include="..\..\..\source\xUI\IXUI.h" />
+    <ClInclude Include="..\..\..\source\xUI\UI2ColorGradient.h" />
+    <ClInclude Include="..\..\..\source\xUI\UICheckbox.h" />
+    <ClInclude Include="..\..\..\source\xUI\UIClassCommand.h" />
+    <ClInclude Include="..\..\..\source\xUI\UIColor.h" />
+    <ClInclude Include="..\..\..\source\xUI\UIComboBox.h" />
+    <ClInclude Include="..\..\..\source\xUI\UICommand.h" />
+    <ClInclude Include="..\..\..\source\xUI\UIControl.h" />
+    <ClInclude Include="..\..\..\source\xUI\UIGrid.h" />
+    <ClInclude Include="..\..\..\source\xUI\UIMaterialBox.h" />
+    <ClInclude Include="..\..\..\source\xUI\UIMinMaxCurve.h" />
+    <ClInclude Include="..\..\..\source\xUI\UIMultiTrackbar.h" />
+    <ClInclude Include="..\..\..\source\xUI\UIPanel.h" />
+    <ClInclude Include="..\..\..\source\xUI\UIPicture.h" />
+    <ClInclude Include="..\..\..\source\xUI\UISpoiler.h" />
+    <ClInclude Include="..\..\..\source\xUI\UITextBox.h" />
+    <ClInclude Include="..\..\..\source\xUI\UIViewport.h" />
     <ClInclude Include="..\..\..\source\xUI\UIWindow.h" />
+    <ClInclude Include="..\..\..\source\xUI\UIButton.h" />
+    <ClInclude Include="..\..\..\source\xUI\UIWindowControl.h" />
     <ClInclude Include="..\..\..\source\xUI\XUI.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\source\common\string.cpp" />
+    <ClCompile Include="..\..\..\source\xUI\CurvePreviewGraphNode.cpp" />
+    <ClCompile Include="..\..\..\source\xUI\CurvePreviewGraphNodeData.cpp" />
+    <ClCompile Include="..\..\..\source\xUI\GradientPreviewGraphNodeData.cpp" />
+    <ClCompile Include="..\..\..\source\xUI\plugin_main.cpp" />
+    <ClCompile Include="..\..\..\source\xUI\UI2ColorGradient.cpp" />
+    <ClCompile Include="..\..\..\source\xUI\UIButton.cpp" />
+    <ClCompile Include="..\..\..\source\xUI\UICheckbox.cpp" />
+    <ClCompile Include="..\..\..\source\xUI\UIColor.cpp" />
+    <ClCompile Include="..\..\..\source\xUI\UIComboBox.cpp" />
+    <ClCompile Include="..\..\..\source\xUI\UIGrid.cpp" />
+    <ClCompile Include="..\..\..\source\xUI\UIMaterialBox.cpp" />
+    <ClCompile Include="..\..\..\source\xUI\UIMinMaxCurve.cpp" />
+    <ClCompile Include="..\..\..\source\xUI\UIMultiTrackbar.cpp" />
+    <ClCompile Include="..\..\..\source\xUI\UIPanel.cpp" />
+    <ClCompile Include="..\..\..\source\xUI\UIPicture.cpp" />
+    <ClCompile Include="..\..\..\source\xUI\UISpoiler.cpp" />
+    <ClCompile Include="..\..\..\source\xUI\UITextBox.cpp" />
+    <ClCompile Include="..\..\..\source\xUI\UIViewport.cpp" />
     <ClCompile Include="..\..\..\source\xUI\UIWindow.cpp" />
+    <ClCompile Include="..\..\..\source\xUI\UIWindowControl.cpp" />
     <ClCompile Include="..\..\..\source\xUI\XUI.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -78,23 +135,23 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>../../../build/bin/</OutDir>
-    <TargetName>$(ProjectName)_d</TargetName>
+    <OutDir>../../../build/bin/plugins/</OutDir>
+    <TargetName>$(ProjectName)</TargetName>
     <SourcePath>$(VC_SourcePath);../../../source</SourcePath>
     <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSdk_LibraryPath_x86);../../../libs</LibraryPath>
     <IncludePath>$(VC_IncludePath);../../../sdks/;$(WindowsSDK_IncludePath);../../../source;../../../sdks/bullet3/src</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <TargetName>$(ProjectName)_d</TargetName>
+    <TargetName>$(ProjectName)</TargetName>
     <SourcePath>$(VC_SourcePath);../../../source</SourcePath>
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSdk_LibraryPath_x64);../../../libs64</LibraryPath>
     <IncludePath>$(VC_IncludePath);../../../sdks/;$(WindowsSDK_IncludePath);../../../source;../../../sdks/bullet3/src</IncludePath>
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>../../../build/bin64/</OutDir>
+    <OutDir>../../../build/bin64/plugins/</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>../../../build/bin/</OutDir>
+    <OutDir>../../../build/bin/plugins/</OutDir>
     <IncludePath>$(VC_IncludePath);../../../sdks/;$(WindowsSDK_IncludePath);../../../source;../../../sdks/bullet3/src</IncludePath>
     <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSdk_LibraryPath_x86);../../../libs</LibraryPath>
     <SourcePath>$(VC_SourcePath);../../../source</SourcePath>
@@ -104,7 +161,7 @@
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSdk_LibraryPath_x64);../../../libs64</LibraryPath>
     <SourcePath>$(VC_SourcePath);../../../source</SourcePath>
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>../../../build/bin64/</OutDir>
+    <OutDir>../../../build/bin64/plugins/</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

@@ -47,7 +47,6 @@ CTaskManager *g_pTaskManager = 0;
 bool g_aGRegistersBool[CORE_REGISTRY_SIZE];
 int32_t g_aGRegistersInt[CORE_REGISTRY_SIZE];
 float32_t g_aGRegistersFloat[CORE_REGISTRY_SIZE];
-float4x4 g_aGRegistersMatrix[CORE_REGISTRY_SIZE];
 float3 g_aGRegistersFloat3[CORE_REGISTRY_SIZE];
 String g_aGRegistersString[CORE_REGISTRY_SIZE];
 
@@ -249,12 +248,12 @@ SX_LIB_API const char* Core_ResPathGetFullPathByRelIndex2(int iRegisterPath, con
 
 SX_LIB_API XDEPRECATED ISXConfig* Core_CrConfig()
 {
-	return new CConfig();
+	return new CConfig(g_pCore->getFileSystem());
 }
 
 SX_LIB_API XDEPRECATED ISXConfig* Core_OpConfig(const char* path)
 {
-	CConfig* pConfig = new CConfig();
+	CConfig* pConfig = new CConfig(g_pCore->getFileSystem());
 	pConfig->open(path);
 	return pConfig;
 }
@@ -347,23 +346,6 @@ float32_t Core_RFloatGet(int id)
 {
 	CORE_REGUSTRY_PRE_COND_ID(id,0);
 	return g_aGRegistersFloat[id];
-}
-
-void Core_RMatrixSet(int id, float4x4* val)
-{
-	CORE_REGUSTRY_PRE_COND_ID(id, _VOID);
-	if (val)
-		g_aGRegistersMatrix[id] = *val;
-	else
-		g_aGRegistersMatrix[id] = SMMatrixIdentity();
-}
-
-void Core_RMatrixGet(int id, float4x4* val)
-{
-	CORE_REGUSTRY_PRE_COND_ID(id, _VOID);
-
-	if (val)
-		memcpy(val, &g_aGRegistersMatrix[id], sizeof(float4x4));
 }
 
 

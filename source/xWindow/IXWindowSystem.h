@@ -22,7 +22,8 @@ enum XWINDOW_FLAG
 	XWF_BUTTON_MINIMIZE = 0x0004,
 	XWF_BUTTON_MAXIMIZE = 0x0008,
 	XWF_TRANSPARENT = 0x0010,
-	XWF_NORESIZE = 0x0020
+	XWF_NORESIZE = 0x0020,
+	XWF_INIT_HIDDEN = 0x0040
 };
 DEFINE_ENUM_FLAG_OPERATORS(XWINDOW_FLAG);
 
@@ -72,7 +73,7 @@ public:
 	virtual const XWINDOW_DESC* XMETHODCALLTYPE getDesc() = 0;
 };
 
-class IXWindowCallback
+class IXWindowCallback: public IXUnknown
 {
 public:
 	virtual INT_PTR XMETHODCALLTYPE onMessage(UINT msg, WPARAM wParam, LPARAM lParam, IXWindow *pWindow) = 0;

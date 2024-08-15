@@ -392,8 +392,26 @@ bool CFileSystem::createDirectory(const char *szPath)
 {
     char path[SIZE_PATH];
     getNormalPath(szPath, path, SIZE_PATH);
+    if(!isAbsolutePath(path))
+    {
+        char szBuf[MAX_PATH];
+        szBuf[0] = 0;
+        strcat(szBuf, m_filePaths[m_writableRoot].c_str());
+        strcat(szBuf, "/");
+        strcat(szBuf, szPath);
+        char *tmp = szBuf;
+        while(*tmp)
+        {
+            if(*tmp == '/')
+            {
+                *tmp = '\\';
+            }
+            ++tmp;
+        }
+        return(SHCreateDirectoryExW(nullptr, CMB2WC(szBuf), nullptr) == NO_ERROR);
+    }
 
-	return SHCreateDirectoryExW(nullptr, CMB2WC(path), nullptr) == NO_ERROR;
+	return(SHCreateDirectoryExW(nullptr, CMB2WC(path), nullptr) == NO_ERROR);
 }
 
 bool CFileSystem::deleteDirectory(const char *szPath)
@@ -402,20 +420,25 @@ bool CFileSystem::deleteDirectory(const char *szPath)
 	getAbsoluteCanonizePath(szPath, path, SIZE_PATH);
 	getNormalPath(path, path, SIZE_PATH);
 
+    CMB2WC wszPath(path);
+    size_t len = wcslen(wszPath);
+    wchar_t *pBuf = (wchar_t*)alloca(sizeof(wchar_t) * (len + 2));
+    memcpy(pBuf, wszPath, sizeof(wchar_t) * (len + 1));
+    pBuf[len + 1] = 0;
+
     SHFILEOPSTRUCTW file_op = {
         NULL,
         FO_DELETE,
-		CMB2WC(path),
+        pBuf,
         L"",
-        FOF_NOCONFIRMATION |
-        FOF_NOERRORUI |
-        FOF_SILENT,
+        FOF_NOCONFIRMATION | FOF_NOERRORUI | FOF_SILENT,
         false,
         0,
-        L"" };
+        L"" 
+    };
 
     // Если вернуло не 0, то все плохо
-    return SHFileOperationW(&file_op) == NO_ERROR;
+    return(SHFileOperationW(&file_op) == NO_ERROR);
 }
 
 IFile *CFileSystem::openFile(const char *szPath, FILE_OPEN_MODE mode = FILE_MODE_READ)

@@ -12,8 +12,6 @@
 
 #include <xcommon/IPluginManager.h>
 
-#include <gcore/sxgcore.h>
-
 #include "CommandClip.h"
 
 extern HINSTANCE g_hInstance;

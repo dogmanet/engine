@@ -17,7 +17,7 @@ public:
 	}
 	void onEvent(const XEventLevel *pData) override
 	{
-		char szPathLevel[1024];
+		//char szPathLevel[1024];
 
 		switch(pData->type)
 		{
@@ -104,21 +104,25 @@ public:
 		}
 		return(&s_guid);
 	}
-	IXUnknown* XMETHODCALLTYPE getInterface(const XGUID &guid) override
+	void XMETHODCALLTYPE getInterface(UINT id, void **ppOut) override
 	{
-		if(guid == IXRENDERABLE_GUID)
+		switch(id)
 		{
-			return(m_pRenderable);
+		case 0:
+			*ppOut = m_pUpdatable;
+			break;
+
+		case 1:
+			*ppOut = m_pRenderable;
+			break;
+
+		case 2:
+			*ppOut = m_pAmbient;
+			break;
+		
+		default:
+			*ppOut = NULL;
 		}
-		if(guid == IXUPDATABLE_GUID)
-		{
-			return(m_pUpdatable);
-		}
-		if(guid == IXAMBIENT_GUID)
-		{
-			return(m_pAmbient);
-		}
-		return(NULL);
 	}
 
 protected:

@@ -8,21 +8,22 @@
 
 //#include "CSSstyle.h"
 
-#define SCROLL_SPEED 3.20f
-#define SCROLL_SPEED_MAX 6.40f
-
 namespace gui
 {
 	namespace dom
 	{
 		IDOMnode* CDOMdocument::createNode(const wchar_t *tag)
 		{
-			return(IDOMnodeTag::createNode(tag));
+			CDOMnode* pNode = (CDOMnode*)IDOMnodeTag::createNode(tag);
+			pNode->setDocument(this);
+			return(pNode);
 		}
 
 		IDOMnode* CDOMdocument::createNode(UINT nid)
 		{
-			return(CDOMnode::createNode(nid));
+			CDOMnode* pNode = (CDOMnode*)CDOMnode::createNode(nid);
+			pNode->setDocument(this);
+			return(pNode);
 		}
 
 		void CDOMdocument::setRootNode(IDOMnode *pNode)
@@ -267,7 +268,7 @@ namespace gui
 			else
 			{
 				fora(i, *pChildren)
-				{
+		{
 					loadStyles((*pChildren)[i]);
 				}
 			}
@@ -908,11 +909,30 @@ namespace gui
 					--i; --l;
 				}
 			}
+
+			if(m_pCapturedNode == pNode)
+			{
+				m_pCapturedNode = NULL;
+			}
+
+			if(getFocus() == pNode)
+			{
+				requestFocus(getElementsByTag(L"body")[0][0]);
+			}
+		}
+
+		void CDOMdocument::forgotRenderFrame(render::IRenderFrame *pRF)
+		{
+			int idx = m_ReflowQueue.indexOf(pRF);
+			if(idx >= 0)
+			{
+				m_ReflowQueue.erase(idx);
+		}
 		}
 
 		bool CDOMdocument::isDirty()
 		{
-			return(m_isDirty);
+			return(m_isDirty || m_uForceDirty != 0);
 		}
 
 		void CDOMdocument::markDirty()
@@ -937,6 +957,45 @@ namespace gui
 			}
 			while(next < html.length());
 			return(m_cTmpNodes);
+		}
+
+		void CDOMdocument::forceDirty(bool set)
+		{
+			if(set)
+			{
+				++m_uForceDirty;
+			}
+			else
+			{
+				assert(m_uForceDirty);
+				if(m_uForceDirty)
+				{
+					--m_uForceDirty;
+				}
+			}
+		}
+
+		void CDOMdocument::setCapture(IDOMnode *pNode)
+		{
+			if(pNode != NULL)
+			{
+				m_pCapturedNode = (CDOMnode*)pNode;
+				TODO("set window system capture");
+			}
+			else
+			{
+				releaseCapture();
+			}
+		}
+		void CDOMdocument::releaseCapture()
+		{
+			m_pCapturedNode = NULL;
+			TODO("release window system capture");
+		}
+
+		CDOMnode* CDOMdocument::getCapture()
+		{
+			return(m_pCapturedNode);
 		}
 
 		void CDOMdocument::cleanup()
@@ -1003,6 +1062,8 @@ namespace gui
 				GEVT_DPTC(GUI_EVENT_TYPE_MOUSEWHEELDOWN, L"mousewheeldown");
 				GEVT_DPTC(GUI_EVENT_TYPE_FOCUS, L"focus");
 				GEVT_DPTC(GUI_EVENT_TYPE_BLUR, L"blur");
+				GEVT_DPTC(GUI_EVENT_TYPE_CHANGE, L"change");
+				GEVT_DPTC(GUI_EVENT_TYPE_LAYOUT, L"layout");
 			}
 			if(cmd.length())
 			{
@@ -1018,7 +1079,7 @@ namespace gui
 			if(ev.propagate && m_pParent)
 			{
 				ev.currentTarget = m_pParent;
-				m_pParent->dispatchClientEvent(ev, NULL);
+				m_pParent->dispatchClientEvent(ev, preventDefault);
 			}
 		}
 
@@ -1027,13 +1088,32 @@ namespace gui
 			//GetGUI()->
 		//}
 
-		void CDOMnode::updateStyles()
+		void CDOMnode::setRenderFrame(render::IRenderFrame *prf)
+		{
+			m_pRenderFrame = prf;
+			if(prf == NULL && m_pDocument->getFocus() == this)
+			{
+				static UINT nBODY = CDOMnode::getNodeIdByName(L"body");
+
+				m_pDocument->requestFocus(m_pDocument->getElementsByTag(nBODY)[0][0]);
+			}
+		}
+
+		void CDOMnode::updateStyles(bool forceUpdate)
 		{
 			m_pDocument->updateStyleSubtree(this);
+			if(forceUpdate)
+			{
+				m_pDocument->updateStyles(0.0f);
+		}
 		}
 
 		void CDOMnode::dispatchEvent(IEvent & ev)
 		{
+			if(pseudoclassExists(css::ICSSrule::PSEUDOCLASS_DISABLED))
+			{
+				return;
+			}
 			if(ev.target == this)
 			{
 				dispatchClientEvent(ev, &ev.preventDefault);
@@ -1078,6 +1158,11 @@ namespace gui
 							}
 						}
 
+						IEvent ev2 = ev;
+						ev2.type = GUI_EVENT_TYPE_CHANGE;
+						ev2.target = this;
+						ev2.relatedTarget = NULL;
+						dispatchEvent(ev2);
 					}
 					else
 					{
@@ -1123,7 +1208,7 @@ namespace gui
 			case GUI_EVENT_TYPE_MOUSEWHEELUP:
 				if(m_pRenderFrame->m_iScrollTopMax != 0)
 				{
-					if(m_pRenderFrame->m_iScrollTop != 0)
+					if(m_pRenderFrame->getScrollTop() != 0)
 					{
 						ev.stopPropagation();
 						m_pDocument->markDirty();
@@ -1147,7 +1232,7 @@ namespace gui
 			case GUI_EVENT_TYPE_MOUSEWHEELDOWN:
 				if(m_pRenderFrame->m_iScrollTopMax != 0)
 				{
-					if(m_pRenderFrame->m_iScrollTopMax != m_pRenderFrame->m_iScrollTop)
+					if(m_pRenderFrame->m_iScrollTopMax != m_pRenderFrame->getScrollTop())
 					{
 						ev.stopPropagation();
 						m_pDocument->markDirty();
@@ -1214,28 +1299,29 @@ namespace gui
 				{
 					if(ev.syskey)
 					{
+						bool isShift = CKeyMap::keyState(KEY_SHIFT);
 						switch(ev.key)
 						{
 						case KEY_LEFT:
-							((render::IRenderTextNew*)(((CDOMnode*)m_vChilds[0])->getRenderFrame()))->moveCaretPos(-1);
+							((render::IRenderTextNew*)(((CDOMnode*)m_vChilds[0])->getRenderFrame()))->moveCaretPos(-1, isShift);
 							break;
 						case KEY_RIGHT:
-							((render::IRenderTextNew*)(((CDOMnode*)m_vChilds[0])->getRenderFrame()))->moveCaretPos(1);
+							((render::IRenderTextNew*)(((CDOMnode*)m_vChilds[0])->getRenderFrame()))->moveCaretPos(1, isShift);
 							break;
 
 						case KEY_UP:
-							((render::IRenderTextNew*)(((CDOMnode*)m_vChilds[0])->getRenderFrame()))->moveCaretLine(-1);
+							((render::IRenderTextNew*)(((CDOMnode*)m_vChilds[0])->getRenderFrame()))->moveCaretLine(-1, isShift);
 							break;
 						case KEY_DOWN:
-							((render::IRenderTextNew*)(((CDOMnode*)m_vChilds[0])->getRenderFrame()))->moveCaretLine(1);
+							((render::IRenderTextNew*)(((CDOMnode*)m_vChilds[0])->getRenderFrame()))->moveCaretLine(1, isShift);
 							break;
 
 						case KEY_HOME:
-							((render::IRenderTextNew*)(((CDOMnode*)m_vChilds[0])->getRenderFrame()))->setCaretPos(0);
+							((render::IRenderTextNew*)(((CDOMnode*)m_vChilds[0])->getRenderFrame()))->setCaretPos(0, false, isShift);
 							break;
 
 						case KEY_END:
-							((render::IRenderTextNew*)(((CDOMnode*)m_vChilds[0])->getRenderFrame()))->setCaretPos(((render::IRenderTextNew*)(((CDOMnode*)m_vChilds[0])->getRenderFrame()))->getCaretMaxPos());
+							((render::IRenderTextNew*)(((CDOMnode*)m_vChilds[0])->getRenderFrame()))->setCaretPos(((render::IRenderTextNew*)(((CDOMnode*)m_vChilds[0])->getRenderFrame()))->getCaretMaxPos(), false, isShift);
 							break;
 
 
@@ -1440,11 +1526,14 @@ namespace gui
 
 		void CDOMnode::updateLayout(bool bForce)
 		{
+			if(getRenderFrame())
+			{
 			getDocument()->addReflowItem(getRenderFrame());
 			if(bForce)
 			{
 				getRenderFrame()->m_bHasFixedSize = false;
 			}
+		}
 		}
 		
 #define APPLY_RULE(rule) if(style->rule.isSet()){pNode->m_css.rule = style->rule;}
@@ -1641,6 +1730,11 @@ namespace gui
 				//m_pDocument->IndexSetId(m_iDOMid, this);
 			}
 
+			else if(name == L"onlayout")
+			{
+				m_bWantLayoutEvents = value.length() != 0;
+			}
+
 			m_mAttributes[name] = value;
 		}
 
@@ -1718,6 +1812,9 @@ namespace gui
 				assert(!pInsertBefore && "Implement me!");
 				getDocument()->updateStyleSubtree(pEl);
 				getDocument()->updateStyles(0);
+
+				if(getRenderFrame() && !pEl->getRenderFrame())
+				{
 				render::IRenderFrame * pNewRF;
 				if(pEl->isTextNode())
 				{
@@ -1735,6 +1832,7 @@ namespace gui
 					getDocument()->addReflowItem(pNewRF, true);
 				}
 			}
+		}
 		}
 
 		void CDOMnode::classAdd(const StringW & cls)
@@ -1770,10 +1868,47 @@ namespace gui
 			//@TODO: Implement me
 			return(FALSE);
 		}
+		void CDOMnode::setUserData(void *pData) 
+		{
+			m_pUserData = pData;
+		}
+		void* CDOMnode::getUserData() 
+		{
+			return(m_pUserData);
+		}
 		/*BOOL CDOMnode::ClassExists(UINT cls)
 		{
 
 		}*/
+		bool CDOMnode::wantLayoutEvents()
+		{
+			return(m_bWantLayoutEvents);
+		}
+		void CDOMnode::triggerLayoutEvent()
+		{
+			IEvent ev;
+			ev.type = GUI_EVENT_TYPE_LAYOUT;
+			ev.target = this;
+			dispatchEvent(ev);
+		}
+
+		UINT CDOMnode::getInnerWidth()
+		{
+			if(m_pRenderFrame)
+			{
+				return(m_pRenderFrame->getInnerWidth());
+			}
+			return(0);
+		}
+		UINT CDOMnode::getInnerHeight()
+		{
+			if(m_pRenderFrame)
+			{
+				return(m_pRenderFrame->getInnerHeight());
+			}
+			return(0);
+		}
+
 
 		void CDOMnode::removeChild(IDOMnode * _pEl, bool regen)
 		{

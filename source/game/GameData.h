@@ -10,7 +10,6 @@ See the license in LICENSE
 
 #include "Player.h"
 #include "crosshair.h"
-#include <mtrl/sxmtrl.h>
 #include <gui/guimain.h>
 #include "HUDcontroller.h"
 #include "GameStateManager.h"
@@ -40,7 +39,7 @@ public:
 	CCrosshair * m_pCrosshair;
 
 	void update();
-	void render();
+	void render(IXRenderTarget *pFinalTarget);
 	void renderHUD();
 	void sync();
 

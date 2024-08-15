@@ -2,7 +2,6 @@
 #define _TERRAX_H_
 
 // "/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'" 
-#include <gcore/sxgcore.h>
 #include <xcommon/editor/IXEditorExtension.h>
 #include <xcommon/editor/IXEditorObject.h>
 #include <common/assotiativearray.h>
@@ -84,7 +83,7 @@ struct CTerraXConfig
 
 	X_2D_VIEW m_x2DView[4];
 	float m_fViewportScale[4];
-	ICamera *m_pViewportCamera[4];
+	IXCamera *m_pViewportCamera[4];
 
 	GRID_STEP m_gridStep = GRID_STEP_1M;
 	bool m_bShowGrid = true;
@@ -192,7 +191,7 @@ void XResetLevel();
 bool XSaveLevel(const char *szNewName=NULL, bool bForcePrompt = false);
 void XLoadLevel(const char *szName);
 void XRender3D();
-void XRender2D(X_2D_VIEW view, float fScale, bool preScene, bool bRenderSelection);
+void XRender2D(IXCamera *pCamera, X_2D_VIEW view, float fScale, bool preScene, bool bRenderSelection);
 
 void XFrameRun(float fDeltaTime);
 
@@ -285,6 +284,8 @@ CProxyObject* XGetObjectParent(IXEditorObject *pObject);
 void CheckToolbarButton(int iCmd, BOOL isChecked);
 
 extern IXEngine *g_pEngine;
+
+extern HINSTANCE hInst;
 
 class CCommandMove;
 class CGizmoMoveCallback: public IXEditorGizmoMoveCallback

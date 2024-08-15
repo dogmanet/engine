@@ -11,8 +11,8 @@ See the license in LICENSE
 
 #include <common/Math.h>
 #include <common/Array.h>
-#include <graphix/graphix.h>
-#include <gcore/sxgcore.h>
+#include <xcommon/IXCore.h>
+#include <xcommon/render/IXRender.h>
 #include <light/IXLight.h>
 #include "light.h"
 
@@ -25,7 +25,7 @@ class IXTexture;
 class IBaseShadowMap
 {
 public:
-	virtual void genShadow(IGXTexture2D *pGBufferDepth, IGXTexture2D *pGBufferNormals) = 0;
+	virtual void genShadow(IGXBaseTexture *pGBufferDepth, IGXBaseTexture *pGBufferNormals) = 0;
 };
 
 //##########################################################################
@@ -48,13 +48,14 @@ public:
 
 	static UINT GetMapMemory(UINT uSize);
 
-	void init(IGXDevice *pContext, UINT uSize);
+	void init(IXRender *pRender, UINT uSize);
 
 	void setLight(CXLight *pLight);
-	void process(IXRenderPipeline *pRenderPipeline);
-	void genShadow(IGXTexture2D *pGBufferDepth, IGXTexture2D *pGBufferNormals) override;
+	void process();
+	void genShadow(IGXBaseTexture *pGBufferDepth, IGXBaseTexture *pGBufferNormals) override;
 
 private:
+	IXRender *m_pRender = NULL;
 	IGXDevice *m_pDevice = NULL;
 
 	static IGXDepthStencilSurface *ms_pDepthStencilSurface;
@@ -67,7 +68,7 @@ private:
 
 	static IGXTexture2D *ms_pRandomTexture;
 
-	static void InitDepthStencilSurface(IGXDevice *pContext, UINT uSize);
+	static void InitDepthStencilSurface(IXRender *pRender, UINT uSize);
 	static void ReleaseDepthStencilSurface();
 
 	IGXTexture2D *m_pDepthMap = NULL;
@@ -119,13 +120,14 @@ public:
 
 	static UINT GetMapMemory(UINT uSize);
 
-	void init(IGXDevice *pContext, UINT uSize);
+	void init(IXRender *pRender, UINT uSize);
 
 	void setLight(CXLight *pLight);
-	void process(IXRenderPipeline *pRenderPipeline);
+	void process();
 	void genLPV(bool isDebug = false) override;
 
 private:
+	IXRender *m_pRender = NULL;
 	IGXDevice *m_pDevice = NULL;
 
 	static IGXDepthStencilSurface *ms_pDepthStencilSurface32;
@@ -138,7 +140,7 @@ private:
 	static ID ms_idInjectShader32;
 	static ID ms_idInjectDebugShader32;
 
-	static void InitDepthStencilSurface(IGXDevice *pContext, UINT uSize);
+	static void InitDepthStencilSurface(IXRender *pRender, UINT uSize);
 	static void ReleaseDepthStencilSurface();
 
 	IGXTexture2D *m_pDepthMap32 = NULL;
@@ -192,18 +194,19 @@ public:
 
 	static UINT GetMapMemory(UINT uSize);
 
-	void init(IGXDevice *pContext, UINT uSize);
+	void init(IXRender *pRender, UINT uSize);
 
-	void setObserverCamera(ICamera *pCamera);
+	void setObserverCamera(IXCamera *pCamera);
 	void setLight(CXLight *pLight);
-	void process(IXRenderPipeline *pRenderPipeline);
-	void genShadow(IGXTexture2D *pGBufferDepth, IGXTexture2D *pGBufferNormals) override;
+	void process();
+	void genShadow(IGXBaseTexture *pGBufferDepth, IGXBaseTexture *pGBufferNormals) override;
 
 protected:
 	void updateFrustums();
 private:
+	IXRender *m_pRender = NULL;
 	IGXDevice *m_pDevice = NULL;
-	ICamera *m_pCamera = NULL;
+	IXCamera *m_pCamera = NULL;
 
 	IGXDepthStencilSurface *m_pDepthStencilSurface = NULL;
 
@@ -271,17 +274,18 @@ public:
 
 	static UINT GetMapMemory(UINT uSize);
 
-	void init(IGXDevice *pContext, UINT uSize);
+	void init(IXRender *pRender, UINT uSize);
 
-	void setObserverCamera(ICamera *pCamera);
+	void setObserverCamera(IXCamera *pCamera);
 	void setLight(CXLight *pLight);
-	void process(IXRenderPipeline *pRenderPipeline);
+	void process();
 	void genLPV(bool isDebug = false) override;
 protected:
 	void updateFrustum();
 private:
+	IXRender *m_pRender = NULL;
 	IGXDevice *m_pDevice = NULL;
-	ICamera *m_pCamera = NULL;
+	IXCamera *m_pCamera = NULL;
 
 	IGXDepthStencilSurface *m_pDepthStencilSurface = NULL;
 
@@ -344,13 +348,14 @@ public:
 
 	static UINT GetMapMemory(UINT uSize);
 
-	void init(IGXDevice *pDevice, UINT uSize);
+	void init(IXRender *pRender, UINT uSize);
 
 	void setLight(CXLight *pLight);
-	void process(IXRenderPipeline *pRenderPipeline);
-	void genShadow(IGXTexture2D *pGBufferDepth, IGXTexture2D *pGBufferNormals) override;
+	void process();
+	void genShadow(IGXBaseTexture *pGBufferDepth, IGXBaseTexture *pGBufferNormals) override;
 
 private:
+	IXRender *m_pRender = NULL;
 	IGXDevice *m_pDevice = NULL;
 
 	static IGXDepthStencilSurface *ms_pDepthStencilSurface;
@@ -361,7 +366,7 @@ private:
 	static IGXSamplerState *ms_pSamplerLinearClamp;
 	static IGXSamplerState *ms_pSamplerComparisonLinearClamp;
 
-	static void InitDepthStencilSurface(IGXDevice *pContext, UINT uSize);
+	static void InitDepthStencilSurface(IXRender *pRender, UINT uSize);
 	static void ReleaseDepthStencilSurface();
 
 	IGXTextureCube *m_pDepthMap = NULL;
@@ -431,13 +436,14 @@ public:
 
 	static UINT GetMapMemory(UINT uSize);
 
-	void init(IGXDevice *pDevice, UINT uSize);
+	void init(IXRender *pRender, UINT uSize);
 
 	void setLight(CXLight *pLight);
-	void process(IXRenderPipeline *pRenderPipeline);
+	void process();
 	void genLPV(bool isDebug = false) override;
 
 private:
+	IXRender *m_pRender = NULL;
 	IGXDevice *m_pDevice = NULL;
 
 	static IGXDepthStencilSurface *ms_pDepthStencilSurface32;
@@ -450,7 +456,7 @@ private:
 	static ID ms_idInjectShader32;
 	static ID ms_idInjectDebugShader32;
 
-	static void InitDepthStencilSurface(IGXDevice *pContext, UINT uSize);
+	static void InitDepthStencilSurface(IXRender *pRender, UINT uSize);
 	static void ReleaseDepthStencilSurface();
 
 	IGXTextureCube *m_pDepthMap32 = NULL;

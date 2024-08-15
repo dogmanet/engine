@@ -27,10 +27,10 @@ cbuffer CDataFrame: register(b4)
 {
 	float g_fFrameTime;
 };
-cbuffer CDataScene: register(b3)
+/* cbuffer CDataScene: register(b3)
 {
 	float4 g_vNearFarInvWinSize;
-};
+}; */
 cbuffer CDataCamera: register(b2)
 {
 	// float4x4 mV;

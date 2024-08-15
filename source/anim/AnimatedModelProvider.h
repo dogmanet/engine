@@ -28,7 +28,7 @@ public:
 	void update(float fDT);
 	void sync();
 	void render(CRenderableVisibility *pVisibility = NULL);
-	void computeVisibility(const IXFrustum *pFrustum, CRenderableVisibility *pVisibility, CRenderableVisibility *pReference=NULL);
+	void computeVisibility(const IXFrustum *pFrustum, CRenderableVisibility *pVisibility, UINT bmLayerMask, CRenderableVisibility *pReference=NULL);
 
 	void getLevelSize(const XEventLevelSize *pData);
 

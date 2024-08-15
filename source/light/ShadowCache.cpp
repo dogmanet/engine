@@ -12,9 +12,9 @@ public:
 
 	virtual void onEvent(const XEventCvarChanged *pEvent)
 	{
-		static const float *s_pfRLSMQuality = GET_PCVAR_FLOAT("r_lsm_quality");
-		static const float *s_pfRPSMQuality = GET_PCVAR_FLOAT("r_psm_quality");
-		static const float *s_pfRPSSMQuality = GET_PCVAR_FLOAT("r_pssm_quality");
+		static const float *s_pfRLSMQuality = m_pCore->getConsole()->getPCVarFloat("r_lsm_quality");
+		static const float *s_pfRPSMQuality = m_pCore->getConsole()->getPCVarFloat("r_psm_quality");
+		static const float *s_pfRPSSMQuality = m_pCore->getConsole()->getPCVarFloat("r_pssm_quality");
 		if(pEvent->pCvar == s_pfRLSMQuality 
 			|| pEvent->pCvar == s_pfRPSMQuality
 			|| pEvent->pCvar == s_pfRPSSMQuality
@@ -31,23 +31,26 @@ private:
 
 //##########################################################################
 
-CShadowCache::CShadowCache(IXRenderPipeline *pRenderPipeline, IXMaterialSystem *pMaterialSystem):
-	m_pRenderPipeline(pRenderPipeline),
+CShadowCache::CShadowCache(IXRender *pRender, IXMaterialSystem *pMaterialSystem):
+	m_pRender(pRender),
 	m_pMaterialSystem(pMaterialSystem),
-	m_shadowMaps(m_aFrameLights, m_aReadyMaps, m_pRenderPipeline, LRT_LIGHT),
-	m_shadowCubeMaps(m_aFrameLights, m_aReadyMaps, m_pRenderPipeline, LRT_LIGHT),
-	m_reflectiveShadowMaps(m_aFrameRSMLights, m_aReadyReflectiveMaps, m_pRenderPipeline, LRT_LPV),
-	m_reflectiveShadowCubeMaps(m_aFrameRSMLights, m_aReadyReflectiveMaps, m_pRenderPipeline, LRT_LPV)
+	m_shadowMaps(m_aFrameLights, m_aReadyMaps, m_pRender, LRT_LIGHT),
+	m_shadowCubeMaps(m_aFrameLights, m_aReadyMaps, m_pRender, LRT_LIGHT),
+	m_reflectiveShadowMaps(m_aFrameRSMLights, m_aReadyReflectiveMaps, m_pRender, LRT_LPV),
+	m_reflectiveShadowCubeMaps(m_aFrameRSMLights, m_aReadyReflectiveMaps, m_pRender, LRT_LPV)
 {
-	m_pShadowSizeCvarListener = new CRShadowSizeCvarListener(Core_GetIXCore(), this);
-	Core_GetIXCore()->getEventChannel<XEventCvarChanged>(EVENT_CVAR_CHANGED_GUID)->addListener(m_pShadowSizeCvarListener);
+	IXCore *pCore = Core_GetIXCore();
+	m_pShadowSizeCvarListener = new CRShadowSizeCvarListener(pCore, this);
+	pCore->getEventChannel<XEventCvarChanged>(EVENT_CVAR_CHANGED_GUID)->addListener(m_pShadowSizeCvarListener);
 
-	Core_0RegisterCVarFloat("r_lsm_quality", 0.5f, "Коэфициент размера карты глубины для направленных источников света [0.5,4] (низкое, высокое)", FCVAR_NOTIFY);
-	Core_0RegisterCVarFloat("r_psm_quality", 0.5f, "Коэфициент размера карты глубины для точечных источников света [0.5,4] (низкое, высокое)", FCVAR_NOTIFY);
-	Core_0RegisterCVarFloat("r_pssm_quality", 0.5f, "Коэфициент размера карты глубины для солнца [0.5,4] (низкое, высокое)", FCVAR_NOTIFY);
-	Core_0RegisterCVarFloat("r_sm_max_memory", 0.15f, "Максимальный процент от доступной видеопамяти, отводимый под кэш теней");
-	Core_0RegisterCVarInt("r_pssm_splits", 6, "Количество PSSM сплитов. Допустимые значения от 1 до 6");
-	Core_0RegisterCVarFloat("r_pssm_max_distance", 800.0f, "Дальность прорисовки PSSM");
+	IXConsole *pConsole = pCore->getConsole();
+
+	pConsole->registerCVar("r_lsm_quality", 0.5f, "Коэфициент размера карты глубины для направленных источников света [0.5,4] (низкое, высокое)", FCVAR_NOTIFY);
+	pConsole->registerCVar("r_psm_quality", 0.5f, "Коэфициент размера карты глубины для точечных источников света [0.5,4] (низкое, высокое)", FCVAR_NOTIFY);
+	pConsole->registerCVar("r_pssm_quality", 0.5f, "Коэфициент размера карты глубины для солнца [0.5,4] (низкое, высокое)", FCVAR_NOTIFY);
+	pConsole->registerCVar("r_sm_max_memory", 0.15f, "Максимальный процент от доступной видеопамяти, отводимый под кэш теней");
+	pConsole->registerCVar("r_pssm_splits", 6, "Количество PSSM сплитов. Допустимые значения от 1 до 6");
+	pConsole->registerCVar("r_pssm_max_distance", 800.0f, "Дальность прорисовки PSSM");
 	
 	const char *aszGSRequiredParams[] = {
 		"vPosition",
@@ -76,10 +79,10 @@ CShadowCache::CShadowCache(IXRenderPipeline *pRenderPipeline, IXMaterialSystem *
 	GXRasterizerDesc rasterizerDesc;
 	//rasterizerDesc.cullMode = GXCULL_FRONT;
 	//rasterizerDesc.useConservativeRasterization = true;
-	m_pRasterizerConservative = m_pRenderPipeline->getDevice()->createRasterizerState(&rasterizerDesc);
+	m_pRasterizerConservative = m_pRender->getDevice()->createRasterizerState(&rasterizerDesc);
 
 	rasterizerDesc.cullMode = GXCULL_FRONT;
-	m_pRasterizerCullFront = m_pRenderPipeline->getDevice()->createRasterizerState(&rasterizerDesc);
+	m_pRasterizerCullFront = m_pRender->getDevice()->createRasterizerState(&rasterizerDesc);
 }
 CShadowCache::~CShadowCache()
 {
@@ -101,7 +104,7 @@ void CShadowCache::setLightsCount(UINT uPoints, UINT uSpots, bool hasGlobal)
 	const UINT uPointShadowmapSize = (UINT)(512 * *s_pfRPSMQuality);
 	const UINT uSunShadowmapSize = (UINT)(512 * *s_pfRPSSMQuality);
 
-	size_t stMaxMem = (size_t)(m_pRenderPipeline->getDevice()->getAdapterDesc()->sizeTotalMemory * *s_pfRSMMaxMemory);
+	size_t stMaxMem = (size_t)(m_pRender->getDevice()->getAdapterDesc()->sizeTotalMemory * *s_pfRSMMaxMemory);
 
 	size_t stPointsMemory = uPoints * CShadowCubeMap::GetMapMemory(uPointShadowmapSize);
 	size_t stSpotsMemory = uSpots * CShadowMap::GetMapMemory(uSpotShadowmapSize);
@@ -145,7 +148,7 @@ void CShadowCache::setLightsCount(UINT uPoints, UINT uSpots, bool hasGlobal)
 		if(!m_pShadowPSSM)
 		{
 			m_pShadowPSSM = new ShadowPSSM();
-			m_pShadowPSSM->map.init(m_pRenderPipeline->getDevice(), uSunShadowmapSize);
+			m_pShadowPSSM->map.init(m_pRender, uSunShadowmapSize);
 		}
 	}
 	else
@@ -162,7 +165,7 @@ void CShadowCache::setRSMLightsCount(UINT uPoints, UINT uSpots, bool hasGlobal)
 	const UINT uSunShadowmapSize = (UINT)(RSM_SUN_SIZE);
 
 	//size_t stMaxMem = (size_t)(m_pRenderPipeline->getDevice()->getAdapterDesc()->sizeTotalMemory * *s_pfRSMMaxMemory);
-	size_t stMaxMem = (size_t)(m_pRenderPipeline->getDevice()->getAdapterDesc()->sizeTotalMemory * 0.3f);
+	size_t stMaxMem = (size_t)(m_pRender->getDevice()->getAdapterDesc()->sizeTotalMemory * 0.3f);
 
 	size_t stPointsMemory = uPoints * CReflectiveShadowCubeMap::GetMapMemory(uPointShadowmapSize);
 	size_t stSpotsMemory = uSpots * CReflectiveShadowMap::GetMapMemory(uSpotShadowmapSize);
@@ -206,7 +209,7 @@ void CShadowCache::setRSMLightsCount(UINT uPoints, UINT uSpots, bool hasGlobal)
 		if(!m_pReflectiveShadowSun)
 		{
 			m_pReflectiveShadowSun = new ReflectiveShadowSun();
-			m_pReflectiveShadowSun->map.init(m_pRenderPipeline->getDevice(), uSunShadowmapSize);
+			m_pReflectiveShadowSun->map.init(m_pRender, uSunShadowmapSize);
 		}
 	}
 	else
@@ -247,11 +250,7 @@ UINT CShadowCache::processNextBunch()
 
 	static const int *r_pssm_splits = GET_PCVAR_INT("r_pssm_splits");
 
-	SMMATRIX mOldView, mOldProj;
-	Core_RMatrixGet(G_RI_MATRIX_VIEW, &mOldView);
-	Core_RMatrixGet(G_RI_MATRIX_PROJECTION, &mOldProj);
-
-	m_pRenderPipeline->getDevice()->getThreadContext()->setDepthStencilState(NULL);
+	m_pRender->getDevice()->getThreadContext()->setDepthStencilState(NULL);
 	m_pMaterialSystem->setCullMode(GXCULL_FRONT);
 //	m_pRenderPipeline->getDevice()->getThreadContext()->setRasterizerState(m_pRasterizerCullFront);
 
@@ -340,7 +339,7 @@ UINT CShadowCache::processNextBunch()
 		{
 			m_pShadowPSSM->map.setObserverCamera(m_pCamera);
 			m_pShadowPSSM->map.setLight(m_pShadowPSSM->pLight);
-			m_pShadowPSSM->map.process(m_pRenderPipeline);
+			m_pShadowPSSM->map.process();
 			m_pShadowPSSM->isDirty = false;
 		}
 
@@ -355,9 +354,6 @@ UINT CShadowCache::processNextBunch()
 
 	m_pMaterialSystem->bindGS(NULL);
 
-	Core_RMatrixSet(G_RI_MATRIX_VIEW, &mOldView);
-	Core_RMatrixSet(G_RI_MATRIX_PROJECTION, &mOldProj);
-
 	m_pMaterialSystem->setCullMode(GXCULL_BACK);
 
 	return(m_aReadyMaps.size());
@@ -370,11 +366,7 @@ UINT CShadowCache::processNextRSMBunch()
 		return(0);
 	}
 
-	SMMATRIX mOldView, mOldProj;
-	Core_RMatrixGet(G_RI_MATRIX_VIEW, &mOldView);
-	Core_RMatrixGet(G_RI_MATRIX_PROJECTION, &mOldProj);
-
-	m_pRenderPipeline->getDevice()->getThreadContext()->setDepthStencilState(NULL);
+	m_pRender->getDevice()->getThreadContext()->setDepthStencilState(NULL);
 	m_pMaterialSystem->setCullMode(GXCULL_BACK);
 //	m_pRenderPipeline->getDevice()->getThreadContext()->setRasterizerState(m_pRasterizerConservative);
 
@@ -463,7 +455,7 @@ UINT CShadowCache::processNextRSMBunch()
 		{
 			m_pReflectiveShadowSun->map.setObserverCamera(m_pCamera);
 			m_pReflectiveShadowSun->map.setLight(m_pReflectiveShadowSun->pLight);
-			m_pReflectiveShadowSun->map.process(m_pRenderPipeline);
+			m_pReflectiveShadowSun->map.process();
 			m_pReflectiveShadowSun->isDirty = false;
 		}
 
@@ -477,9 +469,6 @@ UINT CShadowCache::processNextRSMBunch()
 	m_reflectiveShadowCubeMaps.processTheRest();
 
 	m_pMaterialSystem->bindGS(NULL);
-
-	Core_RMatrixSet(G_RI_MATRIX_VIEW, &mOldView);
-	Core_RMatrixSet(G_RI_MATRIX_PROJECTION, &mOldProj);
 
 	return(m_aReadyReflectiveMaps.size());
 }
@@ -508,7 +497,7 @@ IBaseReflectiveShadowMap* CShadowCache::getRSMShadow(ID id)
 	return(m_aReadyReflectiveMaps[id].pShadowMap);
 }
 
-void CShadowCache::setObserverCamera(ICamera *pCamera)
+void CShadowCache::setObserverCamera(IXCamera *pCamera)
 {
 	m_pCamera = pCamera;
 }

@@ -17,7 +17,7 @@
 #define EXTERN_C extern "C"
 
 class IXEngine;
-class ICamera;
+class IXCamera;
 
 class IXEngineCallback
 {
@@ -26,7 +26,7 @@ public:
 
 	virtual bool XMETHODCALLTYPE processWindowMessages() = 0;
 
-	virtual ICamera* XMETHODCALLTYPE getCameraForFrame() = 0;
+	virtual IXCamera* XMETHODCALLTYPE getCameraForFrame() = 0;
 };
 
 class IXEngine: public IXUnknown

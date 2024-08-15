@@ -43,9 +43,9 @@ static int g_iNumSam = 8;
 float4 main(VSO_ResPos IN):COLOR0
 {
 	float fDepth = g_txDepth.Sample(g_sPointClamp, IN.vTexUV).r;
-	// float3 vRndVec = normalize(2.0 * g_txNoise.Sample(g_sLinearWrap, IN.vTexUV * 0.03125 / g_vNearFarInvWinSize.zw).bgr - 1.0);
-	// float3 vRndVec = normalize(2.0 * g_txNoise.Sample(g_sLinearWrap, IN.vTexUV * 0.03125 / g_vNearFarInvWinSize.zw).bgr - 1.0);
-	float3 vRndVec = normalize(2.0 * g_txNoise.Sample(g_sLinearWrap, IN.vTexUV * 0.25 / g_vNearFarInvWinSize.zw).bgr - 1.0);
+	// float3 vRndVec = normalize(2.0 * g_txNoise.Sample(g_sLinearWrap, IN.vTexUV * 0.03125 / g_vNearFar.zw).bgr - 1.0);
+	// float3 vRndVec = normalize(2.0 * g_txNoise.Sample(g_sLinearWrap, IN.vTexUV * 0.03125 / g_vNearFar.zw).bgr - 1.0);
+	float3 vRndVec = normalize(2.0 * g_txNoise.Sample(g_sLinearWrap, IN.vTexUV * 0.25 / g_vNearFar.zw).bgr - 1.0);
 	
 	if(fDepth >= 1.0)
 	{

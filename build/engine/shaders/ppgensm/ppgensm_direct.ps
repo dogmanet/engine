@@ -85,8 +85,8 @@ float4 main(VSO_ResPos IN, float fThickness):COLOR0
 	float fDepthLightX = g_txDepthShadow.Sample(g_sPointClamp, vTexCoord.xy + float2(vPixelMapSizeBias.x, 0)).r;
 	float fDepthLightY = g_txDepthShadow.Sample(g_sPointClamp, vTexCoord.xy + float2(0, vPixelMapSizeBias.x)).r;
 	
-	float ln = g_vNearFarInvWinSize.x;
-	float lf = g_vNearFarInvWinSize.y;
+	float ln = g_vObserverNearFar.x;
+	float lf = g_vObserverNearFar.y;
 	
 	float fScaleFactor = min(1.0 / (cosTheta * cosTheta), 100);
 	// float fScaleFactor = min(1.0 / cosTheta, 100);

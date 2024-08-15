@@ -33,7 +33,7 @@ void CRenderableVisibility::setOcclusionCuller(IXOcclusionCuller *pOcclusionCull
 	}
 }
 
-void CRenderableVisibility::updateForCamera(ICamera *pCamera, const IXRenderableVisibility *pReference)
+void CRenderableVisibility::updateForCamera(IXCamera *pCamera, const IXRenderableVisibility *pReference)
 {
 	XPROFILE_FUNCTION();
 	CRenderableVisibility *pRef = NULL;
@@ -52,7 +52,7 @@ void CRenderableVisibility::updateForCamera(ICamera *pCamera, const IXRenderable
 	}
 }
 
-void CRenderableVisibility::updateForFrustum(const IXFrustum *pFrustum, const IXRenderableVisibility *pReference)
+void CRenderableVisibility::updateForFrustum(const IXFrustum *pFrustum, UINT bmLayers, const IXRenderableVisibility *pReference)
 {
 	CRenderableVisibility *pRef = NULL;
 	if(pReference)
@@ -65,7 +65,7 @@ void CRenderableVisibility::updateForFrustum(const IXFrustum *pFrustum, const IX
 	{
 		if(m_ppVisibilities[i])
 		{
-			m_ppVisibilities[i]->updateForFrustum(pFrustum, pRef ? pRef->getVisibility(i) : NULL);
+			m_ppVisibilities[i]->updateForFrustum(pFrustum, bmLayers, pRef ? pRef->getVisibility(i) : NULL);
 		}
 	}
 }

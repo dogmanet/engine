@@ -4,6 +4,8 @@
 #	include <dlfcn.h>
 #endif
 
+typedef IXUnknown* (XMETHODCALLTYPE IXPlugin::*IXPLUGIN_GET_INTERFACE)(const XGUID &guid);
+
 CPluginManager::~CPluginManager()
 {
 	for(UINT i = 0, l = m_aPlugins.size(); i < l; ++i)
@@ -46,14 +48,20 @@ IXPlugin *CPluginManager::loadPlugin(const char *szPath)
 		IXPlugin *pPlugin = pfnXPluginMain(m_aPlugins.size());
 		if(pPlugin)
 		{
-			if(pPlugin->getVersion() == IXPLUGIN_VERSION)
+			UINT uVersion = pPlugin->getVersion();
+			if(uVersion == IXPLUGIN_VERSION || uVersion == 1)
 			{
+				//char tmp[128];
 				UINT uIFaceCount = pPlugin->getInterfaceCount();
 				_iface iface;
 				iface.pPlugin = pPlugin;
+				iface.uPluginVersion = uVersion;
 				for(UINT i = 0; i < uIFaceCount; ++i)
 				{
+					iface.uIFaceIndex = i;
 					m_maIFaces[*pPlugin->getInterfaceGUID(i)].push_back(iface);
+					//XGUIDToSting(*pPlugin->getInterfaceGUID(i), tmp, sizeof(tmp));
+					//LogInfo("Registered iface %s\n", tmp);
 				}
 
 				m_aPlugins.push_back(pPlugin);
@@ -87,11 +95,21 @@ IXUnknown *CPluginManager::getInterface(const XGUID &guid, UINT uStartFrom)
 		{
 			return(NULL);
 		}
-		if(!arr[uStartFrom].pIFace)
+		_iface &iface = arr[uStartFrom];
+		if(!iface.pIFace)
 		{
-			arr[uStartFrom].pIFace = arr[uStartFrom].pPlugin->getInterface(guid);
+			if(iface.uPluginVersion == 1)
+			{
+				IXPLUGIN_GET_INTERFACE pfnGetInterface = (IXPLUGIN_GET_INTERFACE)&IXPlugin::getInterface;
+
+				iface.pIFace = (iface.pPlugin->*pfnGetInterface)(guid);
+			}
+			else
+			{
+				iface.pPlugin->getInterface(iface.uIFaceIndex, (void**)&iface.pIFace);
+			}
 		}
-		return(arr[uStartFrom].pIFace);
+		return(iface.pIFace);
 	}
 	return(NULL);
 }

@@ -92,6 +92,27 @@ public:
 
 //##########################################################################
 
+class IXEditorResourceBrowserCallback
+{
+public:
+	virtual void XMETHODCALLTYPE onSelected(const char *szFile) = 0;
+	virtual void XMETHODCALLTYPE onCancelled() = 0;
+};
+
+//--------------------------------------------------------------------------
+
+class IXEditorResourceBrowser: public IXUnknown
+{
+public:
+	virtual UINT XMETHODCALLTYPE getResourceTypeCount() = 0;
+	virtual const char* XMETHODCALLTYPE getResourceType(UINT uId) = 0;
+
+	virtual void XMETHODCALLTYPE browse(const char *szType, const char *szOldValue, IXEditorResourceBrowserCallback *pCallback) = 0;
+	virtual void XMETHODCALLTYPE cancel() = 0;
+};
+
+//##########################################################################
+
 class IXEditorExtension: public IXUnknown
 {
 public:
@@ -105,6 +126,9 @@ public:
 	virtual bool XMETHODCALLTYPE getTool(UINT uId, IXEditorTool **ppOut) = 0;
 
 	virtual void XMETHODCALLTYPE render(bool is3D) = 0;
+
+	virtual UINT XMETHODCALLTYPE getResourceBrowserCount() = 0;
+	virtual bool XMETHODCALLTYPE getResourceBrowser(UINT uId, IXEditorResourceBrowser **ppOut) = 0;
 };
 
 #endif

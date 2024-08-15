@@ -4,7 +4,7 @@
 #include <gdefines.h>
 #include <graphix/graphix.h>
 #include <mtrl/IXMaterialSystem.h>
-#include "IXRenderPipeline.h"
+#include "render/IXRender.h"
 #include "render/IXFrustum.h"
 #include "render/IXOcclusionCuller.h"
 
@@ -12,9 +12,7 @@
 #define IXRENDERABLE_GUID DEFINE_XGUID(0xfdd30038, 0x7d32, 0x4ec6, 0x91, 0x1f, 0x63, 0x53, 0x76, 0xb1, 0x45, 0xd)
 #define IXRENDERABLE_VERSION 2
 
-DEFINE_ENUM_FLAG_OPERATORS(X_RENDER_STAGE);
-
-class ICamera;
+class IXCamera;
 class IXFrustum;
 
 //! Данные о видимости для конкретной системы
@@ -27,30 +25,21 @@ public:
 	virtual void setOcclusionCuller(IXOcclusionCuller *pOcclusionCuller) = 0;
 
 	//! Выполнение проверки видимости для заданной камеры. Если pReference задан - проверка ограничивается только уже рассчитанным множеством
-	virtual void updateForCamera(ICamera *pCamera, const IXRenderableVisibility *pReference = NULL) = 0;
+	virtual void updateForCamera(IXCamera *pCamera, const IXRenderableVisibility *pReference = NULL) = 0;
 
 	//! Выполнение проверки видимости для заданного фрустума. Если pReference задан - проверка ограничивается только уже рассчитанным множеством
-	virtual void updateForFrustum(const IXFrustum *pFrustum, const IXRenderableVisibility *pReference = NULL) = 0;
+	virtual void updateForFrustum(const IXFrustum *pFrustum, UINT bmLayers, const IXRenderableVisibility *pReference = NULL) = 0;
 
 	/*! Выполнение проверки видимости для заданной камеры в режиме оптимизации для многопоточности. 
 	    Возвращает ID задачи из менеджера задач для отслеживания завершения внутренних задач
 	*/
-//	virtual ID updateForCameraThreaded(ICamera *pCamera) = 0;
+//	virtual ID updateForCameraThreaded(IXCamera *pCamera) = 0;
 
 	//! Добввление к текущему набору видимости другого набора
 	virtual void append(const IXRenderableVisibility *pOther) = 0;
 
 	//! Вычитание из текущего набора видимости другого набора
 	virtual void substract(const IXRenderableVisibility *pOther) = 0;
-};
-
-struct XTransparentObject
-{
-	bool hasPSP;
-	SMPLANE psp;
-	float3 vMin;
-	float3 vMax;
-	IXMaterial *pMaterial;
 };
 
 class IXRenderable: public IXUnknown
@@ -72,7 +61,7 @@ public:
 	virtual void XMETHODCALLTYPE renderTransparentObject(_in IXRenderableVisibility *pVisibility, _in UINT uIndex, _in UINT uSplitPlanes) = 0;
 	//! @}
 
-	virtual void XMETHODCALLTYPE startup(_in IGXDevice *pDevice, _in IXMaterialSystem *pMaterialSystem) = 0;
+	virtual void XMETHODCALLTYPE startup(_in IXRender *pRender, _in IXMaterialSystem *pMaterialSystem) = 0;
 	virtual void XMETHODCALLTYPE shutdown() = 0;
 
 	//! Создает новый объект просчета видимости для системы

@@ -3,7 +3,7 @@ XMaterial MainGBuffer(PSI_XMaterial IN)
 {
 	XMaterial OUT = XMATERIAL_LOAD_DEFAULTS();
 	
-	float4 fColor = g_txBase.Sample(g_sScene, IN.vTexUV);
+	float4 fColor = g_txBase.Sample(g_sScene, IN.vTexUV) * IN.vColor;
 	// float4 fColor = IN.vPos;
 #ifdef HAS_ALPHATEST
 	clip(fColor.a - g_xMaterialConstants.pbr_alphatest_threshold);
@@ -51,16 +51,16 @@ XMaterial MainIllimination(PSI_XMaterial IN)
 	float4 fColor = (float4)0;
 	
 #ifdef HAS_ALPHATEST
-	fColor = g_txBase.Sample(g_sScene, IN.vTexUV);
+	fColor = g_txBase.Sample(g_sScene, IN.vTexUV) * IN.vColor;
 	clip(fColor.a - g_xMaterialConstants.pbr_alphatest_threshold);
 	// clip(fColor.a - 0.03);
 #endif
 
 #ifdef HAS_EMISSIVE_MAP
-	fColor = g_txEmissive.Sample(g_sScene, IN.vTexUV);
+	fColor = g_txEmissive.Sample(g_sScene, IN.vTexUV) * IN.vColor;
 #else
 #ifndef HAS_ALPHATEST
-	fColor = g_txBase.Sample(g_sScene, IN.vTexUV);
+	fColor = g_txBase.Sample(g_sScene, IN.vTexUV) * IN.vColor;
 #endif
 #endif
 
@@ -84,7 +84,7 @@ XMaterial MainShadow(PSI_XMaterial IN)
 {
 	XMaterial OUT = XMATERIAL_LOAD_DEFAULTS();
 	
-	float4 fColor = g_txBase.Sample(g_sScene, IN.vTexUV);
+	float4 fColor = g_txBase.Sample(g_sScene, IN.vTexUV) * IN.vColor;
 	// float4 fColor = IN.vPos;
 #ifdef HAS_ALPHATEST
 	clip(fColor.a - g_xMaterialConstants.pbr_alphatest_threshold);

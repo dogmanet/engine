@@ -41,13 +41,13 @@ enum X_2D_VIEW
 #define IXEDITOR_GUID DEFINE_XGUID(0x84ecf1fc, 0x4c03, 0x4eb9, 0xbc, 0x39, 0xd9, 0x91, 0xb8, 0x3f, 0x73, 0xba)
 #define IXEDITOR_VERSION 1
 
-class ICamera;
+class IXCamera;
 class IXEditorObject;
 class IXEditorCommand;
 class IXEditor: public IXUnknown
 {
 public:
-	virtual void XMETHODCALLTYPE getCameraForView(X_WINDOW_POS winPos, ICamera **ppCamera) = 0;
+	virtual void XMETHODCALLTYPE getCameraForView(X_WINDOW_POS winPos, IXCamera **ppCamera) = 0;
 
 	virtual void XMETHODCALLTYPE newGizmoHandle(IXEditorGizmoHandle **ppOut) = 0;
 	virtual void XMETHODCALLTYPE newGizmoRadius(IXEditorGizmoRadius **ppOut) = 0;

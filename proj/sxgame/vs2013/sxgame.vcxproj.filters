@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Source Files">
@@ -255,6 +255,12 @@
     <ClCompile Include="..\..\..\source\game\PropStatic.cpp">
       <Filter>Source Files\ents\props</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\source\game\Editable.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\game\EditorObject.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\source\game\TriggerHurt.cpp">
       <Filter>Source Files\ents\triggers</Filter>
     </ClCompile>
@@ -332,6 +338,15 @@
     </ClCompile>
     <ClCompile Include="..\..\..\source\game\PointChangelevel.cpp">
       <Filter>Source Files\ents\point</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\game\InfoParticlePlayer.cpp">
+      <Filter>Source Files\ents\info</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\game\UICalcContainer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\game\UIDemoContainer.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -488,6 +503,12 @@
     <ClInclude Include="..\..\..\source\game\PropStatic.h">
       <Filter>Header Files\ents\props</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\source\game\Editable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\game\EditorObject.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\..\source\game\TriggerHurt.h">
       <Filter>Header Files\ents\triggers</Filter>
     </ClInclude>
@@ -574,6 +595,15 @@
     </ClInclude>
     <ClInclude Include="..\..\..\source\game\PointChangelevel.h">
       <Filter>Header Files\ents\point</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\game\InfoParticlePlayer.h">
+      <Filter>Header Files\ents\info</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\game\UICalcContainer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\game\UIDemoContainer.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

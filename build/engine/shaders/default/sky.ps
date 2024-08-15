@@ -14,7 +14,7 @@ XMaterial MainGBuffer(PSI_XMaterial IN)
 	OUT.vBaseColor = (float3)0.0f;
 	OUT.fLightCoeff = 0.0f;
 	OUT.vNormal = -IN.vTexUV;
-	OUT.fDepth = g_vNearFarInvWinSize.y - g_vNearFarInvWinSize.x;
+	OUT.fDepth = g_vNearFar.y - g_vNearFar.x;
 	return(OUT);
 }
 #endif

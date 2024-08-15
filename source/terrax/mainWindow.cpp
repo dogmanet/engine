@@ -19,8 +19,7 @@
 
 #include <skyxengine.h>
 #include <core/sxcore.h>
-#include <gcore/sxgcore.h>
-#include <render/sxrender.h>
+#include <xcommon/render/IXRender.h>
 #include <input/sxinput.h>
 //#include <sxguiwinapi/sxgui.h>
 //#include <level/sxlevel.h>
@@ -50,6 +49,8 @@
 char g_szClipboardFile[MAX_PATH + sizeof(CLIPBOARD_FILE)];
 
 #include <gui/guimain.h>
+
+#include "TextureWindow.h"
 
 extern Array<IXEditorObject*> g_pLevelObjects;
 extern AssotiativeArray<AAString, IXEditable*> g_mEditableSystems;
@@ -260,6 +261,8 @@ void CMatBrowserCallback::onSelected(const char *szName)
 		m_pMaterialSystem->loadTexture(szTexture, &m_pTex);
 	}
 
+	SetWindowTextW(g_hCurMatWnd, szTexture ? CMB2WC(szTexture) : L"");
+
 	mem_release(pIter);
 
 	if(m_pTex)
@@ -379,6 +382,11 @@ ATOM XRegisterClass(HINSTANCE hInstance)
 	wcex.lpszClassName = RENDER_WINDOW_CLASS;
 
 	if(!RegisterClassEx(&wcex))
+	{
+		return(FALSE);
+	}
+
+	if(!CTextureWindow::RegisterWindowClass(hInstance))
 	{
 		return(FALSE);
 	}
@@ -1061,7 +1069,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			//SetWindowLongPtr(g_hComboCurrentMatWnd, GWLP_WNDPROC, (LONG_PTR)ClassesComboWndProc);
 		}
 
-		g_hCurMatWnd = CreateWindowExA(WS_EX_CLIENTEDGE, RENDER_NONINTERACTIVE_WINDOW_CLASS, "", WS_CHILD | WS_VISIBLE | SS_SUNKEN, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15 + 25, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), hWnd, NULL, hInst, NULL);
+		g_hCurMatWnd = CreateWindowExA(WS_EX_CLIENTEDGE, WC_TEXTURE_VIEWPORT, "", WS_CHILD | WS_VISIBLE | SS_SUNKEN, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15 + 25, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), hWnd, NULL, hInst, NULL);
 		if(g_hCurMatWnd)
 		{
 			ShowWindow(g_hCurMatWnd, SW_SHOW);
@@ -1297,7 +1305,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 			RECT rcTopLeft;
 			GetClientRect(g_hTopLeftWnd, &rcTopLeft);
-			g_pEngine->getCore()->getConsole()->execCommand2("r_win_width %d\nr_win_height %d", rcTopLeft.right - rcTopLeft.left, rcTopLeft.bottom - rcTopLeft.top);
+
+			if(rcTopLeft.right - rcTopLeft.left > 0 && rcTopLeft.bottom - rcTopLeft.top > 0)
+			{
+				g_pEngine->getCore()->getConsole()->execCommand2("r_win_width %d\nr_win_height %d", rcTopLeft.right - rcTopLeft.left, rcTopLeft.bottom - rcTopLeft.top);
+			}
 		}
 
 		SendMessage(g_hStatusWnd, WM_SIZE, wParam, lParam);
@@ -1681,7 +1693,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				float3 vCenterPos = (g_xState.vSelectionBoundMax + g_xState.vSelectionBoundMin) * 0.5f;
 				for(UINT i = 1; i < 4; ++i)
 				{
-					ICamera *pCamera = g_xConfig.m_pViewportCamera[i];
+					IXCamera *pCamera = g_xConfig.m_pViewportCamera[i];
 					float3 vCamPos = pCamera->getPosition();
 
 					switch(g_xConfig.m_x2DView[i])
@@ -1860,7 +1872,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 		case ID_TOOLS_NEWMATERIAL:
 			{
-				IXMaterialSystem *pMS = (IXMaterialSystem*)Core_GetIXCore()->getPluginManager()->getInterface(IXMATERIALSYSTEM_GUID);
+				IXMaterialSystem *pMS = (IXMaterialSystem*)g_pEngine->getCore()->getPluginManager()->getInterface(IXMATERIALSYSTEM_GUID);
 				char tmp[1024];
 				tmp[0] = 0;
 				int iMaxLen = sizeof(tmp);
@@ -1870,7 +1882,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					if(pMS->testMaterialName(tmp))
 					{
 						pMS->loadMaterial(tmp, &pMat);
-						new CMaterialEditor(hInst, g_hWndMain, pMat);
+						new CMaterialEditor(hInst, g_hWndMain, g_pEngine->getCore(), pMat);
 						break;
 					}
 					else
@@ -2271,7 +2283,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 		xPos = DivDpi(GET_X_LPARAM(lParam), g_uWndMainDpi);
 		yPos = DivDpi(GET_Y_LPARAM(lParam), g_uWndMainDpi);
-		
+
 		GetClientRect(hWnd, &rect);
 		DivDpiRect(&rect, g_uWndMainDpi);
 
@@ -2378,7 +2390,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 		BOOL isLeft = (pt.x < rect.left + MulDpi(iLeftWidth, g_uWndMainDpi)),
 			isTop = (pt.y < rect.top + MulDpi(iTopHeight, g_uWndMainDpi));
-		ICamera *pCamera = NULL;
+		IXCamera *pCamera = NULL;
 		X_2D_VIEW x2dView;
 		HWND hTargetWnd;
 		float *pfOldScale = NULL;
@@ -2456,6 +2468,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				break;
 			}
 			*pfOldScale = fNewScale;
+			pCamera->setScale(fNewScale);
 		}
 		else
 		{
@@ -2563,7 +2576,7 @@ static void XTrackMouse(HWND hWnd, LPARAM lParam)
 
 	g_xState.vMousePos = {(float)GET_X_LPARAM(lParam), (float)GET_Y_LPARAM(lParam)};
 
-	ICamera *pCamera = g_xConfig.m_pViewportCamera[g_xState.activeWindow];
+	IXCamera *pCamera = g_xConfig.m_pViewportCamera[g_xState.activeWindow];
 	if(!pCamera)
 	{
 		return;
@@ -2577,8 +2590,7 @@ static void XTrackMouse(HWND hWnd, LPARAM lParam)
 	if(g_xState.activeWindow == XWP_TOP_LEFT)
 	{
 		// transform by matrix
-		SMMATRIX mViewProj;
-		Core_RMatrixGet(G_RI_MATRIX_OBSERVER_VIEWPROJ, &mViewProj);
+		SMMATRIX mViewProj = g_xConfig.m_pViewportCamera[XWP_TOP_LEFT]->getViewMatrix() * g_xConfig.m_pViewportCamera[XWP_TOP_LEFT]->getProjMatrix();
 		SMMATRIX mInvVP = SMMatrixInverse(NULL, mViewProj);
 
 		float3 vScreenPos(g_xState.vMousePos / vWinSize, 0.0f);
@@ -2990,8 +3002,7 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 			float2 vWinSize((float)(rc.right - rc.left), (float)(rc.bottom - rc.top));
 
 			// transform by matrix
-			SMMATRIX mViewProj;
-			Core_RMatrixGet(G_RI_MATRIX_OBSERVER_VIEWPROJ, &mViewProj);
+			SMMATRIX mViewProj = g_xConfig.m_pViewportCamera[XWP_TOP_LEFT]->getViewMatrix() * g_xConfig.m_pViewportCamera[XWP_TOP_LEFT]->getProjMatrix();
 			SMMATRIX mInvVP = SMMatrixInverse(NULL, mViewProj);
 
 			float3 vScreenPos(g_xState.vMousePos / vWinSize, 0.0f);
@@ -3470,7 +3481,7 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 			{
 				X_2D_VIEW xCurView = g_xConfig.m_x2DView[g_xState.activeWindow];
 #if 0
-				ICamera *pCamera = g_xConfig.m_pViewportCamera[g_xState.activeWindow];
+				IXCamera *pCamera = g_xConfig.m_pViewportCamera[g_xState.activeWindow];
 				if(!pCamera)
 				{
 					break;
@@ -3509,7 +3520,7 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 				/*if(g_is2DPanning)
 				{
 				// vWorldDelta
-				ICamera *pCamera = g_xConfig.m_pViewportCamera[g_xState.activeWindow];
+				IXCamera *pCamera = g_xConfig.m_pViewportCamera[g_xState.activeWindow];
 
 				float3 vWorldDelta = (g_xState.vMousePos - g_v2DPanningStartMouse) * fViewScale;
 
@@ -3703,7 +3714,7 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 		case ID_2D_FRONT:
 		case ID_2D_SIDE:
 		{
-			ICamera *pTargetCam = g_xConfig.m_pViewportCamera[g_xState.activeWindow];
+			IXCamera *pTargetCam = g_xConfig.m_pViewportCamera[g_xState.activeWindow];
 			X_2D_VIEW *pX2DView = &g_xConfig.m_x2DView[g_xState.activeWindow];
 			g_bViewportCaptionDirty[g_xState.activeWindow] = true;
 			switch(LOWORD(wParam))
@@ -3799,6 +3810,9 @@ void XFrameRun(float fDeltaTime)
 	}
 
 	g_pMaterialBrowser->update(fDeltaTime);
+
+	XUpdateSelectionBound();
+	XUpdateGizmos();
 }
 
 void DisplayContextMenu(HWND hwnd, POINT pt, HMENU hMenu, int iSubmenu, int iCheckItem)

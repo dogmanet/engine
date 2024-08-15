@@ -35,23 +35,7 @@ namespace gui
 		public:
 			friend class CDOMdocument;
 
-			CDOMnode():
-				m_bDelegateEvents(false),
-				m_bToggleOnly(false),
-				m_bToggleable(false),
-				m_bToggleState(false),
-				m_pParent(NULL),
-				m_iNodeId(0),
-				m_pDocument(NULL),
-				m_iDOMid(0),
-				m_pPrevSibling(NULL),
-				m_pNextSibling(NULL),
-				m_pseudoclasses(0),
-				m_pRenderFrame(NULL),
-				m_bEditable(false),
-				m_bFocusable(false),
-				m_bIgnHotkeys(false)
-			{};
+			CDOMnode() = default;
 			~CDOMnode();
 			void appendChild(IDOMnode * pEl, bool regen = true, IDOMnode *pInsertBefore = NULL);
 			void appendHTML(const StringW &wsHTML, bool regen = true, IDOMnode *pInsertBefore = NULL);
@@ -175,16 +159,13 @@ namespace gui
 			{
 				return(m_pRenderFrame);
 			}
-			void setRenderFrame(render::IRenderFrame * prf)
-			{
-				m_pRenderFrame = prf;
-			}
-			void updateStyles();
-			void updateLayout(bool bForce=false);
+			void setRenderFrame(render::IRenderFrame *prf);
+			void updateStyles(bool forceUpdate = false) override;
+			void updateLayout(bool bForce = false);
 
 
-			void dispatchEvent(IEvent &ev);
-			void dispatchClientEvent(IEvent ev, bool *preventDefault);
+			void dispatchEvent(IEvent &ev) override;
+			void dispatchClientEvent(IEvent ev, bool *preventDefault) override;
 
 			static void applyCSSrules(const css::ICSSstyle *style, CDOMnode *pNode);
 
@@ -202,18 +183,55 @@ namespace gui
 			BOOL classExists(const StringW &cls);
 			//BOOL ClassExists(UINT cls);
 
-		protected:
-			IDOMnode *m_pParent;
-			IDOMnode *m_pPrevSibling;
-			IDOMnode *m_pNextSibling;
-			Array<IDOMnode*> m_vChilds;
-			CDOMdocument *m_pDocument;
-			UINT m_iNodeId;
+			void setUserData(void *pData) override;
+			void* getUserData() override;
 
-			UINT m_iDOMid;
+			void skipStructureChanges()
+			{
+				m_bSkipStructureChanges = true;
+			}
+
+			bool isStructureChangesSkipped()
+			{
+				return(m_bSkipStructureChanges);
+			}
+
+			bool wantLayoutEvents();
+			void triggerLayoutEvent();
+
+			UINT getInnerWidth() override;
+			UINT getInnerHeight() override;
+
+			int getScrollLeft()
+			{
+				return(m_iScrollLeft);
+			}
+			void setScrollLeft(int x)
+			{
+				m_iScrollLeft = x;
+			}
+
+			int getScrollTop()
+			{
+				return(m_iScrollTop);
+			}
+			void setScrollTop(int x)
+			{
+				m_iScrollTop = x;
+			}
+
+		protected:
+			IDOMnode *m_pParent = NULL;
+			IDOMnode *m_pPrevSibling = NULL;
+			IDOMnode *m_pNextSibling = NULL;
+			Array<IDOMnode*> m_vChilds;
+			CDOMdocument *m_pDocument = NULL;
+			UINT m_iNodeId = 0;
+
+			UINT m_iDOMid = 0;
 			Array<UINT> m_vDOMcls;
 
-			UINT m_pseudoclasses;
+			UINT m_pseudoclasses = 0;
 
 			AssotiativeArray<StringW, StringW> m_mAttributes;
 
@@ -221,17 +239,27 @@ namespace gui
 			css::CCSSstyle m_cssOld;
 			css::CCSSstyle m_css_self;
 
-			render::IRenderFrame *m_pRenderFrame;
+			render::IRenderFrame *m_pRenderFrame = NULL;
 
-			bool m_bToggleable;
-			bool m_bToggleState;
-			bool m_bToggleOnly;
-			bool m_bEditable;
-			bool m_bFocusable;
+			bool m_bToggleable = false;
+			bool m_bToggleState = false;
+			bool m_bToggleOnly = false;
+			bool m_bEditable = false;
+			bool m_bFocusable = false;
 
-			bool m_bIgnHotkeys;
+			bool m_bIgnHotkeys = false;
 
-			bool m_bDelegateEvents;
+			bool m_bDelegateEvents = false;
+
+		private:
+			void *m_pUserData = NULL;
+
+			bool m_bSkipStructureChanges = false;
+
+			bool m_bWantLayoutEvents = false;
+
+			int m_iScrollTop = 0;
+			int m_iScrollLeft = 0;
 		};
 
 

@@ -9,10 +9,10 @@ dev_lines.vs
 
 //##########################################################################
 
-cbuffer CDataFrame: register(b6)
+/* cbuffer CDataFrame: register(b6)
 {
 	float3 g_vCamRight;
-};
+}; */
 
 //##########################################################################
 
@@ -20,9 +20,15 @@ VSO_DevPoints main(VSI_DevPoints IN)
 {
 	VSO_DevPoints OUT = (VSO_DevPoints)0;
 	
+	float3 vRight = normalize(g_mObserverInvV._m00_m01_m02);
+	
 	float3 vPos = IN.vPosition.xyz;
-	float3 vRight = g_vCamRight;
-	float3 vUp = normalize(cross(vRight, vPos - g_vObserverPosCam.xyz));
+	// float3 vRight = g_vCamRight;
+// #ifdef IS_ORTHO
+	float3 vUp = -normalize(g_mObserverInvV._m10_m11_m12);
+// #else
+	// float3 vUp = normalize(cross(vRight, vPos - g_vObserverPosCam.xyz));
+// #endif
 	
 	float2 vOffset = IN.vPosition.w * (IN.vTexUVMode.xy - 0.5);
 	

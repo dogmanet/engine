@@ -23,6 +23,9 @@ public:
 
 	void XMETHODCALLTYPE render(bool is3D) override;
 
+	UINT XMETHODCALLTYPE getResourceBrowserCount() override;
+	bool XMETHODCALLTYPE getResourceBrowser(UINT uId, IXEditorResourceBrowser **ppOut) override;
+	
 	void onSelectionChanged(CEditorObject *pObject);
 
 	CVertexTool* getVertexTool()

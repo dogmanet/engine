@@ -1,0 +1,1 @@
+node ./gen-entity.js

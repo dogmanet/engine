@@ -125,6 +125,9 @@ select
 	
 	background-position-x: 100%;
 	background-position-y: 50%;
+	
+	overflow-x: hidden;
+	overflow-y: auto;
 }
 
 select:checked

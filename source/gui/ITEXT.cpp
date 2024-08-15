@@ -36,9 +36,12 @@ namespace gui
 			OpenClipboard(NULL);
 			HANDLE h = GetClipboardData(CF_UNICODETEXT);
 			WCHAR* s = (WCHAR*)GlobalLock(h);
-			render::IRenderTextNew * t = (render::IRenderTextNew*)m_pRenderFrame;
-			m_wsText.insert(t->getCaretPos(), s);
-			t->setCaretPos(t->getCaretPos() + (int)wcslen(s), true);
+			if(s)
+			{
+				render::IRenderTextNew * t = (render::IRenderTextNew*)m_pRenderFrame;
+				m_wsText.insert(t->getCaretPos(), s);
+				t->setCaretPos(t->getCaretPos() + (int)wcslen(s), true);
+			}
 			GlobalUnlock(h);
 			CloseClipboard();
 		}

@@ -10,6 +10,7 @@
 #include <graphix/graphix.h>
 #include <mtrl/IXMaterialSystem.h>
 #include <xcommon/gui/IXFontManager.h>
+#include <xcommon/render/IXRender.h>
 //#include "terrax.h"
 
 #include "ScrollBar.h"
@@ -50,8 +51,9 @@ public:
 	~CMaterialBrowser();
 
 	void browse(IMaterialBrowserCallback *pCallback, bool bTextureOnly = false);
+	void abort();
 
-	void initGraphics(IGXDevice *pDev);
+	void initGraphics(IXRender *pRender);
 	void render();
 	void swapBuffers();
 
@@ -75,9 +77,11 @@ private:
 
 	bool m_isDirty = false;
 	bool m_bDoSwap = false;
+	IXRender *m_pRender = NULL;
 	IGXDevice *m_pDev = NULL;
-	IGXSwapChain *m_pSwapChain = NULL;
+	//IGXSwapChain *m_pSwapChain = NULL;
 	IGXSurface *m_pSurface = NULL;
+	IXRenderTarget *m_pFinalTarget = NULL;
 
 	bool m_isResizing = false;
 	bool m_isScreenSizeChanged = false;

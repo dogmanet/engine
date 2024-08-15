@@ -26,6 +26,8 @@ protected:
 	{
 		IXUnknown *pIFace = NULL;
 		IXPlugin *pPlugin = NULL;
+		UINT uPluginVersion = 0;
+		UINT uIFaceIndex = 0;
 	};
 
 	Array<IXPlugin*> m_aPlugins;

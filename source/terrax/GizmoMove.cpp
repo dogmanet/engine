@@ -1,6 +1,5 @@
 #include "GizmoMove.h"
 #include "Editor.h"
-#include <gcore/sxgcore.h>
 #include "GizmoHandle.h"
 
 #define AXES_HELPER_MOVE_LENGTH 1.0f		/*!< */
@@ -132,7 +131,7 @@ void CGizmoMove::draw(IXGizmoRenderer *pGRBoth, IXGizmoRenderer *pGR2D, IXGizmoR
 
 	IXGizmoRenderer *pRenderer = pGR3D;
 
-	ICamera *pCamera;
+	IXCamera *pCamera;
 	m_pEditor->getCameraForView(XWP_TOP_LEFT, &pCamera);
 	float3 vCamDir = pCamera->getPosition() - m_vPos;
 
@@ -352,7 +351,7 @@ void CGizmoMove::draw(IXGizmoRenderer *pGRBoth, IXGizmoRenderer *pGR2D, IXGizmoR
 
 bool CGizmoMove::intersectMove(const float3 &vStart, const float3 &vRayDir)
 {
-	ICamera *pCamera;
+	IXCamera *pCamera;
 	m_pEditor->getCameraForView(XWP_TOP_LEFT, &pCamera);
 	float3 vCamDir = pCamera->getPosition() - m_vPos;
 

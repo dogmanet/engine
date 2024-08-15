@@ -8,9 +8,15 @@ See the license in LICENSE
 #include "Tracer.h"
 #include "BaseTool.h"
 #include <particles/sxparticles.h>
-#include <mtrl/sxmtrl.h>
+#include <mtrl/IXMaterial.h>
 #include <decals/sxdecals.h>
 //#include <BulletCollision/NarrowPhaseCollision/btRaycastCallback.h>
+
+//! TODO Reimplement me!
+#define SMtrl_MtlGetPhysicMaterial(id) MTLTYPE_PHYSIC_METAL
+#define SMtrl_MtlGetDurability(id) 1.0f
+#define SMtrl_MtlGetDensity(id) 1.0f
+#define SMtrl_MtlGetHitChance(id) 1.0f
 
 /*! \skydocent base_ammo
 Базовый класс для патронов

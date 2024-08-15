@@ -1,4 +1,4 @@
-﻿
+
 #include "SoundSystem.h"
 #include "AudioConverter.h"
 
@@ -396,7 +396,7 @@ bool CSoundSystem::supportedDesc(const AudioRawDesc *pDesc, AB_TYPE type)
 
 IXSoundLayer* XMETHODCALLTYPE CSoundSystem::findLayer(const char *szName)
 {
-	if(!szName)
+	if(!szName || !m_pMasterLayer)
 		return NULL;
 
 	if(strcasecmp(m_pMasterLayer->getName(), szName) == 0)

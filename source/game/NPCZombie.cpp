@@ -34,10 +34,11 @@ CNPCZombie::CNPCZombie():
 	IXSoundSystem *pSound = (IXSoundSystem*)(Core_GetIXCore()->getPluginManager()->getInterface(IXSOUNDSYSTEM_GUID));
 	if(pSound)
 	{
-		IXSoundLayer *pGameLayer = pSound->findLayer("xGame");
-		m_pSndIdle = pGameLayer->newSoundPlayer("mobs/zombie/zombie_idle_16.ogg", SOUND_SPACE_3D);
-		m_pSndIdle2 = pGameLayer->newSoundPlayer("mobs/zombie/zombie_idle_17.ogg", SOUND_SPACE_3D);
-		m_pSndDeath = pGameLayer->newSoundPlayer("mobs/zombie/zombie_die_1.ogg", SOUND_SPACE_3D);
+		IXSoundLayer *pGameLayer = pSound->findLayer("xGame"); if(pGameLayer){
+			m_pSndIdle = pGameLayer->newSoundPlayer("mobs/zombie/zombie_idle_16.ogg", SOUND_SPACE_3D);
+			m_pSndIdle2 = pGameLayer->newSoundPlayer("mobs/zombie/zombie_idle_17.ogg", SOUND_SPACE_3D);
+			m_pSndDeath = pGameLayer->newSoundPlayer("mobs/zombie/zombie_die_1.ogg", SOUND_SPACE_3D);
+		}
 	}
 
 }

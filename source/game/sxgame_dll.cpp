@@ -9,7 +9,6 @@ See the license in LICENSE
 
 #include "sxgame.h"
 #include <core/sxcore.h>
-#include <gcore/sxgcore.h>
 
 #include "EntityManager.h"
 
@@ -20,14 +19,10 @@ See the license in LICENSE
 
 #if defined(_DEBUG)
 #	pragma comment(lib, "sxcore_d.lib")
-#	pragma comment(lib, "sxgcore_d.lib")
 #	pragma comment(lib, "sxinput_d.lib")
-#	pragma comment(lib, "sxmtrl_d.lib")
 #else
 #	pragma comment(lib, "sxcore.lib")
-#	pragma comment(lib, "sxgcore.lib")
 #	pragma comment(lib, "sxinput.lib")
-#	pragma comment(lib, "sxmtrl.lib")
 #endif
 
 #if !defined(DEF_STD_REPORT)
@@ -37,7 +32,7 @@ report_func g_fnReportf = DefReport;
 
 
 GameData * g_pGameData = NULL;
-IMesh* g_pFigureBox = 0;
+//IMesh* g_pFigureBox = 0;
 DECLARE_PROFILER_INTERNAL();
 
 HINSTANCE g_hInstance = NULL;
@@ -90,7 +85,7 @@ void ccmd_save_as(int argc, const char ** argv)
 	}
 }
 
-SX_LIB_API ICamera* SGame_GetActiveCamera()
+SX_LIB_API IXCamera* SGame_GetActiveCamera()
 {
 	SG_PRECOND(NULL);
 	return(GameData::m_pActiveCamera->getCamera());
@@ -109,7 +104,7 @@ SX_LIB_API void SGame_0Create(HWND hWnd, bool isGame)
 	g_pGameData = new GameData(hWnd, isGame);
 
 	//g_pPlayer->spawn();
-	SGCore_FCreateBoundingBoxMesh(&float3(-0.5f, -0.5f, -0.5f), &float3(0.5f, 0.5f, 0.5f), &g_pFigureBox);
+	//SGCore_FCreateBoundingBoxMesh(&float3(-0.5f, -0.5f, -0.5f), &float3(0.5f, 0.5f, 0.5f), &g_pFigureBox);
 	//DX_CALL(D3DXCreateBox(SGCore_GetDXDevice(), 1, 1, 1, &g_pFigureBox, 0));
 
 	Core_0RegisterConcmd("add_corner", ccmd_cam_pt);
@@ -119,7 +114,7 @@ SX_LIB_API void SGame_AKill()
 {
 	SG_PRECOND(_VOID);
 	mem_delete(g_pGameData);
-	mem_release(g_pFigureBox);
+	//mem_release(g_pFigureBox);
 }
 
 SX_LIB_API void SGame_Update(int thread)
@@ -151,11 +146,11 @@ SX_LIB_API gui::IGUI* SGame_GetGUI()
 	return(GameData::m_pGUI);
 }
 
-SX_LIB_API void SGame_Render()
+SX_LIB_API void SGame_Render(IXRenderTarget *pFinalTarget)
 {
 	SG_PRECOND(_VOID);
 	//GameData::m_pMgr->render();
-	g_pGameData->render();
+	g_pGameData->render(pFinalTarget);
 }
 
 SX_LIB_API void SGame_RenderHUD()

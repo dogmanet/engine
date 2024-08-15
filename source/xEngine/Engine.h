@@ -3,6 +3,7 @@
 
 #include "IXEngine.h"
 #include <xUI/IXUI.h>
+#include <xcommon/render/IXRender.h>
 
 // #define USE_BREAKPAD
 
@@ -20,7 +21,7 @@ enum WANT_RESIZE
 	WR_VSYNC = 0x0010
 };
 
-class CEngine: public IXUnknownImplementation<IXEngine>
+class CEngine final: public IXUnknownImplementation<IXEngine>
 {
 	friend class CMainLoopTask;
 public:
@@ -35,7 +36,7 @@ public:
 	INT_PTR XMETHODCALLTYPE onMessage(UINT msg, WPARAM wParam, LPARAM lParam) override;
 	IXCore* XMETHODCALLTYPE getCore() override;
 
-protected:
+private:
 
 	void initPaths();
 
@@ -51,9 +52,13 @@ protected:
 
 	void showProfile();
 
+private:
 	IXEngineCallback *m_pCallback = NULL;
 
 	IXCore *m_pCore = NULL;
+
+	IXRender *m_pRender = NULL;
+	IXRenderTarget *m_pScreenTarget = NULL;
 
 	WANT_RESIZE m_wantResize = WR_NONE;
 

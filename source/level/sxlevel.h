@@ -18,7 +18,6 @@ See the license in LICENSE
 #define SX_LIB_API extern "C" __declspec (dllimport)
 
 #if defined(_DEBUG)
-#pragma comment(lib, "sxgcore_d.lib")
 #pragma comment(lib, "sxscore_d.lib")
 #pragma comment(lib, "sxgreen_d.lib")
 #pragma comment(lib, "sxaigrid_d.lib")
@@ -26,7 +25,6 @@ See the license in LICENSE
 #pragma comment(lib, "sxpp_d.lib")
 #pragma comment(lib, "sxdecals_d.lib")
 #else
-#pragma comment(lib, "sxgcore.lib")
 #pragma comment(lib, "sxscore.lib")
 #pragma comment(lib, "sxgreen.lib")
 #pragma comment(lib, "sxaigrid.lib")

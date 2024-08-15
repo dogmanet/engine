@@ -1,4 +1,4 @@
-﻿#ifndef _CCSSstyle_H_
+#ifndef _CCSSstyle_H_
 #define _CCSSstyle_H_
 
 
@@ -348,6 +348,8 @@ namespace gui
 				case css::ICSSproperty::DIM_VMAX:
 					return((int)_round(falue * (float)max(uWinWidth, uWinHeight) * 0.01f));
 					break;
+				case css::ICSSproperty::DIM_AUTO:
+					assert(!"Cannot handle auto values this way!");
 				default:
 					return(base);
 				}

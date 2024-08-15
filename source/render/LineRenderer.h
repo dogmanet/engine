@@ -2,11 +2,12 @@
 #define __LINERENDERER_H
 
 #include <xcommon/render/IXRenderUtils.h>
+#include <xcommon/render/IXRender.h>
 
 class CLineRenderer final: public IXUnknownImplementation<IXLineRenderer>
 {
 public:
-	CLineRenderer(IGXDevice *pDev);
+	CLineRenderer(IXRender *pRender);
 	~CLineRenderer();
 
 	void XMETHODCALLTYPE reset() override;
@@ -21,6 +22,7 @@ public:
 	void XMETHODCALLTYPE lineTo(const float3 &vPos) override;
 
 private:
+	IXRender *m_pRender;
 	IGXDevice *m_pDev;
 
 	static std::atomic_uint s_uResRefCount;

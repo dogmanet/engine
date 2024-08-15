@@ -2,6 +2,7 @@
 #define __IXCONFIGLOADER_H
 
 #include <gdefines.h>
+#include "IXJSON.h"
 
 /*! интерфейс для работы с файлами конфигурации (ini)
 \warning секции и ключи хранятся в виде дерева, и нет гарантии что может быть доступ по порядковому номеру,
@@ -24,6 +25,25 @@ public:
 	virtual bool XMETHODCALLTYPE keyExists(const char *szSection, const char *szKey) = 0; //!< существует ли ключ key в секции section
 
 	virtual void XMETHODCALLTYPE clear() = 0; //!< очистить
+
+	virtual bool XMETHODCALLTYPE tryGetBool(const char *szSection, const char *szKey, bool *pbOut) = 0;
+	virtual bool XMETHODCALLTYPE tryGetInt(const char *szSection, const char *szKey, int *piOut) = 0;
+	virtual bool XMETHODCALLTYPE tryGetUint(const char *szSection, const char *szKey, UINT *puOut) = 0;
+	virtual bool XMETHODCALLTYPE tryGetFloat(const char *szSection, const char *szKey, float *pfOut) = 0;
+	virtual bool XMETHODCALLTYPE tryGetVector2(const char *szSection, const char *szKey, float2_t *pvOut) = 0;
+	virtual bool XMETHODCALLTYPE tryGetVector3(const char *szSection, const char *szKey, float3_t *pvOut) = 0;
+	virtual bool XMETHODCALLTYPE tryGetVector4(const char *szSection, const char *szKey, float4_t *pvOut) = 0;
+	virtual bool XMETHODCALLTYPE tryGetJsonItem(const char *szSection, const char *szKey, IXJSONItem **ppOut) = 0;
+	virtual bool XMETHODCALLTYPE tryGetJsonObject(const char *szSection, const char *szKey, IXJSONObject **ppOut) = 0;
+	virtual bool XMETHODCALLTYPE tryGetJsonArray(const char *szSection, const char *szKey, IXJSONArray **ppOut) = 0;
+
+	virtual void XMETHODCALLTYPE setBool(const char *szSection, const char *szKey, bool bValue) = 0;
+	virtual void XMETHODCALLTYPE setInt(const char *szSection, const char *szKey, int iValue) = 0;
+	virtual void XMETHODCALLTYPE setUint(const char *szSection, const char *szKey, UINT uValue) = 0;
+	virtual void XMETHODCALLTYPE setFloat(const char *szSection, const char *szKey, float fValue) = 0;
+	virtual void XMETHODCALLTYPE setVector2(const char *szSection, const char *szKey, const float2_t &vValue) = 0;
+	virtual void XMETHODCALLTYPE setVector3(const char *szSection, const char *szKey, const float3_t &vValue) = 0;
+	virtual void XMETHODCALLTYPE setVector4(const char *szSection, const char *szKey, const float4_t &vValue) = 0;
 };
 
 #endif

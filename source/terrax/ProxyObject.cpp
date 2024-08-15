@@ -5,6 +5,7 @@
 #include "terrax.h"
 #include "CommandDelete.h"
 #include <common/aastring.h>
+#include <core/sxcore.h>
 
 extern AssotiativeArray<AAString, IXEditable*> g_mEditableSystems;
 

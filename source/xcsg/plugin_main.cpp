@@ -65,27 +65,22 @@ public:
 		}
 		return(&s_guid);
 	}
-	IXUnknown* XMETHODCALLTYPE getInterface(const XGUID &guid) override
+	void XMETHODCALLTYPE getInterface(UINT id, void **ppOut) override
 	{
-		if(guid == IXEDITABLE_GUID)
+		switch(id)
 		{
+		case 0:
 			if(!m_pEditable)
 			{
 				m_pEditable = new CEditable(m_pCore);
 			}
-			return(m_pEditable);
+			*ppOut = m_pEditable;
+			break;
+		
+		default:
+			*ppOut = NULL;
 		}
-		//if(guid == IXMATERIALPROXY_GUID)
-		//{
-		//	return(new CMaterialProxy(m_pCore->getFileSystem()));
-		//}
-		//if(guid == IXMATERIALLOADER_GUID)
-		//{
-		//	return(new CMaterialLoader(m_pCore));
-		//}
-		return(NULL);
 	}
-
 
 	void onLevelEvent(const XEventLevel *pData)
 	{

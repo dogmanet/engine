@@ -123,7 +123,7 @@ CCore::CCore(const char *szName)
 
 	loadPlugins();
 
-	loadProfiler();
+	//loadProfiler();
 
 #if 0
 	IXTextureLoader *pLoader = (IXTextureLoader*)m_pPluginManager->getInterface(IXTEXTURELOADER_GUID);
@@ -297,31 +297,13 @@ void CCore::loadPlugins()
 		}
 	}
 
+	loadProfiler();
+
 	m_pResourceManager = new CResourceManager(this);
 
 	m_pPluginManager->invokeStartup(this);
 
 	m_pResourceManager->initPlugins();
-}
-
-void XMETHODCALLTYPE CCore::getRenderPipeline(IXRenderPipeline **ppRenderPipeline)
-{
-	if(m_pRenderPipeline)
-	{
-		m_pRenderPipeline->AddRef();
-	}
-
-	*ppRenderPipeline = m_pRenderPipeline;
-}
-
-void XMETHODCALLTYPE CCore::setRenderPipeline(IXRenderPipeline *pRenderPipeline)
-{
-	mem_release(m_pRenderPipeline);
-	if(pRenderPipeline)
-	{
-		pRenderPipeline->AddRef();
-	}
-	m_pRenderPipeline = pRenderPipeline;
 }
 
 void CCore::initUpdatable()
@@ -408,7 +390,7 @@ bool XMETHODCALLTYPE CCore::isOnMainThread()
 
 IXConfig* XMETHODCALLTYPE CCore::newConfig()
 {
-	return(new CXConfig());
+	return(new CXConfig(m_pFileSystem));
 }
 
 IXBuffer* XMETHODCALLTYPE CCore::newBuffer()

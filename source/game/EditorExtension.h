@@ -25,6 +25,9 @@ public:
 	{
 	}
 
+	UINT XMETHODCALLTYPE getResourceBrowserCount() override;
+	bool XMETHODCALLTYPE getResourceBrowser(UINT uId, IXEditorResourceBrowser **ppOut) override;
+
 private:
 	CEditorOutputsTab *m_pOutputsTab = NULL;
 

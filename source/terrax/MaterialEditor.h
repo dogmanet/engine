@@ -11,6 +11,7 @@
 #include <mtrl/IXMaterialSystem.h>
 #include <xcommon/gui/IXFontManager.h>
 #include "MaterialBrowser.h"
+#include <xcommon/IXCore.h>
 //#include "terrax.h"
 
 class IXMaterial;
@@ -40,7 +41,7 @@ private:
 	static INT_PTR CALLBACK DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 	
 public:
-	CMaterialEditor(HINSTANCE hInstance, HWND hMainWnd, IXMaterial *pMaterial);
+	CMaterialEditor(HINSTANCE hInstance, HWND hMainWnd, IXCore *pCore, IXMaterial *pMaterial);
 	~CMaterialEditor();
 
 	void browse();

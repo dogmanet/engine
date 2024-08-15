@@ -35,17 +35,20 @@ public:
 		}
 		return(&s_guid);
 	}
-	IXUnknown* XMETHODCALLTYPE getInterface(const XGUID &guid) override
+	void XMETHODCALLTYPE getInterface(UINT id, void **ppOut) override
 	{
-		if(guid == IXTEXTURELOADER_GUID)
+		switch(id)
 		{
-			return(new CTextureLoader(m_pCore->getFileSystem()));
+		case 0:
+			*ppOut = new CTextureLoader(m_pCore->getFileSystem());
+			break;
+		case 1:
+			*ppOut = new CTextureProxy(m_pCore->getFileSystem());
+			break;
+		
+		default:
+			*ppOut = NULL;
 		}
-		if(guid == IXTEXTUREPROXY_GUID)
-		{
-			return(new CTextureProxy(m_pCore->getFileSystem()));
-		}
-		return(NULL);
 	}
 
 protected:

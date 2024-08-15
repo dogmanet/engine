@@ -6,13 +6,6 @@ See the license in LICENSE
 
 #include <windows.h>
 
-//! @todo remove this references
-#if defined(_DEBUG)
-#pragma comment(lib, "sxgcore_d.lib")
-#else
-#pragma comment(lib, "sxgcore.lib")
-#endif
-
 BOOL APIENTRY DllMain(HMODULE hModule,
 	DWORD  ul_reason_for_call,
 	LPVOID lpReserved

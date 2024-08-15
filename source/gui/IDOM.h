@@ -54,7 +54,7 @@ namespace gui
 			virtual void dispatchEvent(IEvent & ev) = 0;
 			virtual void dispatchClientEvent(IEvent ev, bool * preventDefault) = 0;
 
-			virtual void updateStyles() = 0;
+			virtual void updateStyles(bool forceUpdate = false) = 0;
 
 			virtual void classAdd(const StringW & cls) = 0;
 
@@ -63,6 +63,12 @@ namespace gui
 			virtual void classToggle(const StringW & cls, int set = -1) = 0;
 
 			virtual BOOL classExists(const StringW & cls) = 0;
+
+			virtual void setUserData(void *pData) = 0;
+			virtual void* getUserData() = 0;
+
+			virtual UINT getInnerWidth() = 0;
+			virtual UINT getInnerHeight() = 0;
 		};
 
 

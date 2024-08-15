@@ -6,7 +6,7 @@
 
 #define X_PLUGIN_ENTRYPOINT XPluginMain
 #define X_PLUGIN_API extern "C" __declspec(dllexport)
-#define IXPLUGIN_VERSION 1
+#define IXPLUGIN_VERSION 2
 #define DECLARE_XPLUGIN(cls) IXProfiler *g_pProfiler = NULL;                                              \
 class cls##Imp final: public cls{                                                                         \
 public:                                                                                                   \
@@ -29,7 +29,7 @@ public:
 
 	virtual UINT XMETHODCALLTYPE getInterfaceCount() = 0;
 	virtual const XGUID* XMETHODCALLTYPE getInterfaceGUID(UINT id) = 0;
-	virtual IXUnknown* XMETHODCALLTYPE getInterface(const XGUID &guid) = 0;
+	virtual void XMETHODCALLTYPE getInterface(UINT id, void **ppOut) = 0;
 
 	virtual void XMETHODCALLTYPE startup(IXCore *pCore) = 0;
 	virtual void XMETHODCALLTYPE shutdown() = 0;

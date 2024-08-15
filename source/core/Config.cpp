@@ -13,7 +13,8 @@ See the license in LICENSE
 */
 
 
-CConfig::CConfig()
+CConfig::CConfig(IFileSystem *pFS):
+	m_pFS(pFS)
 {
 	ErrorFile = "";
 	BaseFile = "";
@@ -64,8 +65,8 @@ int CConfig::parse(const char* file)
 {
 	clear();
 	BaseFile = CConfigString(file);
-	FILE * fp = fopen(file, "rb");
-	if(!fp)
+	IFile *pFile = m_pFS->openFile(file, FILE_MODE_READ);
+	if(!pFile)
 	{
 		return -1;
 	}
@@ -104,8 +105,8 @@ int CConfig::parse(const char* file)
 		}
 		else
 		{
-			c = fgetc(fp);
-			if(feof(fp))
+			c = pFile->readChar();
+			if(pFile->isEOF())
 			{
 				c = '\n';
 				isRunning = false;
@@ -223,7 +224,7 @@ int CConfig::parse(const char* file)
 		}
 		else if(c == '/')
 		{
-			if((cn = getc(fp)) == '/')
+			if((cn = pFile->readChar()) == '/')
 			{
 				bComment = true;
 				continue;
@@ -323,7 +324,7 @@ int CConfig::parse(const char* file)
 		bFirstChar = false;
 	}
 
-	fclose(fp);
+	mem_release(pFile);
 	return 0;
 }
 
@@ -352,16 +353,15 @@ void CConfig::modify(AssotiativeArray<CConfigString, CSection> & sections, Assot
 int CConfig::parseInclude(CConfigString & file, const CConfigString & dir)
 {
 	//printf("Parsing include %s fromdir = %s\n", file.c_str(), dir.c_str());
-	FILE * pF = fopen((dir + file).c_str(), "r");
-	if(pF)
+	String sFile = dir + file;
+	if(m_pFS->fileExists(sFile.c_str()))
 	{
-		fclose(pF);
 		CInclude inc;
 
-		inc.pParser = new CConfig(/*(dir + file).c_str()*/);
-		inc.pParser->open((dir + file).c_str());
+		inc.pParser = new CConfig(m_pFS/*(dir + file).c_str()*/);
+		inc.pParser->open(sFile.c_str());
 
-		inc.name = baseName(dir + file);
+		inc.name = baseName(sFile);
 		/*		if(inc.name == "gl.ltx")
 		{
 		_asm
@@ -369,13 +369,13 @@ int CConfig::parseInclude(CConfigString & file, const CConfigString & dir)
 		int 3;
 		};
 		}*/
-		inc.pParser->modify(m_mSections, m_mFinalValues, dir + file);
+		inc.pParser->modify(m_mSections, m_mFinalValues, sFile);
 		m_vIncludes.push_back(inc);
 		return(0);
 	}
 	else
 	{
-		//printf("[Error]: Unable to open include \"%s\"", (dir + file).c_str());
+		LogError("Unable to open include \"%s%s\"", dir.c_str(), file.c_str());
 		ErrorFile = (dir + file);
 		return -2;
 	}
@@ -750,14 +750,7 @@ int CConfig::writeFile(const CConfigString & name, CConfigString section, CConfi
 
 int CConfig::getSectionCount()
 {
-	int c = m_mSections.Size();
-	int size = m_vIncludes.size();
-	for(int i = 0; i < size; ++i)
-	{
-		//m_vIncludes
-		c += m_vIncludes[i].pParser->getSectionCount();
-	}
-	return(c);
+	return(m_mSections.Size());
 }
 
 int CConfig::getKeyCount()
@@ -823,11 +816,8 @@ void CConfig::clear2()
 	auto tmp = BaseFile;
 	clear();
 	BaseFile = tmp;
-	FILE *pF = fopen(BaseFile.c_str(), "wb");
-	if(pF)
-	{
-		fclose(pF);
-	}
+	IFile *pFile = m_pFS->openFile(BaseFile.c_str(), FILE_MODE_WRITE);
+	mem_release(pFile);
 }
 
 AssotiativeArray<CConfigString, CConfig::CSection> * CConfig::getSections()
@@ -846,9 +836,9 @@ CConfigString CConfig::getIncludeName(int i)
 
 //#############################################################################
 
-CXConfig::CXConfig()
+CXConfig::CXConfig(IFileSystem *pFS)
 {
-	m_pConfig = new CConfig();
+	m_pConfig = new CConfig(pFS);
 }
 CXConfig::~CXConfig()
 {
@@ -903,4 +893,173 @@ bool XMETHODCALLTYPE CXConfig::sectionExists(const char *szSection)
 bool XMETHODCALLTYPE CXConfig::keyExists(const char *szSection, const char *szKey)
 {
 	return(m_pConfig->keyExists(szSection, szKey));
+}
+
+bool XMETHODCALLTYPE CXConfig::tryGetBool(const char *szSection, const char *szKey, bool *pbOut)
+{
+	const char *szVal = getKey(szSection, szKey);
+	if(!szVal)
+	{
+		return(false);
+	}
+
+	if(!strcasecmp(szVal, "true") || !strcasecmp(szVal, "on") || !strcasecmp(szVal, "yes") || !strcmp(szVal, "1"))
+	{
+		*pbOut = true;
+		return(true);
+	}
+
+	if(!strcasecmp(szVal, "false") || !strcasecmp(szVal, "off") || !strcasecmp(szVal, "no") || !strcmp(szVal, "0"))
+	{
+		*pbOut = false;
+		return(true);
+	}
+
+	return(false);
+}
+bool XMETHODCALLTYPE CXConfig::tryGetInt(const char *szSection, const char *szKey, int *piOut)
+{
+	const char *szVal = getKey(szSection, szKey);
+	return(szVal && sscanf(szVal, "%d", piOut));
+}
+bool XMETHODCALLTYPE CXConfig::tryGetUint(const char *szSection, const char *szKey, UINT *puOut)
+{
+	const char *szVal = getKey(szSection, szKey);
+	return(szVal && sscanf(szVal, "%u", puOut));
+}
+bool XMETHODCALLTYPE CXConfig::tryGetFloat(const char *szSection, const char *szKey, float *pfOut)
+{
+	const char *szVal = getKey(szSection, szKey);
+	return(szVal && sscanf(szVal, "%g", pfOut));
+}
+bool XMETHODCALLTYPE CXConfig::tryGetVector2(const char *szSection, const char *szKey, float2_t *pvOut)
+{
+	const char *szVal = getKey(szSection, szKey);
+	float2_t vec;
+	if(szVal && (sscanf(szVal, "%g %g", &vec.x, &vec.y) == 2 || sscanf(szVal, "%g, %g", &vec.x, &vec.y) == 2))
+	{
+		*pvOut = vec;
+		return(true);
+	}
+	return(false);
+}
+bool XMETHODCALLTYPE CXConfig::tryGetVector3(const char *szSection, const char *szKey, float3_t *pvOut)
+{
+	const char *szVal = getKey(szSection, szKey);
+	float3_t vec;
+	if(szVal && (sscanf(szVal, "%g %g %g", &vec.x, &vec.y, &vec.z) == 3 || sscanf(szVal, "%g, %g, %g", &vec.x, &vec.y, &vec.z) == 3))
+	{
+		*pvOut = vec;
+		return(true);
+	}
+	return(false);
+}
+bool XMETHODCALLTYPE CXConfig::tryGetVector4(const char *szSection, const char *szKey, float4_t *pvOut)
+{
+	const char *szVal = getKey(szSection, szKey);
+	float4_t vec;
+	if(szVal && (sscanf(szVal, "%g %g %g %g", &vec.x, &vec.y, &vec.z, &vec.w) == 4 || sscanf(szVal, "%g, %g, %g, %g", &vec.x, &vec.y, &vec.z, &vec.w) == 4))
+	{
+		*pvOut = vec;
+		return(true);
+	}
+	return(false);
+}
+
+bool XMETHODCALLTYPE CXConfig::tryGetJsonItem(const char *szSection, const char *szKey, IXJSONItem **ppOut)
+{
+	const char *szVal = getKey(szSection, szKey);
+	if(!szVal)
+	{
+		return(false);
+	}
+
+	static IXJSON *s_pJSON = (IXJSON*)Core_GetIXCore()->getPluginManager()->getInterface(IXJSON_GUID);
+	IXJSONItem *pRoot;
+	if(!s_pJSON->parse(szVal, &pRoot))
+	{
+		return(false);
+	}
+
+	*ppOut = pRoot;
+	return(true);
+}
+
+bool XMETHODCALLTYPE CXConfig::tryGetJsonObject(const char *szSection, const char *szKey, IXJSONObject **ppOut)
+{
+	IXJSONItem *pRoot;
+	if(!tryGetJsonItem(szSection, szKey, &pRoot))
+	{
+		return(false);
+	}
+
+	IXJSONObject *pObj = pRoot->asObject();
+	if(pObj)
+	{
+		*ppOut = pObj;
+		return(true);
+	}
+
+	mem_release(pRoot);
+	return(false);
+}
+bool XMETHODCALLTYPE CXConfig::tryGetJsonArray(const char *szSection, const char *szKey, IXJSONArray **ppOut)
+{
+	IXJSONItem *pRoot;
+	if(!tryGetJsonItem(szSection, szKey, &pRoot))
+	{
+		return(false);
+	}
+
+	IXJSONArray *pArr = pRoot->asArray();
+	if(pArr)
+	{
+		*ppOut = pArr;
+		return(true);
+	}
+
+	mem_release(pRoot);
+	return(false);
+}
+
+
+void XMETHODCALLTYPE CXConfig::setBool(const char *szSection, const char *szKey, bool bValue)
+{
+	set(szSection, szKey, bValue ? "true" : "false");
+}
+void XMETHODCALLTYPE CXConfig::setInt(const char *szSection, const char *szKey, int iValue)
+{
+	char tmp[32];
+	sprintf(tmp, "%d", iValue);
+	set(szSection, szKey, tmp);
+}
+void XMETHODCALLTYPE CXConfig::setUint(const char *szSection, const char *szKey, UINT uValue)
+{
+	char tmp[32];
+	sprintf(tmp, "%u", uValue);
+	set(szSection, szKey, tmp);
+}
+void XMETHODCALLTYPE CXConfig::setFloat(const char *szSection, const char *szKey, float fValue)
+{
+	char tmp[64];
+	sprintf(tmp, "%g", fValue);
+	set(szSection, szKey, tmp);
+}
+void XMETHODCALLTYPE CXConfig::setVector2(const char *szSection, const char *szKey, const float2_t &vValue)
+{
+	char tmp[128];
+	sprintf(tmp, "%g %g", vValue.x, vValue.y);
+	set(szSection, szKey, tmp);
+}
+void XMETHODCALLTYPE CXConfig::setVector3(const char *szSection, const char *szKey, const float3_t &vValue)
+{
+	char tmp[192];
+	sprintf(tmp, "%g %g %g", vValue.x, vValue.y, vValue.z);
+	set(szSection, szKey, tmp);
+}
+void XMETHODCALLTYPE CXConfig::setVector4(const char *szSection, const char *szKey, const float4_t &vValue)
+{
+	char tmp[256];
+	sprintf(tmp, "%g %g %g %g", vValue.x, vValue.y, vValue.z, vValue.w);
+	set(szSection, szKey, tmp);
 }

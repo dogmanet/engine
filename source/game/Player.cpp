@@ -59,7 +59,7 @@ void CPlayer::onPostLoad()
 
 	m_idQuadCurr = -1;
 
-	m_pCrosshair = new CCrosshair();
+	m_pCrosshair = new CCrosshair(GetRender());
 
 	IXResourceManager *pResourceManager = Core_GetIXCore()->getResourceManager();
 	pResourceManager->getModelAnimated("models/weapons/hands.dse", &m_pHandsModelResource);
@@ -95,7 +95,7 @@ void CPlayer::setOrient(const SMQuaternion &q)
 	if(SMIsZero(1.0f - fabsf(fAng)))
 	{
 		m_vPitchYawRoll.x = SM_PIDIV2 * fAng;
-		m_vPitchYawRoll.y = GetAngleBetweenVectors(q * -vUp, vBase, vUp);
+		m_vPitchYawRoll.y = SMRightAngleBetweenVectors(q * -vUp, vBase, vUp);
 	}
 	else
 	{

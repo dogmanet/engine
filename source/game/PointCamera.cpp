@@ -23,7 +23,7 @@ REGISTER_ENTITY(CPointCamera, point_camera, REC_ICON("dev_point_camera"));
 CPointCamera::CPointCamera()
 {
 	const float * r_default_fov = GET_PCVAR_FLOAT("r_default_fov");
-	m_pSXC = SGCore_CrCamera();
+	GetRender()->newCamera(&m_pSXC);
 	m_pSXC->setFOV(SMToRadian(*r_default_fov));
 }
 
@@ -33,7 +33,7 @@ CPointCamera::~CPointCamera()
 	mem_release(m_pSXC);
 }
 
-ICamera* CPointCamera::getCamera()
+IXCamera* CPointCamera::getCamera()
 {
 	return(m_pSXC);
 }

@@ -7,13 +7,11 @@ gui_simple.ps
 
 //##########################################################################
 
-half4 g_vColor;
+float4 g_vColor: register(b0);
 
 //##########################################################################
 
-half4 main(VSO_GUISimple IN):COLOR0
+float4 main(VSO_GUISimple IN):COLOR0
 {
-	half4 vFinalColor = g_vColor;
-	
-	return(vFinalColor);
+	return(g_vColor);
 }

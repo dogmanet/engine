@@ -2,6 +2,8 @@
 
 #include <xcommon/resource/IXResourceManager.h>
 #include <xcommon/IXAmbient.h>
+#include <xcommon/IXRenderable.h>
+#include <core/sxcore.h>
 
 class CLevelLoadListener: public IEventListener<XEventLevel>
 {
@@ -61,12 +63,13 @@ private:
 CLightSystem::CLightSystem(IXCore *pCore):
 	m_pCore(pCore)
 {
-	Core_0RegisterCVarFloat("lpv_size_0", 1.0f, "Коэфициент размера первого каскада LPV");
-	Core_0RegisterCVarFloat("lpv_size_1", 2.0f, "Коэфициент размера второго каскада LPV");
-	Core_0RegisterCVarFloat("lpv_size_2", 4.0f, "Коэфициент размера третьего каскада LPV");
-	Core_0RegisterCVarInt("lpv_cascades_count", 3, "Количество активных каскадов LPV [0;3]");
-	Core_0RegisterCVarInt("pp_ssao", 3, "Рисовать ли эффект ssao? 0 - нет, 1 - на низком качестве, 2 - на среднем, 3 - на высоком"); 
-	Core_0RegisterCVarBool("pp_sslr", true, "Рисовать ли эффект sslr?");
+	IXConsole *pConsole = pCore->getConsole();
+	pConsole->registerCVar("lpv_size_0", 1.0f, "Коэфициент размера первого каскада LPV");
+	pConsole->registerCVar("lpv_size_1", 2.0f, "Коэфициент размера второго каскада LPV");
+	pConsole->registerCVar("lpv_size_2", 4.0f, "Коэфициент размера третьего каскада LPV");
+	pConsole->registerCVar("lpv_cascades_count", 3, "Количество активных каскадов LPV [0;3]");
+	pConsole->registerCVar("pp_ssao", 3, "Рисовать ли эффект ssao? 0 - нет, 1 - на низком качестве, 2 - на среднем, 3 - на высоком");
+	pConsole->registerCVar("pp_sslr", true, "Рисовать ли эффект sslr?");
 
 	m_pLevelListener = new CLevelLoadListener(this, pCore);
 	m_pLevelChannel = pCore->getEventChannel<XEventLevel>(EVENT_LEVEL_GUID);
@@ -76,9 +79,19 @@ CLightSystem::CLightSystem(IXCore *pCore):
 	m_pSkyboxChangedChannel = pCore->getEventChannel<XEventSkyboxChanged>(EVENT_SKYBOX_CHANGED_GUID);
 	m_pSkyboxChangedChannel->addListener(m_pSkyboxChangedListener);
 
-	m_pDevice = SGCore_GetDXDevice();
+
+
+	m_pRender = (IXRender*)pCore->getPluginManager()->getInterface(IXRENDER_GUID);
+	m_pDevice = m_pRender->getDevice();
 
 	m_pMaterialSystem = (IXMaterialSystem*)pCore->getPluginManager()->getInterface(IXMATERIALSYSTEM_GUID);
+	m_pRenderPassIllumination = m_pMaterialSystem->getRenderPass("xIllumination");
+
+	m_pShadowCache = new CShadowCache(m_pRender, m_pMaterialSystem);
+	
+	initShaders();
+
+
 
 	if(m_pDevice)
 	{
@@ -110,32 +123,21 @@ CLightSystem::CLightSystem(IXCore *pCore):
 			m_pGICubesRB = m_pDevice->createRenderBuffer(1, &pVB, pVD);
 			mem_release(pVD);
 			mem_release(pVB);
-
-			ID idVS = SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "gi_cubes.vs");
-			ID idPS = SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "gi_cubes.ps");
-			ID idGS = SGCore_ShaderLoad(SHADER_TYPE_GEOMETRY, "gi_cubes.gs");
-			m_idGICubesShader = SGCore_ShaderCreateKit(idVS, idPS, idGS);
 		}
 
-		static const int *r_win_width = GET_PCVAR_INT("r_win_width");
-		static const int *r_win_height = GET_PCVAR_INT("r_win_height");
+		//static const int *r_win_width = GET_PCVAR_INT("r_win_width");
+		//static const int *r_win_height = GET_PCVAR_INT("r_win_height");
 
 		m_pLightLuminance = m_pDevice->createTexture2D(LUMINANCE_BUFFER_SIZE, LUMINANCE_BUFFER_SIZE, 1, GX_TEXFLAG_RENDERTARGET, GXFMT_R16F);
 
 		m_pLightLuminance32 = m_pDevice->createTexture2D(32, 32, 1, GX_TEXFLAG_RENDERTARGET | GX_TEXFLAG_UNORDERED_ACCESS, GXFMT_R16F);
 		m_pLightLuminance1 = m_pDevice->createTexture2D(1, 1, 1, GX_TEXFLAG_RENDERTARGET | GX_TEXFLAG_UNORDERED_ACCESS, GXFMT_R16F);
-		m_pAdaptedLuminance[0] = m_pDevice->createTexture2D(1, 1, 1, GX_TEXFLAG_RENDERTARGET | GX_TEXFLAG_UNORDERED_ACCESS, GXFMT_R16F);
-		m_pAdaptedLuminance[1] = m_pDevice->createTexture2D(1, 1, 1, GX_TEXFLAG_RENDERTARGET | GX_TEXFLAG_UNORDERED_ACCESS, GXFMT_R16F);
-		m_pBloom[0] = m_pDevice->createTexture2D(*r_win_width / 2, *r_win_height / 2, 1, GX_TEXFLAG_RENDERTARGET | GX_TEXFLAG_AUTORESIZE, GXFMT_A16B16G16R16F); // GXFMT_A8B8G8R8
-		m_pBloom[1] = m_pDevice->createTexture2D(*r_win_width / 2, *r_win_height / 2, 1, GX_TEXFLAG_RENDERTARGET | GX_TEXFLAG_AUTORESIZE, GXFMT_A16B16G16R16F); // GXFMT_A8B8G8R8
-
-
+		
 		
 		m_pLPVcentersShaderData = m_pDevice->createConstantBuffer(sizeof(m_lpvCentersShaderData.vs));
 		m_pLPVcurrentCascadeShaderData = m_pDevice->createConstantBuffer(sizeof(float4_t));
 		
 		m_pToneMappingShaderData = m_pDevice->createConstantBuffer(sizeof(m_toneMappingShaderData));
-		m_pGaussBlurShaderData = m_pDevice->createConstantBuffer(sizeof(m_gaussBlurShaderData));
 
 		for(UINT i = 0; i < 3; ++i)
 		{
@@ -161,16 +163,6 @@ CLightSystem::CLightSystem(IXCore *pCore):
 		m_pSkyLightBaseR = m_pDevice->createTexture2D(SKYLIGHT_AREA_COUNT, 1, 1, GX_TEXFLAG_RENDERTARGET, GXFMT_A32B32G32R32F);
 		m_pSkyLightBaseG = m_pDevice->createTexture2D(SKYLIGHT_AREA_COUNT, 1, 1, GX_TEXFLAG_RENDERTARGET, GXFMT_A32B32G32R32F);
 		m_pSkyLightBaseB = m_pDevice->createTexture2D(SKYLIGHT_AREA_COUNT, 1, 1, GX_TEXFLAG_RENDERTARGET, GXFMT_A32B32G32R32F);
-
-		m_idLightBoundShader = SGCore_ShaderCreateKit(SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "lighting_bound.vs"), -1);
-
-		m_idLPVPropagateShader = SGCore_ShaderCreateKit(-1, -1, -1, SGCore_ShaderLoad(SHADER_TYPE_COMPUTE, "gi_propagation.cs"));
-
-		GXMacro aMaskedReductionMacro[] = {{"APPLY_MASK", ""}, GX_MACRO_END()};
-		m_idLuminanceReductionShader = SGCore_ShaderCreateKit(-1, -1, -1, SGCore_ShaderLoad(SHADER_TYPE_COMPUTE, "hdr_reduction.cs"));
-		m_idLuminanceReductionMaskedShader = SGCore_ShaderCreateKit(-1, -1, -1, SGCore_ShaderLoad(SHADER_TYPE_COMPUTE, "hdr_reduction.cs", "hdr_reduction_masked.cs", aMaskedReductionMacro));
-
-		m_idSkylightGenGridShader = SGCore_ShaderCreateKit(-1, -1, -1, SGCore_ShaderLoad(SHADER_TYPE_COMPUTE, "gi_skylight_grid.cs"));
 		
 		GXSamplerDesc samplerDesc;
 
@@ -245,65 +237,7 @@ CLightSystem::CLightSystem(IXCore *pCore):
 
 		dsDesc.useStencilTest = FALSE;
 		m_pDepthStencilStateLightShadowGlobal = m_pDevice->createDepthStencilState(&dsDesc);
-
-
-
-		ID idScreenOut = SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "pp_quad_render.vs");
-		ID idResPos = SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "pp_res_pos.vs", "pp_quad_render_res_pos.vs");
-
-		GXMacro Defines_IS_SHADOWED[] = {{"IS_SHADOWED", "1"}, GX_MACRO_END()};
-		GXMacro Defines_IS_SPOT_SHADOWED[] = {{"IS_SHADOWED", "1"}, {"IS_SPOT", "1"}, GX_MACRO_END()};
-		GXMacro Defines_IS_PSSM_SHADOWED[] = {{"IS_SHADOWED", "1"}, {"IS_PSSM", "1"}, GX_MACRO_END()};
-
-		GXMacro Defines_USE_AO[] = {{"USE_AO", "1"}, GX_MACRO_END()};
-		m_idBlendAmbientSpecDiffColor[0][0] = SGCore_ShaderCreateKit(idResPos, SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "lighting_blend.ps"));
-		m_idBlendAmbientSpecDiffColor[1][0] = SGCore_ShaderCreateKit(idResPos, SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "lighting_blend.ps", 0, Defines_USE_AO));
-		GXMacro Defines_USE_SSLR[] = {{"USE_SSLR", "1"}, GX_MACRO_END()};
-		m_idBlendAmbientSpecDiffColor[0][1] = SGCore_ShaderCreateKit(idResPos, SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "lighting_blend.ps", 0, Defines_USE_SSLR));
-		GXMacro Defines_USE_AO_SSLR[] = {{"USE_SSLR", "1"}, {"USE_AO", "1"}, GX_MACRO_END()};
-		m_idBlendAmbientSpecDiffColor[1][1] = SGCore_ShaderCreateKit(idResPos, SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "lighting_blend.ps", 0, Defines_USE_AO_SSLR));
-
-		m_idComLightingShadow = SGCore_ShaderCreateKit(idResPos, SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "lighting_com.ps", "lighting_com_shadow.ps", Defines_IS_SHADOWED));
-		m_idComLightingSpotShadow = SGCore_ShaderCreateKit(idResPos, SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "lighting_com.ps", "lighting_com_spot_shadow.ps", Defines_IS_SPOT_SHADOWED));
-		m_idComLightingPSSMShadow = SGCore_ShaderCreateKit(idResPos, SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "lighting_com.ps", "lighting_com_pssm_shadow.ps", Defines_IS_PSSM_SHADOWED));
-
-		// LPV_CASCADES_COUNT - iCascades
-		GXMacro Defines_LPV_CASCADE_3[] = {{"LPV_START_CASCADE", "0"}, GX_MACRO_END()};
-		GXMacro Defines_LPV_CASCADE_3_AO[] = {{"LPV_START_CASCADE", "0"}, {"USE_AO", "1"}, GX_MACRO_END()};
-		m_idComLightingGI[2][0] = SGCore_ShaderCreateKit(idResPos, SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "lighting_gi.ps", 0, Defines_LPV_CASCADE_3));
-		m_idComLightingGI[2][1] = SGCore_ShaderCreateKit(idResPos, SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "lighting_gi.ps", 0, Defines_LPV_CASCADE_3_AO));
-		GXMacro Defines_LPV_CASCADE_2[] = {{"LPV_START_CASCADE", "1"}, GX_MACRO_END()};
-		GXMacro Defines_LPV_CASCADE_2_AO[] = {{"LPV_START_CASCADE", "1"}, {"USE_AO", "1"}, GX_MACRO_END()};
-		m_idComLightingGI[1][0] = SGCore_ShaderCreateKit(idResPos, SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "lighting_gi.ps", 0, Defines_LPV_CASCADE_2));
-		m_idComLightingGI[1][1] = SGCore_ShaderCreateKit(idResPos, SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "lighting_gi.ps", 0, Defines_LPV_CASCADE_2_AO));
-		GXMacro Defines_LPV_CASCADE_1[] = {{"LPV_START_CASCADE", "2"}, GX_MACRO_END()};
-		GXMacro Defines_LPV_CASCADE_1_AO[] = {{"LPV_START_CASCADE", "2"}, {"USE_AO", "1"}, GX_MACRO_END()};
-		m_idComLightingGI[0][0] = SGCore_ShaderCreateKit(idResPos, SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "lighting_gi.ps", 0, Defines_LPV_CASCADE_1));
-		m_idComLightingGI[0][1] = SGCore_ShaderCreateKit(idResPos, SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "lighting_gi.ps", 0, Defines_LPV_CASCADE_1_AO));
-
-		m_idHDRinitLuminance = SGCore_ShaderCreateKit(idScreenOut, SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "hdr_luminance.ps"));
-		m_idHDRAdaptLuminance = SGCore_ShaderCreateKit(idScreenOut, SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "hdr_adapt.ps"));
-		m_idHDRToneMapping = SGCore_ShaderCreateKit(idScreenOut, SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "hdr_tonemapping.ps"));
-		m_idBloomShader = SGCore_ShaderCreateKit(idScreenOut, SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "hdr_bloom.ps"));
-		m_idGaussShader[0] = SGCore_ShaderCreateKit(idScreenOut, SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "ppe_gauss_blur.ps"));
-		GXMacro Defines_PPE_GAUSS_HORIZONTAL[] = {{"_H_", "1"}, GX_MACRO_END()};
-		m_idGaussShader[1] = SGCore_ShaderCreateKit(idScreenOut, SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "ppe_gauss_blur.ps", 0, Defines_PPE_GAUSS_HORIZONTAL));
-
-
-		m_idSkylightGenSHShader = SGCore_ShaderCreateKit(SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "gi_skylight_gen_sh.vs"), SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "gi_skylight_gen_sh.ps"));
-
-
-		GXMacro Defines_SSAO_Q_3[] = {{"SSAO_Q_3", ""}, GX_MACRO_END()};
-		m_idSSAOShader[2] = SGCore_ShaderCreateKit(idResPos, SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "ppe_ssao.ps", "ppe_ssao_q_3.ps", Defines_SSAO_Q_3));
-
-		GXMacro Defines_SSAO_Q_2[] = {{"SSAO_Q_2", ""}, GX_MACRO_END()};
-		m_idSSAOShader[1] = SGCore_ShaderCreateKit(idResPos, SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "ppe_ssao.ps", "ppe_ssao_q_2.ps", Defines_SSAO_Q_2));
-
-		GXMacro Defines_SSAO_Q_1[] = {{"SSAO_Q_1", ""}, GX_MACRO_END()};
-		m_idSSAOShader[0] = SGCore_ShaderCreateKit(idResPos, SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "ppe_ssao.ps", "ppe_ssao_q_1.ps", Defines_SSAO_Q_1));
-
-		m_idSSAOBlendShader = SGCore_ShaderCreateKit(idScreenOut, SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "ppe_ssao_blur.ps"));
-
+		
 		float3 rnd[24];
 		for(int i = 0; i < 24; i++)
 		{
@@ -325,10 +259,7 @@ CLightSystem::CLightSystem(IXCore *pCore):
 
 		//m_pRndTexture = m_pDevice->createTexture2D(32, 32, 1, 0, GXFMT_A8B8G8R8, aRandomTexture);
 		m_pRndTexture = m_pDevice->createTexture2D(4, 4, 1, 0, GXFMT_A8B8G8R8, aRandomTexture);
-
-		m_pSSAOTexture = m_pDevice->createTexture2D(*r_win_width, *r_win_height, 1, GX_TEXFLAG_RENDERTARGET | GX_TEXFLAG_AUTORESIZE, GXFMT_R16F);
-		m_pSSAOTextureBlur = m_pDevice->createTexture2D(*r_win_width, *r_win_height, 1, GX_TEXFLAG_RENDERTARGET | GX_TEXFLAG_AUTORESIZE, GXFMT_R16F);
-
+		
 		m_pSkyLightGenCB = m_pDevice->createConstantBuffer(sizeof(SkyLightGenSHParam));
 
 		buildSkyLightMasks();
@@ -344,9 +275,6 @@ CLightSystem::CLightSystem(IXCore *pCore):
 	}
 	else
 	{
-		m_pAdaptedLuminance[0] = NULL;
-		m_pAdaptedLuminance[1] = NULL;
-
 		for(UINT i = 0; i < 3; ++i)
 		{
 			m_aLPVs[i].pGIAccumRed = NULL;
@@ -370,15 +298,12 @@ CLightSystem::~CLightSystem()
 	mem_delete(m_pSun);
 	mem_release(m_pShapeSphere);
 	mem_release(m_pShapeCone);
-	mem_release(m_pRenderPipeline);
 
 	mem_release(m_pGICubesRB);
 
 	mem_release(m_pLightLuminance);
 	mem_release(m_pLightLuminance32);
 	mem_release(m_pLightLuminance1);
-	mem_release(m_pAdaptedLuminance[0]);
-	mem_release(m_pAdaptedLuminance[1]);
 
 	mem_release(m_pLPVcentersShaderData);
 	mem_release(m_pLPVcurrentCascadeShaderData);
@@ -419,11 +344,6 @@ CLightSystem::~CLightSystem()
 	mem_release(m_pDepthStencilStateLightShadowNonGlobal);
 	mem_release(m_pDepthStencilStateLightShadowGlobal);
 
-	mem_release(m_pGBufferColor);
-	mem_release(m_pGBufferNormals);
-	mem_release(m_pGBufferParams);
-	mem_release(m_pGBufferDepth);
-
 	mem_release(m_pSkyboxTexture);
 
 	for(UINT i = 0; i < SKYLIGHT_AREA_COUNT; ++i)
@@ -444,13 +364,6 @@ CLightSystem::~CLightSystem()
 	mem_release(m_pSSAOrndCB);
 
 	mem_release(m_pRndTexture);
-	mem_release(m_pSSAOTexture);
-	mem_release(m_pSSAOTextureBlur);
-
-	mem_release(m_pBloom[0]);
-	mem_release(m_pBloom[1]);
-
-	mem_release(m_pGaussBlurShaderData);
 }
 
 void CLightSystem::setLevelSize(const float3 &vMin, const float3 &vMax)
@@ -547,41 +460,41 @@ void CLightSystem::_deleteLight(CXLight *pLight)
 	}
 }
 
-IMesh* CLightSystem::getShapeSphere()
+IXMesh* CLightSystem::getShapeSphere()
 {
 	if(!m_pShapeSphere)
 	{
-		SGCore_FCreateSphere(1.0f, 16, 16, &m_pShapeSphere);
+		m_pRender->getUtils()->createSphereMesh(1.0f, 16, 16, &m_pShapeSphere);
 	}
-	m_pShapeSphere->AddRef();
+	add_ref(m_pShapeSphere);
 	return(m_pShapeSphere);
 }
 
-IMesh* CLightSystem::getShapeCone()
+IXMesh* CLightSystem::getShapeCone()
 {
 	if(!m_pShapeCone)
 	{
-		SGCore_FCreateCone(0.0f, 1.0f / cosf(SM_PI / 16.0f), 1.0f, &m_pShapeCone, 16);
+		m_pRender->getUtils()->createConeMesh(0.0f, 1.0f / cosf(SM_PI / 16.0f), 1.0f, &m_pShapeCone, 16);
 	}
-	m_pShapeCone->AddRef();
+	add_ref(m_pShapeCone);
 	return(m_pShapeCone);
 }
 
-void XMETHODCALLTYPE CLightSystem::updateVisibility()
+void CLightSystem::updateVisibility(IXCamera *pCamera)
 {
 	XPROFILE_FUNCTION();
-	assert(m_pMainCamera);
+	assert(pCamera);
 
 	if(!m_isEnabled)
 	{
 		return;
 	}
 
-	float3 vCamPos = m_pMainCamera->getPosition();
-	float3 vCamDir = m_pMainCamera->getLook();
+	float3 vCamPos = pCamera->getPosition();
+	float3 vCamDir = pCamera->getLook();
 
-	static const float *lpv_size_2 = GET_PCVAR_FLOAT("lpv_size_2");
-	static const int *lpv_cascades_count = GET_PCVAR_INT("lpv_cascades_count");
+	static const float *lpv_size_2 = m_pCore->getConsole()->getPCVarFloat("lpv_size_2");
+	static const int *lpv_cascades_count = m_pCore->getConsole()->getPCVarInt("lpv_cascades_count");
 
 	int iCascades = *lpv_cascades_count;
 	if(iCascades < 0)
@@ -611,58 +524,28 @@ void XMETHODCALLTYPE CLightSystem::updateVisibility()
 
 			if(m_aLights[i]->isDirty(LRT_ALL))
 			{
-				m_aLights[i]->updateVisibility(m_pMainCamera, vLPVmin, vLPVmax, iCascades > 0);
+				m_aLights[i]->updateVisibility(pCamera, vLPVmin, vLPVmax, iCascades > 0);
 			}
 		}
 	}
 }
 
-void XMETHODCALLTYPE CLightSystem::setFrameObserverCamera(ICamera *pMainCamera)
+void CLightSystem::setFrameObserverCamera(IXCamera *pMainCamera)
 {
-	//! @todo uncomment me!
-	// pMainCamera->AddRef();
-	m_pMainCamera = pMainCamera;
-	if(m_pSun)
-	{
-		m_pSun->setCamera(pMainCamera);
-	}
+	SAFE_CALL(m_pSun, setCamera, pMainCamera);
 }
 
-void XMETHODCALLTYPE CLightSystem::setGBuffer(IGXTexture2D *pColor, IGXTexture2D *pNormals, IGXTexture2D *pParams, IGXTexture2D *pDepth)
-{
-	mem_release(m_pGBufferColor);
-	mem_release(m_pGBufferNormals);
-	mem_release(m_pGBufferParams);
-	mem_release(m_pGBufferDepth);
-
-	pColor->AddRef();
-	pNormals->AddRef();
-	pParams->AddRef();
-	pDepth->AddRef();
-
-	m_pGBufferColor = pColor;
-	m_pGBufferNormals = pNormals;
-	m_pGBufferParams = pParams;
-	m_pGBufferDepth = pDepth;
-}
-
-void XMETHODCALLTYPE CLightSystem::setRenderPipeline(IXRenderPipeline *pRenderPipeline)
-{
-	mem_release(m_pRenderPipeline);
-	m_pRenderPipeline = pRenderPipeline;
-	m_pRenderPipeline->AddRef();
-	if(!m_pShadowCache)
-	{
-		m_pShadowCache = new CShadowCache(m_pRenderPipeline, m_pMaterialSystem);
-	}
-}
-
-void XMETHODCALLTYPE CLightSystem::renderGI(IGXTexture2D *pLightTotal, IGXTexture2D *pTempBuffer)
+void CLightSystem::renderGI(CGIGraphNodeData *pNodeData, IXRenderTarget *pFinalTarget)
 {
 	if(!m_isEnabled)
 	{
 		return;
 	}
+	//IGXTexture2D *pLightTotal = pNodeData->m_pLightTotal;
+	IGXTexture2D *pTempBuffer = pNodeData->m_pLightAmbientDiffuse;
+
+	IXCamera *pCamera;
+	pFinalTarget->getCamera(&pCamera);
 
 	updateSkylight();
 
@@ -678,7 +561,7 @@ void XMETHODCALLTYPE CLightSystem::renderGI(IGXTexture2D *pLightTotal, IGXTextur
 	m_pShadowCache->setLightsCount(uCounts[LIGHT_TYPE_POINT], uCounts[LIGHT_TYPE_SPOT], uCounts[LIGHT_TYPE_SUN] != 0);
 	m_pShadowCache->setRSMLightsCount(uCounts[LIGHT_TYPE_POINT], uCounts[LIGHT_TYPE_SPOT], uCounts[LIGHT_TYPE_SUN] != 0);
 
-	m_pShadowCache->setObserverCamera(m_pMainCamera);
+	m_pShadowCache->setObserverCamera(pCamera);
 
 	m_pShadowCache->nextFrame();
 
@@ -693,16 +576,22 @@ void XMETHODCALLTYPE CLightSystem::renderGI(IGXTexture2D *pLightTotal, IGXTextur
 	pCtx->clear(GX_CLEAR_COLOR);
 	//	pCtx->clear(GX_CLEAR_COLOR | GX_CLEAR_STENCIL);
 
-	m_pRenderPipeline->renderGI();
+	IXRenderableVisibility *pVis;
+	pCamera->getVisibility(&pVis);
+
+	m_pRender->setSceneFilter(pCtx);
+	m_pMaterialSystem->bindRenderPass(m_pRenderPassIllumination);
+	m_pRender->renderStage(XRS_GI, pVis);
+	mem_release(pVis);
 	pCtx->addTimestamp("selfillum -");
 
-	float3 vCamDir = m_pMainCamera->getLook();
-	float3 vCamPos = m_pMainCamera->getPosition();
+	float3 vCamDir = pCamera->getLook();
+	float3 vCamPos = pCamera->getPosition();
 
-	static const float *lpv_size_0 = GET_PCVAR_FLOAT("lpv_size_0");
-	static const float *lpv_size_1 = GET_PCVAR_FLOAT("lpv_size_1");
-	static const float *lpv_size_2 = GET_PCVAR_FLOAT("lpv_size_2");
-	static const int *lpv_cascades_count = GET_PCVAR_INT("lpv_cascades_count");
+	static const float *lpv_size_0 = m_pCore->getConsole()->getPCVarFloat("lpv_size_0");
+	static const float *lpv_size_1 = m_pCore->getConsole()->getPCVarFloat("lpv_size_1");
+	static const float *lpv_size_2 = m_pCore->getConsole()->getPCVarFloat("lpv_size_2");
+	static const int *lpv_cascades_count = m_pCore->getConsole()->getPCVarInt("lpv_cascades_count");
 
 	int iCascades = *lpv_cascades_count;
 	if(iCascades < 0)
@@ -731,7 +620,7 @@ void XMETHODCALLTYPE CLightSystem::renderGI(IGXTexture2D *pLightTotal, IGXTextur
 	bool useAO = false;
 
 	{
-		static const int *pp_ssao = GET_PCVAR_INT("pp_ssao");
+		static const int *pp_ssao = m_pCore->getConsole()->getPCVarInt("pp_ssao");
 		int iSSAO = *pp_ssao;
 		if(iSSAO < 0)
 		{
@@ -744,33 +633,33 @@ void XMETHODCALLTYPE CLightSystem::renderGI(IGXTexture2D *pLightTotal, IGXTextur
 		if(iSSAO && (iCascades || m_pSkyboxTexture))
 		{
 			IGXDepthStencilSurface *pOldDS = pCtx->getDepthStencilSurface();
-			pCtx->unsetDepthStencilSurface();
+			pCtx->setDepthStencilSurface(NULL);
 
-			IGXSurface *pSurf = m_pSSAOTexture->getMipmap();
+			IGXSurface *pSurf = pNodeData->m_pSSAOTexture->getMipmap();
 			pCtx->setColorTarget(pSurf);
 			mem_release(pSurf);
 
 			pCtx->setPSTexture(m_pRndTexture, 2);
-			pCtx->setPSTexture(m_pGBufferNormals, 3);
-			pCtx->setPSTexture(m_pGBufferDepth, 4);
+			pCtx->setPSTexture(pNodeData->m_pGBufferNormals, 3);
+			pCtx->setPSTexture(pNodeData->m_pGBufferDepth, 4);
 
 			pCtx->setSamplerState(m_pSamplerPointClamp, 0);
 			pCtx->setSamplerState(m_pSamplerLinearWrap, 2);
 
 			m_pDevice->getThreadContext()->setPSConstant(m_pSSAOrndCB, 7);
 
-			SGCore_ShaderBind(m_idSSAOShader[iSSAO - 1]);
-			SGCore_ScreenQuadDraw();
+			m_pRender->bindShader(pCtx, m_idSSAOShader[iSSAO - 1]);
+			m_pRender->drawScreenQuad(pCtx, pFinalTarget);
 
-			pSurf = m_pSSAOTextureBlur->getMipmap();
+			pSurf = pNodeData->m_pSSAOTextureBlur->getMipmap();
 			pCtx->setColorTarget(pSurf);
 			mem_release(pSurf);
-			pCtx->setPSTexture(m_pSSAOTexture, 0);
+			pCtx->setPSTexture(pNodeData->m_pSSAOTexture, 0);
 
-			SGCore_ShaderBind(m_idSSAOBlendShader);
-			SGCore_ScreenQuadDraw();
+			m_pRender->bindShader(pCtx, m_idSSAOBlendShader);
+			m_pRender->drawScreenQuad(pCtx, pFinalTarget);
 
-			std::swap(m_pSSAOTexture, m_pSSAOTextureBlur);
+			std::swap(pNodeData->m_pSSAOTexture, pNodeData->m_pSSAOTextureBlur);
 
 			useAO = true;
 
@@ -789,7 +678,7 @@ void XMETHODCALLTYPE CLightSystem::renderGI(IGXTexture2D *pLightTotal, IGXTextur
 		pLight = m_aLights[i];
 
 		//если свет виден фрустуму камеры (это надо было заранее просчитать) и если свет включен
-		if(pLight->isEnabled() && pLight->getRenderType() != LRT_NONE)
+		if(pLight->isEnabled() && pLight->getRenderType() != LRT_NONE && ((1 << pLight->getLayer()) & pCamera->getLayerMask()))
 		{
 			if(pLight->getRenderType() & LRT_LPV)
 			{
@@ -802,12 +691,17 @@ void XMETHODCALLTYPE CLightSystem::renderGI(IGXTexture2D *pLightTotal, IGXTextur
 		}
 	}
 
-	static const float *r_default_fov = GET_PCVAR_FLOAT("r_default_fov");
-	static const float *r_near = GET_PCVAR_FLOAT("r_near");
-	static const float *r_far = GET_PCVAR_FLOAT("r_far");
+	//static const float *r_default_fov = GET_PCVAR_FLOAT("r_default_fov");
+	//static const float *r_near = GET_PCVAR_FLOAT("r_near");
+	//static const float *r_far = GET_PCVAR_FLOAT("r_far");
 
 	m_pMaterialSystem->setCullMode(GXCULL_BACK);
 //	pCtx->setRasterizerState(m_pRasterizerConservative);
+
+	IGXConstantBuffer *pOldVSCameraConst = pCtx->getVSConstant(SCR_CAMERA);
+	IGXConstantBuffer *pOldPSCameraConst = pCtx->getPSConstant(SCR_CAMERA);
+	IGXConstantBuffer *pOldGSCameraConst = pCtx->getGSConstant(SCR_CAMERA);
+	IGXConstantBuffer *pOldCSCameraConst = pCtx->getCSConstant(SCR_CAMERA);
 
 	UINT uShadowCount = 0;
 	while((uShadowCount = m_pShadowCache->processNextBunch()))
@@ -834,7 +728,7 @@ void XMETHODCALLTYPE CLightSystem::renderGI(IGXTexture2D *pLightTotal, IGXTextur
 				pCtx->setDepthStencilState(m_pDepthStencilStateLightBound);
 
 				//отрисовка ограничивающего объема
-				SGCore_ShaderBind(m_idLightBoundShader);
+				m_pRender->bindShader(pCtx, m_idLightBoundShader);
 				pLight->drawShape(m_pDevice);
 
 				pCtx->setStencilRef(255);
@@ -850,7 +744,7 @@ void XMETHODCALLTYPE CLightSystem::renderGI(IGXTexture2D *pLightTotal, IGXTextur
 
 
 			pCtx->setBlendState(m_pBlendRed);
-			pShadow->genShadow(m_pGBufferDepth, m_pGBufferNormals);
+			pShadow->genShadow(pNodeData->m_pGBufferDepth, pNodeData->m_pGBufferNormals);
 			pCtx->setBlendState(m_pBlendAlphaOneOne);
 			pCtx->setColorTarget(pAmbientSurf);
 
@@ -883,17 +777,17 @@ void XMETHODCALLTYPE CLightSystem::renderGI(IGXTexture2D *pLightTotal, IGXTextur
 			pCtx->setPSConstant(pLightConstants);
 			mem_release(pLightConstants);
 
-			SGCore_ShaderBind(idshaderkit);
+			m_pRender->bindShader(pCtx, idshaderkit);
 
 			pCtx->setSamplerState(m_pSamplerPointClamp, 0);
 
-			pCtx->setPSTexture(m_pGBufferColor);
-			pCtx->setPSTexture(m_pGBufferNormals, 1);
-			pCtx->setPSTexture(m_pGBufferParams, 2);
-			pCtx->setPSTexture(m_pGBufferDepth, 3);
+			pCtx->setPSTexture(pNodeData->m_pGBufferColor);
+			pCtx->setPSTexture(pNodeData->m_pGBufferNormals, 1);
+			pCtx->setPSTexture(pNodeData->m_pGBufferParams, 2);
+			pCtx->setPSTexture(pNodeData->m_pGBufferDepth, 3);
 			//m_pDevice->setTexture(SGCore_GbufferGetRT(DS_RT_ADAPTEDLUM), 5);
 
-			SGCore_ScreenQuadDraw();
+			m_pRender->drawScreenQuad(pCtx, pFinalTarget);
 		}
 		pCtx->addTimestamp("lights -");
 	}
@@ -916,7 +810,7 @@ void XMETHODCALLTYPE CLightSystem::renderGI(IGXTexture2D *pLightTotal, IGXTextur
 		//	pCtx->setPSConstant(m_pLightingShaderDataPS, 1);
 
 		IGXDepthStencilSurface *pOldSurface = pCtx->getDepthStencilSurface();
-		pCtx->unsetDepthStencilSurface();
+		pCtx->setDepthStencilSurface(NULL);
 
 		IBaseReflectiveShadowMap *pShadow = NULL;
 
@@ -958,10 +852,10 @@ void XMETHODCALLTYPE CLightSystem::renderGI(IGXTexture2D *pLightTotal, IGXTextur
 
 		pCtx->addTimestamp("lpv_inject -");
 
-		const bool *dev_lpv_points = GET_PCVAR_BOOL("dev_lpv_points");
+		const bool *dev_lpv_points = m_pCore->getConsole()->getPCVarBool("dev_lpv_points");
 		if(*dev_lpv_points)
 		{
-			auto pTarget = m_pGBufferColor->asRenderTarget();
+			auto pTarget = pNodeData->m_pGBufferColor->asRenderTarget();
 			pCtx->setColorTarget(pAmbientSurf);
 			mem_release(pTarget);
 			for(UINT i = 0; i < uShadowCount; ++i)
@@ -1009,13 +903,13 @@ void XMETHODCALLTYPE CLightSystem::renderGI(IGXTexture2D *pLightTotal, IGXTextur
 			}
 		}
 	}
-	SGCore_ShaderUnBind();
+	m_pRender->unbindShader(pCtx);
 
 	mem_release(pOldDSSurface);
 
 	if(iCascades)
 	{
-		SGCore_ShaderBind(m_idLPVPropagateShader);
+		m_pRender->bindShader(pCtx, m_idLPVPropagateShader);
 		UINT uStepCount[] = {4, 6, 8};
 
 		//for(UINT k = 0; k < 1000; ++k)
@@ -1068,7 +962,7 @@ void XMETHODCALLTYPE CLightSystem::renderGI(IGXTexture2D *pLightTotal, IGXTextur
 		}
 		//}
 
-		SGCore_ShaderUnBind(); 
+		m_pRender->unbindShader(pCtx);
 		pCtx->addTimestamp("lpv_propagate -");
 	}
 
@@ -1081,16 +975,16 @@ void XMETHODCALLTYPE CLightSystem::renderGI(IGXTexture2D *pLightTotal, IGXTextur
 		pCtx->setBlendState(m_pBlendAlphaOneOne);
 		pCtx->setDepthStencilState(m_pDepthStencilStateLightShadowGlobal);
 
-		SGCore_ShaderBind(m_idComLightingGI[iCascades - 1][useAO ? 1 : 0]);
+		m_pRender->bindShader(pCtx, m_idComLightingGI[iCascades - 1][useAO ? 1 : 0]);
 
 		pCtx->setSamplerState(m_pSamplerPointClamp, 0);
 		pCtx->setSamplerState(m_pSamplerLinearBorder, 1);
 
-		pCtx->setPSTexture(m_pGBufferDepth);
-		pCtx->setPSTexture(m_pGBufferNormals, 1);
-		pCtx->setPSTexture(m_pGBufferColor, 2);
-		pCtx->setPSTexture(m_pGBufferParams, 3);
-		pCtx->setPSTexture(m_pSSAOTexture, 13);
+		pCtx->setPSTexture(pNodeData->m_pGBufferDepth);
+		pCtx->setPSTexture(pNodeData->m_pGBufferNormals, 1);
+		pCtx->setPSTexture(pNodeData->m_pGBufferColor, 2);
+		pCtx->setPSTexture(pNodeData->m_pGBufferParams, 3);
+		pCtx->setPSTexture(pNodeData->m_pSSAOTexture, 13);
 		for(UINT i = 0; i < 3; ++i)
 		{
 			pCtx->setPSTexture(m_aLPVs[i].pGIAccumRed, 4 + i);
@@ -1098,19 +992,27 @@ void XMETHODCALLTYPE CLightSystem::renderGI(IGXTexture2D *pLightTotal, IGXTextur
 			pCtx->setPSTexture(m_aLPVs[i].pGIAccumBlue, 10 + i);
 		}
 
-		SGCore_ScreenQuadDraw();
+		m_pRender->drawScreenQuad(pCtx, pFinalTarget);
 
 		pCtx->setPSTexture(NULL, 2);
 		pCtx->setPSTexture(NULL, 3);
 		pCtx->setPSTexture(NULL, 4);
 
-		SGCore_ShaderUnBind();
+		m_pRender->unbindShader(pCtx);
 		pCtx->setSamplerState(m_pSamplerLinearClamp, 1); 
 		
 		pCtx->addTimestamp("lpv_apply -");
 	}
 
+	pCtx->setVSConstant(pOldVSCameraConst, SCR_CAMERA);
+	pCtx->setPSConstant(pOldPSCameraConst, SCR_CAMERA);
+	pCtx->setGSConstant(pOldGSCameraConst, SCR_CAMERA);
+	pCtx->setCSConstant(pOldCSCameraConst, SCR_CAMERA);
 
+	mem_release(pOldVSCameraConst);
+	mem_release(pOldPSCameraConst);
+	mem_release(pOldGSCameraConst);
+	mem_release(pOldCSCameraConst);
 
 	pCtx->setDepthStencilState(m_pDepthStencilStateNoZ);
 	pCtx->setRasterizerState(NULL);
@@ -1125,7 +1027,7 @@ void XMETHODCALLTYPE CLightSystem::renderGI(IGXTexture2D *pLightTotal, IGXTextur
 	//теперь необходимо все смешать чтобы получить итоговую освещенную картинку
 	//{{
 
-	static const bool *pp_sslr = GET_PCVAR_BOOL("pp_sslr");
+	static const bool *pp_sslr = m_pCore->getConsole()->getPCVarBool("pp_sslr");
 	bool useSSLR = *pp_sslr;
 
 
@@ -1137,20 +1039,22 @@ void XMETHODCALLTYPE CLightSystem::renderGI(IGXTexture2D *pLightTotal, IGXTextur
 	//очищаем рт (в старой версии было многопроходное смешивание)
 	//	pCtx->clear(GX_CLEAR_COLOR);
 
-	pCtx->setPSTexture(m_pGBufferColor);
+	pCtx->setPSTexture(pNodeData->m_pGBufferColor);
 	pCtx->setPSTexture(pTempBuffer, 1);
 	//pCtx->setPSTexture(m_pRndTexture, 2);
 	//pCtx->setPSTexture(m_pLightSpecular, 2);
-	pCtx->setPSTexture(m_pGBufferNormals, 3);
-	pCtx->setPSTexture(m_pGBufferDepth, 4);
-	pCtx->setPSTexture(m_pGBufferParams, 5);
+	pCtx->setPSTexture(pNodeData->m_pGBufferNormals, 3);
+	pCtx->setPSTexture(pNodeData->m_pGBufferDepth, 4);
+	pCtx->setPSTexture(pNodeData->m_pGBufferParams, 5);
 
 	//
 
-	IGXSurface *pComLightSurf = pLightTotal->getMipmap();
-	pCtx->setColorTarget(pComLightSurf);
+	pCtx->setColorTarget(pBackBuf);
+	mem_release(pBackBuf);
+	//IGXSurface *pComLightSurf = pLightTotal->getMipmap();
+	//pCtx->setColorTarget(pComLightSurf);
 
-	pCtx->setPSTexture(m_pSSAOTexture, 2);
+	pCtx->setPSTexture(pNodeData->m_pSSAOTexture, 2);
 
 	pCtx->setPSTexture(m_pSkyLightR, 6);
 	pCtx->setPSTexture(m_pSkyLightG, 7);
@@ -1167,27 +1071,27 @@ void XMETHODCALLTYPE CLightSystem::renderGI(IGXTexture2D *pLightTotal, IGXTextur
 		mem_release(pTex);
 	}
 
-	SGCore_ShaderBind(m_idBlendAmbientSpecDiffColor[useAO ? 1 : 0][useSSLR ? 1 : 0]);
+	m_pRender->bindShader(pCtx, m_idBlendAmbientSpecDiffColor[useAO ? 1 : 0][useSSLR ? 1 : 0]);
 
-	SGCore_ScreenQuadDraw();
+	m_pRender->drawScreenQuad(pCtx, pFinalTarget);
 
-	mem_release(pComLightSurf);
+	//mem_release(pComLightSurf);
 	//}}
 
-	SGCore_ShaderUnBind();
+	m_pRender->unbindShader(pCtx);
 
-	pCtx->setColorTarget(pBackBuf);
-	mem_release(pBackBuf);
+
+	mem_release(pCamera);
 
 	pCtx->addTimestamp("final -");
 	//Sleep(16);
 }
-void XMETHODCALLTYPE CLightSystem::renderToneMapping(IGXTexture2D *pSourceLight)
+void CLightSystem::renderToneMapping(IGXBaseTexture *pSourceLight, CTonemappingGraphNodeData *pNodeData, IXRenderTarget *pFinalTarget)
 {
 	XPROFILE_FUNCTION();
-
-	static const float *hdr_adapted_coef = GET_PCVAR_FLOAT("hdr_adapted_coef");
-	static const float *hdr_base_value = GET_PCVAR_FLOAT("hdr_base_value");
+	
+	static const float *hdr_adapted_coef = m_pCore->getConsole()->getPCVarFloat("hdr_adapted_coef");
+	static const float *hdr_base_value = m_pCore->getConsole()->getPCVarFloat("hdr_base_value");
 
 	//! @todo update only on change
 	m_toneMappingShaderData.fAdaptationSpeed = *hdr_adapted_coef;
@@ -1209,17 +1113,17 @@ void XMETHODCALLTYPE CLightSystem::renderToneMapping(IGXTexture2D *pSourceLight)
 	pCtx->setSamplerState(m_pSamplerLinearClamp, 0);
 
 	IGXDepthStencilSurface *pDSSurface = pCtx->getDepthStencilSurface();
-	pCtx->unsetDepthStencilSurface();
+	pCtx->setDepthStencilSurface(NULL);
 
-	SGCore_ShaderBind(m_idHDRinitLuminance);
-	SGCore_ScreenQuadDraw();
-	SGCore_ShaderUnBind();
+	m_pRender->bindShader(pCtx, m_idHDRinitLuminance);
+	m_pRender->drawScreenQuad(pCtx, pFinalTarget);
+	m_pRender->unbindShader(pCtx);
 
 	pCtx->setColorTarget(pBackBuf);
 
 	// Reduction
 	{
-		SGCore_ShaderBind(m_idLuminanceReductionShader);
+		m_pRender->bindShader(pCtx, m_idLuminanceReductionShader);
 
 		pCtx->setCSTexture(m_pLightLuminance, 0);
 		pCtx->setCSUnorderedAccessView(m_pLightLuminance32, 0);
@@ -1227,83 +1131,73 @@ void XMETHODCALLTYPE CLightSystem::renderToneMapping(IGXTexture2D *pSourceLight)
 		pCtx->setCSUnorderedAccessView(NULL, 0);
 		pCtx->setCSTexture(NULL, 0);
 
-		SGCore_ShaderBind(m_idLuminanceReductionMaskedShader);
+		m_pRender->bindShader(pCtx, m_idLuminanceReductionMaskedShader);
 		pCtx->setCSTexture(m_pLightLuminance32, 0);
 		pCtx->setCSUnorderedAccessView(m_pLightLuminance1, 0);
 		pCtx->computeDispatch(1, 1, 1);
 		pCtx->setCSUnorderedAccessView(NULL, 0);
 		pCtx->setCSTexture(NULL, 0);
 
-		SGCore_ShaderUnBind();
+		m_pRender->unbindShader(pCtx);
 	}
 
 	// Adaptation
 	{
 		// m_pLightLuminance1
-		pCtx->setPSTexture(m_pAdaptedLuminance[!m_uCurrAdaptedLuminanceTarget]);
+		pCtx->setPSTexture(pNodeData->m_pAdaptedLuminance[!pNodeData->m_uCurrAdaptedLuminanceTarget]);
 		pCtx->setPSTexture(m_pLightLuminance1, 1);
-		IGXSurface *pAdaptedLuminanceBuf = m_pAdaptedLuminance[m_uCurrAdaptedLuminanceTarget]->asRenderTarget();
+		IGXSurface *pAdaptedLuminanceBuf = pNodeData->m_pAdaptedLuminance[pNodeData->m_uCurrAdaptedLuminanceTarget]->asRenderTarget();
 		pCtx->setColorTarget(pAdaptedLuminanceBuf);
 		mem_release(pAdaptedLuminanceBuf);
 
-		SGCore_ShaderBind(m_idHDRAdaptLuminance);
+		m_pRender->bindShader(pCtx, m_idHDRAdaptLuminance);
 
-		SGCore_ScreenQuadDraw();
+		m_pRender->drawScreenQuad(pCtx, pFinalTarget);
 
-		SGCore_ShaderUnBind();
+		m_pRender->unbindShader(pCtx);
 	}
 
 
 	// Bloom
 	{
-		SGCore_ShaderBind(m_idBloomShader);
+		m_pRender->bindShader(pCtx, m_idBloomShader);
 
 		pCtx->setPSTexture(pSourceLight);
-		pCtx->setPSTexture(m_pAdaptedLuminance[m_uCurrAdaptedLuminanceTarget], 1);
-		IGXSurface *pRT = m_pBloom[0]->asRenderTarget();
+		pCtx->setPSTexture(pNodeData->m_pAdaptedLuminance[pNodeData->m_uCurrAdaptedLuminanceTarget], 1);
+		IGXSurface *pRT = pNodeData->m_pBloom[0]->asRenderTarget();
 		pCtx->setColorTarget(pRT);
 		mem_release(pRT);
 
 		pCtx->setSamplerState(m_pSamplerPointClamp, 1);
 
-		SGCore_ScreenQuadDraw();
-		SGCore_ShaderUnBind();
+		m_pRender->drawScreenQuad(pCtx, pFinalTarget);
+		m_pRender->unbindShader(pCtx);
 
-		if(m_pBloom[0]->getWidth() != m_gaussBlurShaderData.uWidth)
-		{
-			m_gaussBlurShaderData.uWidth = m_pBloom[0]->getWidth();
-			m_gaussBlurShaderData.vSizeMapInv.x = 1.0f / (float)m_pBloom[0]->getWidth();
-			m_gaussBlurShaderData.vSizeMapInv.y = 1.0f / (float)m_pBloom[0]->getHeight();
-			m_gaussBlurShaderData.fCoefBlur = 1.0f;
-			m_pGaussBlurShaderData->update(&m_gaussBlurShaderData);
-		}
-		pCtx->setPSConstant(m_pGaussBlurShaderData, 8);
+		pCtx->setPSConstant(pNodeData->m_pGaussBlurShaderData, 8);
 
-		SGCore_ShaderBind(m_idGaussShader[0]);
-		pCtx->setPSTexture(m_pBloom[0], 0);
-		pRT = m_pBloom[1]->asRenderTarget();
+		m_pRender->bindShader(pCtx, m_idGaussShader[0]);
+		pCtx->setPSTexture(pNodeData->m_pBloom[0], 0);
+		pRT = pNodeData->m_pBloom[1]->asRenderTarget();
 		pCtx->setColorTarget(pRT);
 		mem_release(pRT);
-		SGCore_ScreenQuadDraw();
+		m_pRender->drawScreenQuad(pCtx, pFinalTarget);
 
 
-		SGCore_ShaderBind(m_idGaussShader[1]);
-		pCtx->setPSTexture(m_pBloom[1], 0);
-		pRT = m_pBloom[0]->asRenderTarget();
+		m_pRender->bindShader(pCtx, m_idGaussShader[1]);
+		pCtx->setPSTexture(pNodeData->m_pBloom[1], 0);
+		pRT = pNodeData->m_pBloom[0]->asRenderTarget();
 		pCtx->setColorTarget(pRT);
 		mem_release(pRT);
-		SGCore_ScreenQuadDraw();
+		m_pRender->drawScreenQuad(pCtx, pFinalTarget);
 
 
-		SGCore_ShaderUnBind();
+		m_pRender->unbindShader(pCtx);
 		pCtx->setColorTarget(pBackBuf);
 	}
 
 	pCtx->setPSConstant(m_pToneMappingShaderData, 8);
 
-
-
-
+	
 	pCtx->setColorTarget(pBackBuf);
 	mem_release(pBackBuf);
 
@@ -1311,23 +1205,23 @@ void XMETHODCALLTYPE CLightSystem::renderToneMapping(IGXTexture2D *pSourceLight)
 		pCtx->setSamplerState(m_pSamplerPointClamp, 0);
 		pCtx->setSamplerState(m_pSamplerLinearClamp, 1);
 		pCtx->setPSTexture(pSourceLight);
-		pCtx->setPSTexture(m_pAdaptedLuminance[m_uCurrAdaptedLuminanceTarget], 1);
+		pCtx->setPSTexture(pNodeData->m_pAdaptedLuminance[pNodeData->m_uCurrAdaptedLuminanceTarget], 1);
 		pCtx->setPSTexture(m_pLightLuminance1, 2);
-		pCtx->setPSTexture(m_pBloom[0], 3);
+		pCtx->setPSTexture(pNodeData->m_pBloom[0], 3);
 
-		SGCore_ShaderBind(m_idHDRToneMapping);
+		m_pRender->bindShader(pCtx, m_idHDRToneMapping);
 
-		SGCore_ScreenQuadDraw();
+		m_pRender->drawScreenQuad(pCtx, pFinalTarget);
 
-		SGCore_ShaderUnBind();
+		m_pRender->unbindShader(pCtx);
 	}
 
 	pCtx->setDepthStencilSurface(pDSSurface);
-	m_uCurrAdaptedLuminanceTarget = !m_uCurrAdaptedLuminanceTarget;
+	pNodeData->m_uCurrAdaptedLuminanceTarget = !pNodeData->m_uCurrAdaptedLuminanceTarget;
 }
-void XMETHODCALLTYPE CLightSystem::renderDebug()
+void CLightSystem::renderDebug()
 {
-	const bool *dev_lpv_cubes = GET_PCVAR_BOOL("dev_lpv_cubes");
+	const bool *dev_lpv_cubes = m_pCore->getConsole()->getPCVarBool("dev_lpv_cubes");
 	if(*dev_lpv_cubes)
 	{
 		showGICubes();
@@ -1340,7 +1234,7 @@ void CLightSystem::showGICubes()
 
 	pCtx->setPrimitiveTopology(GXPT_POINTLIST);
 	pCtx->setRenderBuffer(m_pGICubesRB);
-	SGCore_ShaderBind(m_idGICubesShader);
+	m_pRender->bindShader(pCtx, m_idGICubesShader);
 	//pCtx->setGSConstant(m_pLightingShaderDataVS, 1);
 	pCtx->setDepthStencilState(m_pDepthStencilStateDefault);
 	pCtx->setSamplerState(m_pSamplerPointClamp, 0);
@@ -1560,7 +1454,7 @@ void CLightSystem::updateSkylight()
 	}
 
 	IGXDepthStencilSurface *pOldDS = pCtx->getDepthStencilSurface();
-	pCtx->unsetDepthStencilSurface();
+	pCtx->setDepthStencilSurface(NULL);
 
 
 	IGXSurface *pOldRT = pCtx->getColorTarget(0);
@@ -1586,7 +1480,7 @@ void CLightSystem::updateSkylight()
 		pCtx->setVSConstant(m_pSkyLightGenCB);
 		pCtx->setPSConstant(m_pSkyLightGenCB);
 
-		SGCore_ShaderBind(m_idSkylightGenSHShader);
+		m_pRender->bindShader(pCtx, m_idSkylightGenSHShader);
 
 		pCtx->setRenderBuffer(NULL);
 		pCtx->setIndexBuffer(NULL);
@@ -1666,7 +1560,7 @@ void CLightSystem::updateSkylightGrid()
 
 	m_pSkyLightOcclusionCB->update(buf);
 
-	SGCore_ShaderBind(m_idSkylightGenGridShader);
+	m_pRender->bindShader(pCtx, m_idSkylightGenGridShader);
 
 	pCtx->setCSConstant(m_pSkyLightOcclusionCB);
 
@@ -1693,3 +1587,84 @@ void CLightSystem::updateSkylightGrid()
 	pCtx->setCSTexture(NULL, 2);
 }
 
+void CLightSystem::initShaders()
+{
+	ID idVS = m_pRender->loadShader(SHADER_TYPE_VERTEX, "gi_cubes.vs");
+	ID idPS = m_pRender->loadShader(SHADER_TYPE_PIXEL, "gi_cubes.ps");
+	ID idGS = m_pRender->loadShader(SHADER_TYPE_GEOMETRY, "gi_cubes.gs");
+	m_idGICubesShader = m_pRender->createShaderKit(idVS, idPS, idGS);
+
+	m_idLightBoundShader = m_pRender->createShaderKit(m_pRender->loadShader(SHADER_TYPE_VERTEX, "lighting_bound.vs"), -1);
+
+	m_idLPVPropagateShader = m_pRender->createShaderKit(-1, -1, -1, m_pRender->loadShader(SHADER_TYPE_COMPUTE, "gi_propagation.cs"));
+
+	GXMacro aMaskedReductionMacro[] = {{"APPLY_MASK", ""}, GX_MACRO_END()};
+	m_idLuminanceReductionShader = m_pRender->createShaderKit(-1, -1, -1, m_pRender->loadShader(SHADER_TYPE_COMPUTE, "hdr_reduction.cs"));
+	m_idLuminanceReductionMaskedShader = m_pRender->createShaderKit(-1, -1, -1, m_pRender->loadShader(SHADER_TYPE_COMPUTE, "hdr_reduction.cs", aMaskedReductionMacro));
+
+	m_idSkylightGenGridShader = m_pRender->createShaderKit(-1, -1, -1, m_pRender->loadShader(SHADER_TYPE_COMPUTE, "gi_skylight_grid.cs"));
+
+	ID idScreenOut = m_pRender->loadShader(SHADER_TYPE_VERTEX, "pp_quad_render.vs");
+	ID idResPos = m_pRender->loadShader(SHADER_TYPE_VERTEX, "pp_res_pos.vs");
+
+	GXMacro Defines_IS_SHADOWED[] = {{"IS_SHADOWED", "1"}, GX_MACRO_END()};
+	GXMacro Defines_IS_SPOT_SHADOWED[] = {{"IS_SHADOWED", "1"}, {"IS_SPOT", "1"}, GX_MACRO_END()};
+	GXMacro Defines_IS_PSSM_SHADOWED[] = {{"IS_SHADOWED", "1"}, {"IS_PSSM", "1"}, GX_MACRO_END()};
+
+	GXMacro Defines_USE_AO[] = {{"USE_AO", "1"}, GX_MACRO_END()};
+	m_idBlendAmbientSpecDiffColor[0][0] = m_pRender->createShaderKit(idResPos, m_pRender->loadShader(SHADER_TYPE_PIXEL, "lighting_blend.ps"));
+	m_idBlendAmbientSpecDiffColor[1][0] = m_pRender->createShaderKit(idResPos, m_pRender->loadShader(SHADER_TYPE_PIXEL, "lighting_blend.ps", Defines_USE_AO));
+	GXMacro Defines_USE_SSLR[] = {{"USE_SSLR", "1"}, GX_MACRO_END()};
+	m_idBlendAmbientSpecDiffColor[0][1] = m_pRender->createShaderKit(idResPos, m_pRender->loadShader(SHADER_TYPE_PIXEL, "lighting_blend.ps", Defines_USE_SSLR));
+	GXMacro Defines_USE_AO_SSLR[] = {{"USE_SSLR", "1"}, {"USE_AO", "1"}, GX_MACRO_END()};
+	m_idBlendAmbientSpecDiffColor[1][1] = m_pRender->createShaderKit(idResPos, m_pRender->loadShader(SHADER_TYPE_PIXEL, "lighting_blend.ps", Defines_USE_AO_SSLR));
+
+	m_idComLightingShadow = m_pRender->createShaderKit(idResPos, m_pRender->loadShader(SHADER_TYPE_PIXEL, "lighting_com.ps", Defines_IS_SHADOWED));
+	m_idComLightingSpotShadow = m_pRender->createShaderKit(idResPos, m_pRender->loadShader(SHADER_TYPE_PIXEL, "lighting_com.ps", Defines_IS_SPOT_SHADOWED));
+	m_idComLightingPSSMShadow = m_pRender->createShaderKit(idResPos, m_pRender->loadShader(SHADER_TYPE_PIXEL, "lighting_com.ps", Defines_IS_PSSM_SHADOWED));
+
+	// LPV_CASCADES_COUNT - iCascades
+	GXMacro Defines_LPV_CASCADE_3[] = {{"LPV_START_CASCADE", "0"}, GX_MACRO_END()};
+	GXMacro Defines_LPV_CASCADE_3_AO[] = {{"LPV_START_CASCADE", "0"}, {"USE_AO", "1"}, GX_MACRO_END()};
+	m_idComLightingGI[2][0] = m_pRender->createShaderKit(idResPos, m_pRender->loadShader(SHADER_TYPE_PIXEL, "lighting_gi.ps", Defines_LPV_CASCADE_3));
+	m_idComLightingGI[2][1] = m_pRender->createShaderKit(idResPos, m_pRender->loadShader(SHADER_TYPE_PIXEL, "lighting_gi.ps", Defines_LPV_CASCADE_3_AO));
+	GXMacro Defines_LPV_CASCADE_2[] = {{"LPV_START_CASCADE", "1"}, GX_MACRO_END()};
+	GXMacro Defines_LPV_CASCADE_2_AO[] = {{"LPV_START_CASCADE", "1"}, {"USE_AO", "1"}, GX_MACRO_END()};
+	m_idComLightingGI[1][0] = m_pRender->createShaderKit(idResPos, m_pRender->loadShader(SHADER_TYPE_PIXEL, "lighting_gi.ps", Defines_LPV_CASCADE_2));
+	m_idComLightingGI[1][1] = m_pRender->createShaderKit(idResPos, m_pRender->loadShader(SHADER_TYPE_PIXEL, "lighting_gi.ps", Defines_LPV_CASCADE_2_AO));
+	GXMacro Defines_LPV_CASCADE_1[] = {{"LPV_START_CASCADE", "2"}, GX_MACRO_END()};
+	GXMacro Defines_LPV_CASCADE_1_AO[] = {{"LPV_START_CASCADE", "2"}, {"USE_AO", "1"}, GX_MACRO_END()};
+	m_idComLightingGI[0][0] = m_pRender->createShaderKit(idResPos, m_pRender->loadShader(SHADER_TYPE_PIXEL, "lighting_gi.ps", Defines_LPV_CASCADE_1));
+	m_idComLightingGI[0][1] = m_pRender->createShaderKit(idResPos, m_pRender->loadShader(SHADER_TYPE_PIXEL, "lighting_gi.ps", Defines_LPV_CASCADE_1_AO));
+
+	m_idHDRinitLuminance = m_pRender->createShaderKit(idScreenOut, m_pRender->loadShader(SHADER_TYPE_PIXEL, "hdr_luminance.ps"));
+	m_idHDRAdaptLuminance = m_pRender->createShaderKit(idScreenOut, m_pRender->loadShader(SHADER_TYPE_PIXEL, "hdr_adapt.ps"));
+	m_idHDRToneMapping = m_pRender->createShaderKit(idScreenOut, m_pRender->loadShader(SHADER_TYPE_PIXEL, "hdr_tonemapping.ps"));
+	m_idBloomShader = m_pRender->createShaderKit(idScreenOut, m_pRender->loadShader(SHADER_TYPE_PIXEL, "hdr_bloom.ps"));
+	m_idGaussShader[0] = m_pRender->createShaderKit(idScreenOut, m_pRender->loadShader(SHADER_TYPE_PIXEL, "ppe_gauss_blur.ps"));
+	GXMacro Defines_PPE_GAUSS_HORIZONTAL[] = {{"_H_", "1"}, GX_MACRO_END()};
+	m_idGaussShader[1] = m_pRender->createShaderKit(idScreenOut, m_pRender->loadShader(SHADER_TYPE_PIXEL, "ppe_gauss_blur.ps", Defines_PPE_GAUSS_HORIZONTAL));
+
+
+	m_idSkylightGenSHShader = m_pRender->createShaderKit(m_pRender->loadShader(SHADER_TYPE_VERTEX, "gi_skylight_gen_sh.vs"), m_pRender->loadShader(SHADER_TYPE_PIXEL, "gi_skylight_gen_sh.ps"));
+
+
+	GXMacro Defines_SSAO_Q_3[] = {{"SSAO_Q_3", ""}, GX_MACRO_END()};
+	m_idSSAOShader[2] = m_pRender->createShaderKit(idResPos, m_pRender->loadShader(SHADER_TYPE_PIXEL, "ppe_ssao.ps", Defines_SSAO_Q_3));
+
+	GXMacro Defines_SSAO_Q_2[] = {{"SSAO_Q_2", ""}, GX_MACRO_END()};
+	m_idSSAOShader[1] = m_pRender->createShaderKit(idResPos, m_pRender->loadShader(SHADER_TYPE_PIXEL, "ppe_ssao.ps", Defines_SSAO_Q_2));
+
+	GXMacro Defines_SSAO_Q_1[] = {{"SSAO_Q_1", ""}, GX_MACRO_END()};
+	m_idSSAOShader[0] = m_pRender->createShaderKit(idResPos, m_pRender->loadShader(SHADER_TYPE_PIXEL, "ppe_ssao.ps", Defines_SSAO_Q_1));
+
+	m_idSSAOBlendShader = m_pRender->createShaderKit(idScreenOut, m_pRender->loadShader(SHADER_TYPE_PIXEL, "ppe_ssao_blur.ps"));
+}
+
+void CLightSystem::sync()
+{
+	for(UINT i = 0, l = m_aLights.size(); i < l; ++i)
+	{
+		m_aLights[i]->resetVisibility();
+	}
+}

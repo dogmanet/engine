@@ -151,26 +151,13 @@ CEngine::CEngine(int argc, char **argv, const char *szName)
 
 	Core_0RegisterCVarString("engine_version", SKYXENGINE_VERSION, "Текущая версия движка", FCVAR_READONLY);
 	Core_0RegisterCVarString("engine_build", SKYXENGINE_BUILD_NUMBER, "Текущая версия движка", FCVAR_READONLY);
-
-#if 0
-	// init mtrl
-	SMtrl_0Create("sxml", false, true);
-	LibReport(REPORT_MSG_LEVEL_NOTICE, "LIB mtrl initialized\n");
-
-	// init physics
-	SPhysics_0Create();
-	LibReport(REPORT_MSG_LEVEL_NOTICE, "LIB physics initialized\n");
-#endif
 }
 CEngine::~CEngine()
 {
 	mem_release(m_pXUI);
 
-	SRender_AKill();
 	SGame_AKill();
 	SPhysics_AKill();
-	SMtrl_AKill();
-	SGCore_AKill();
 	//SSInput_AKill();
 	mem_delete(m_pCore);
 
@@ -200,11 +187,14 @@ bool XMETHODCALLTYPE CEngine::initGraphics(XWINDOW_OS_HANDLE hWindow, IXEngineCa
 
 	IXSoundSystem *pSound = (IXSoundSystem*)(m_pCore->getPluginManager()->getInterface(IXSOUNDSYSTEM_GUID));
 	IXSoundLayer *pMasterLayer = pSound->createMasterLayer(&oAudioDesc, "master");
-	pMasterLayer->play(true);
-	IXSoundLayer *pGameLayer = pMasterLayer->newSoundLayer("xGame");
-	IXSoundLayer *pGuiLayer = pMasterLayer->newSoundLayer("xGUI");
-	pGameLayer->play(false);
-	pGuiLayer->play(false);
+	if(pMasterLayer)
+	{
+		pMasterLayer->play(true);
+		IXSoundLayer *pGameLayer = pMasterLayer->newSoundLayer("xGame");
+		IXSoundLayer *pGuiLayer = pMasterLayer->newSoundLayer("xGUI");
+		pGameLayer->play(false);
+		pGuiLayer->play(false);
+	}
 	/*IXSoundPlayer *pPlayer = pMasterLayer->newSoundPlayer("sounds/guitar_10.ogg", SOUND_DTYPE_3D);
 	pPlayer->setWorldPos(float3(-11.084, 0.435, -18.707));
 	pPlayer->setLoop(SOUND_LOOP_SIMPLE);
@@ -242,7 +232,7 @@ bool XMETHODCALLTYPE CEngine::initGraphics(XWINDOW_OS_HANDLE hWindow, IXEngineCa
 	Core_0RegisterCVarBool("r_win_windowed", true, "Режим рендера true - оконный, false - полноэкранный", FCVAR_NOTIFY_OLD);
 	Core_0RegisterCVarBool("r_win_borderless", false, "Режим без рамки", FCVAR_NOTIFY_OLD);
 	Core_0RegisterCVarBool("r_vsync", false, "Включить вертикальную синхронизацию", FCVAR_NOTIFY_OLD);
-	Core_0RegisterCVarFloat("r_default_fov", SM_PI * 0.25f, "Дефолтный fov в радианах");
+	Core_0RegisterCVarFloat("r_default_fov", 45.0f /*SM_PI * 0.25f*/, "Дефолтный fov в градусах");
 	Core_0RegisterCVarFloat("r_near", 0.025f, "Ближняя плоскость отсчечения", FCVAR_NOTIFY);
 	Core_0RegisterCVarFloat("r_far", 800.0f, "Дальняя плоскость отсечения (дальность видимости)", FCVAR_NOTIFY);
 	Core_0RegisterCVarInt("dev_gpu_profile_framerate", 0, "Раз в сколько кадров выводить данные профайлинга (0 отключает эту возможность)", FCVAR_NOTIFY);
@@ -255,38 +245,47 @@ bool XMETHODCALLTYPE CEngine::initGraphics(XWINDOW_OS_HANDLE hWindow, IXEngineCa
 	Core_0RegisterConcmdCls("on_r_win_borderless_change", this, (SXCONCMDCLS)&CEngine::onRWinBorderlessChanged);
 	Core_0RegisterConcmdCls("on_r_vsync_change", this, (SXCONCMDCLS)&CEngine::onRVSyncChanged);
 
-	static int *r_win_width = (int*)GET_PCVAR_INT("r_win_width");
-	static int *r_win_height = (int*)GET_PCVAR_INT("r_win_height");
+	static const int *r_win_width = GET_PCVAR_INT("r_win_width");
+	static const int *r_win_height = GET_PCVAR_INT("r_win_height");
 	static const bool *r_win_windowed = GET_PCVAR_BOOL("r_win_windowed");
 
-	SGCore_0Create("sxgcore", (HWND)hWindow, *r_win_width, *r_win_height, *r_win_windowed, false);
+	//SGCore_0Create("sxgcore", (HWND)hWindow, *r_win_width, *r_win_height, *r_win_windowed, false);
 	
-	LibReport(REPORT_MSG_LEVEL_NOTICE, "LIB gcore initialized\n");
+	//LibReport(REPORT_MSG_LEVEL_NOTICE, "LIB gcore initialized\n");
 
 #if 1
-	// init mtrl
-	SMtrl_0Create("sxml", false, true);
-	LibReport(REPORT_MSG_LEVEL_NOTICE, "LIB mtrl initialized\n");
-
 	// init physics
 	SPhysics_0Create();
 	LibReport(REPORT_MSG_LEVEL_NOTICE, "LIB physics initialized\n");
 #endif
 
-	// init render
-	SRender_0Create("sxrender", (HWND)hWindow, NULL, false);
-	LibReport(REPORT_MSG_LEVEL_NOTICE, "LIB render initialized\n");
 
+#if 1
+	m_pRender = (IXRender*)m_pCore->getPluginManager()->getInterface(IXRENDER_GUID);
 
-	
+	m_pRender->initGraphics();
 
+	m_pRender->newFinalTarget(hWindow, "xMainWindow", &m_pScreenTarget);
 
+	m_pScreenTarget->resize(*r_win_width, *r_win_height);
+
+	IXRenderGraph *pGraph;
+	if(m_pRender->getGraph("xDefaultScene", &pGraph))
+	{
+		m_pScreenTarget->attachGraph(pGraph);
+		mem_release(pGraph);
+	}
+	else
+	{
+		LogFatal("Couldn't load default render graph 'xDefaultScene'\n");
+	}
+#endif
 
 	// init game
 	SGame_0Create((HWND)hWindow, true);
 	LibReport(REPORT_MSG_LEVEL_NOTICE, "LIB game initialized\n");
 
-
+#if 0
 	//m_pXUI = 
 	HMODULE hDLL = LoadLibrary("xUI"
 #ifdef _DEBUG
@@ -299,21 +298,26 @@ bool XMETHODCALLTYPE CEngine::initGraphics(XWINDOW_OS_HANDLE hWindow, IXEngineCa
 #ifdef _DEBUG
 			"_d"
 #endif
-			".dll");
+			".dll\n");
 	}
-
-	PFNXUIINIT pfnXGUIInit;
-	pfnXGUIInit = (PFNXUIINIT)GetProcAddress(hDLL, "InitInstance");
-
-	if(!pfnXGUIInit)
+	else
 	{
-		LibReport(REPORT_MSG_LEVEL_ERROR, "The procedure entry point InitInstance could not be located in the dynamic link library xUI.dll");
+		PFNXUIINIT pfnXGUIInit;
+		pfnXGUIInit = (PFNXUIINIT)GetProcAddress(hDLL, "InitInstance");
+
+		if(!pfnXGUIInit)
+		{
+			LibReport(REPORT_MSG_LEVEL_ERROR, "The procedure entry point InitInstance could not be located in the dynamic link library xUI.dll\n");
+		}
+		else
+		{
+			IXWindowSystem *pWindowSystem = (IXWindowSystem*)m_pCore->getPluginManager()->getInterface(IXWINDOWSYSTEM_GUID);
+			m_pXUI = pfnXGUIInit(m_pRender, pWindowSystem, SGame_GetGUI());
+			m_pCore->getPluginManager()->registerInterface(IXUI_GUID, m_pXUI);
+		}
 	}
-
-	IXWindowSystem *pWindowSystem = (IXWindowSystem*)m_pCore->getPluginManager()->getInterface(IXWINDOWSYSTEM_GUID);
-	m_pXUI = pfnXGUIInit(SGCore_GetDXDevice(), pWindowSystem, SGame_GetGUI());
-	m_pCore->getPluginManager()->registerInterface(IXUI_GUID, m_pXUI);
-
+#endif
+	m_pXUI = (IXUI*)m_pCore->getPluginManager()->getInterface(IXUI_GUID);
 	// init updatable
 	m_pCore->initUpdatable();
 
@@ -326,10 +330,6 @@ bool XMETHODCALLTYPE CEngine::initServer()
 	XPROFILE_FUNCTION();
 
 #if 1
-	// init mtrl
-	SMtrl_0Create("sxml", false, true);
-	LibReport(REPORT_MSG_LEVEL_NOTICE, "LIB mtrl initialized\n");
-
 	// init physics
 	SPhysics_0Create();
 	LibReport(REPORT_MSG_LEVEL_NOTICE, "LIB physics initialized\n");
@@ -388,15 +388,13 @@ bool CEngine::runFrame()
 		return(false);
 	}
 	
-	SGCore_ShaderAllLoad();
-
 	Core_TimesUpdate();
 
 	SSInput_Update();
 	
 	// draw frame
 	{
-		static IGXDevice *pRenderDevice = SGCore_GetDXDevice();
+		static IGXDevice *pRenderDevice = m_pRender->getDevice();
 		if(pRenderDevice && (/*!pRenderContext->canBeginFrame() || */!checkResize()))
 		{
 			goto end;
@@ -412,8 +410,6 @@ bool CEngine::runFrame()
 		
 		SGame_Sync();
 
-		SMtrl_Update(m_fDeltaTime);
-
 		m_pCore->runUpdate();
 		
 		//#############################################################################
@@ -423,20 +419,21 @@ bool CEngine::runFrame()
 		{
 			auto *pCtx = pRenderDevice->getThreadContext();
 
-			ICamera *pCamera = m_pCallback->getCameraForFrame();
-			SRender_SetCamera(pCamera);
-			SRender_UpdateView();
+			IXCamera *pCamera = m_pCallback->getCameraForFrame();
+			m_pScreenTarget->setCamera(pCamera);
 
 			XEventObserverChanged ev;
 			ev.pCamera = pCamera;
 			m_pObserverChangedEventChannel->broadcastEvent(&ev);
 
-			IXRenderPipeline *pRenderPipeline;
-			m_pCore->getRenderPipeline(&pRenderPipeline);
+			m_pRender->updateVisibility();
 
-			pRenderPipeline->updateVisibility();
-
-			pRenderPipeline->endFrame();
+			{
+				XPROFILE_SECTION("Present");
+				m_pRender->endFrame();
+				//m_pDevice->swapBuffers();
+				SAFE_CALL(m_pXUI, present);
+			}
 
 			showProfile();
 
@@ -446,11 +443,13 @@ bool CEngine::runFrame()
 
 			pCtx->beginFrame();
 			pCtx->addTimestamp("begin");
-			pRenderPipeline->renderFrame(m_fDeltaTime);
+			m_pRender->renderFrame(m_fDeltaTime);
+
+			SAFE_CALL(m_pXUI, render);
+			pCtx->addTimestamp("ui");
+
 			pCtx->addTimestamp("end");
 			pCtx->endFrame();
-
-			mem_release(pRenderPipeline);
 		}
 
 		//#############################################################################
@@ -466,7 +465,7 @@ finish:
 
 void CEngine::showProfile()
 {
-	static IGXDevice *pRenderDevice = SGCore_GetDXDevice();
+	static IGXDevice *pRenderDevice = m_pRender->getDevice();
 	static int *dev_gpu_profile_framerate = (int*)GET_PCVAR_INT("dev_gpu_profile_framerate");
 
 	if(*dev_gpu_profile_framerate)
@@ -595,8 +594,6 @@ bool CEngine::checkResize()
 	{
 		return(true);
 	}
-	IXRenderPipeline *pRenderPipeline;
-	m_pCore->getRenderPipeline(&pRenderPipeline);
 
 	static const bool *r_win_windowed = GET_PCVAR_BOOL("r_win_windowed");
 	static const bool *r_win_borderless = GET_PCVAR_BOOL("r_win_borderless");
@@ -606,29 +603,30 @@ bool CEngine::checkResize()
 
 	if(m_wantResize & WR_VSYNC)
 	{
-		SGCore_GetDXDevice()->enableVSync(*r_vsync);
+		m_pRender->getDevice()->enableVSync(*r_vsync);
 	}
 
-	int iModeCount = 0;
-	const DEVMODE *pModes = SGCore_GetModes(&iModeCount);
+	UINT uModeCount = 0;
+	const GXModeDesc *pModes = m_pRender->getModes(&uModeCount, m_pScreenTarget);
+
 	// only one dimension has been changed, select the second from available modes
 	if((m_wantResize & (WR_WIDTH | WR_HEIGHT)) != (WR_WIDTH | WR_HEIGHT))
 	{
 		if(m_wantResize & WR_WIDTH)
 		{
 			int iNewHeight = 0;
-			for(int i = 0; i < iModeCount; ++i)
+			for(UINT i = 0; i < uModeCount; ++i)
 			{
-				if(pModes[i].dmPelsWidth == *r_win_width)
+				if(pModes[i].uWidth == *r_win_width)
 				{
-					if(pModes[i].dmPelsHeight == *r_win_height)
+					if(pModes[i].uHeight == *r_win_height)
 					{
-						iNewHeight = pModes[i].dmPelsHeight;
+						iNewHeight = pModes[i].uHeight;
 						break;
 					}
 					if(iNewHeight == 0)
 					{
-						iNewHeight = pModes[i].dmPelsHeight;
+						iNewHeight = pModes[i].uHeight;
 					}
 				}
 			}
@@ -640,18 +638,18 @@ bool CEngine::checkResize()
 		else
 		{
 			int iNewWidth = 0;
-			for(int i = 0; i < iModeCount; ++i)
+			for(UINT i = 0; i < uModeCount; ++i)
 			{
-				if(pModes[i].dmPelsHeight == *r_win_height)
+				if(pModes[i].uHeight == *r_win_height)
 				{
-					if(pModes[i].dmPelsWidth == *r_win_width)
+					if(pModes[i].uWidth == *r_win_width)
 					{
-						iNewWidth = pModes[i].dmPelsWidth;
+						iNewWidth = pModes[i].uWidth;
 						break;
 					}
 					if(iNewWidth == 0)
 					{
-						iNewWidth = pModes[i].dmPelsWidth;
+						iNewWidth = pModes[i].uWidth;
 					}
 				}
 			}
@@ -665,9 +663,9 @@ bool CEngine::checkResize()
 	if(!*r_win_windowed) 
 	{
 		bool isValid = false;
-		for(int i = 0; i < iModeCount; ++i)
+		for(UINT i = 0; i < uModeCount; ++i)
 		{
-			if(pModes[i].dmPelsWidth == *r_win_width && pModes[i].dmPelsHeight == *r_win_height)
+			if(pModes[i].uWidth == *r_win_width && pModes[i].uHeight == *r_win_height)
 			{
 				isValid = true;
 				break;
@@ -679,26 +677,26 @@ bool CEngine::checkResize()
 			int iNewWidthL = 0, iNewHeightL = 0, iDeltaL = 0;
 			int iNewWidthG = 0, iNewHeightG = 0, iDeltaG = 0;
 
-			for(int i = 0; i < iModeCount; ++i)
+			for(UINT i = 0; i < uModeCount; ++i)
 			{
-				int iDelta = pModes[i].dmPelsWidth - *r_win_width + pModes[i].dmPelsHeight - *r_win_height;
+				int iDelta = pModes[i].uWidth - *r_win_width + pModes[i].uHeight - *r_win_height;
 
-				if((int)pModes[i].dmPelsWidth >= *r_win_width && (int)pModes[i].dmPelsHeight >= *r_win_height)
+				if((int)pModes[i].uWidth >= *r_win_width && (int)pModes[i].uHeight >= *r_win_height)
 				{
 					if(iDelta < iDeltaG)
 					{
 						iDeltaG = iDelta;
-						iNewWidthG = pModes[i].dmPelsWidth;
-						iNewHeightG = pModes[i].dmPelsHeight;
+						iNewWidthG = pModes[i].uWidth;
+						iNewHeightG = pModes[i].uHeight;
 					}
 				}
-				else if((int)pModes[i].dmPelsWidth <= *r_win_width && (int)pModes[i].dmPelsHeight <= *r_win_height)
+				else if((int)pModes[i].uWidth <= *r_win_width && (int)pModes[i].uHeight <= *r_win_height)
 				{
 					if(-iDelta < iDeltaL)
 					{
 						iDeltaL = -iDelta;
-						iNewWidthL = pModes[i].dmPelsWidth;
-						iNewHeightL = pModes[i].dmPelsHeight;
+						iNewWidthL = pModes[i].uWidth;
+						iNewHeightL = pModes[i].uHeight;
 					}
 				}
 			}
@@ -733,16 +731,23 @@ bool CEngine::checkResize()
 		}
 	}
 
+	if(*r_win_width <= 0)
+	{
+		*r_win_width = 1;
+	}
+	if(*r_win_height <= 0)
+	{
+		*r_win_height = 1;
+	}
+
 	LibReport(REPORT_MSG_LEVEL_WARNING, "r_win_width %d, r_win_height %d, r_win_windowed %d\n", *r_win_width, *r_win_height, (int)*r_win_windowed);
 	if(m_pCallback)
 	{
 		m_pCallback->onGraphicsResize(*r_win_width, *r_win_height, !*r_win_windowed, *r_win_borderless, this);
 	}
-	pRenderPipeline->resize(*r_win_width, *r_win_height, *r_win_windowed);
-	SRender_ComDeviceLost(false);
+	m_pScreenTarget->resize(*r_win_width, *r_win_height/*, *r_win_windowed*/);
 	m_wantResize = WR_NONE;
 
-	mem_release(pRenderPipeline);
 	return(false);
 }
 

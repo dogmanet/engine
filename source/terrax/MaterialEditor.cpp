@@ -4,15 +4,15 @@
 #include <windowsx.h>
 #include <commdlg.h>
 #include <commctrl.h>
-#include <gcore/sxgcore.h>
 #include <xcommon/IXTextureFilter.h>
 #include "terrax.h"
+#include <xcommon/IPluginManager.h>
 
 WNDPROC g_pfnTrackbarOldWndproc = NULL;
 
 void GetChildRect(HWND hWnd, LPRECT lpRect);
 
-CMaterialEditor::CMaterialEditor(HINSTANCE hInstance, HWND hMainWnd, IXMaterial *pMaterial):
+CMaterialEditor::CMaterialEditor(HINSTANCE hInstance, HWND hMainWnd, IXCore *pCore, IXMaterial *pMaterial):
 	m_hInstance(hInstance),
 	m_hMainWnd(hMainWnd),
 	m_cbTextureBrowser(this),
@@ -23,7 +23,7 @@ CMaterialEditor::CMaterialEditor(HINSTANCE hInstance, HWND hMainWnd, IXMaterial 
 	backup();
 
 	//registerClass();
-	IPluginManager *pPM = Core_GetIXCore()->getPluginManager();
+	IPluginManager *pPM = pCore->getPluginManager();
 
 	m_hTextureMenu = CreatePopupMenu();
 	m_hTextureOptMenu = CreatePopupMenu();

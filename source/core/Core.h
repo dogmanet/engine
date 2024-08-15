@@ -29,8 +29,12 @@ public:
 	IAsyncFileReader* XMETHODCALLTYPE newAsyncFileReader() override;
 	IAsyncTaskRunner* XMETHODCALLTYPE newAsyncTaskRunner() override;
 
-	void XMETHODCALLTYPE getRenderPipeline(IXRenderPipeline **ppRenderPipeline) override;
-	void XMETHODCALLTYPE setRenderPipeline(IXRenderPipeline *pRenderPipeline) override;
+	void XMETHODCALLTYPE __removed0(void **ppReserved) override
+	{
+	}
+	void XMETHODCALLTYPE __removed1(void *pReserved) override
+	{
+	}
 
 	void loadPlugins();
 
@@ -69,8 +73,6 @@ private:
 	CResourceManager *m_pResourceManager = NULL;
 	CModelProvider *m_pModelProvider = NULL;
 	AssotiativeArray<XGUID, IBaseEventChannel*> m_mEventChannels;
-
-	IXRenderPipeline *m_pRenderPipeline = NULL;
 
 	struct _update_sys
 	{

@@ -16,5 +16,5 @@ cbuffer perFrame: register(b0)
 
 half4 main(VSO_TXColored IN):COLOR0
 {
-	return(g_vColor);
+	return(float4(pow(g_vColor.rgb, 2.2), g_vColor.a));
 }

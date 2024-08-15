@@ -33,8 +33,9 @@ namespace gui
 			//	static CSHADER shText = CTextureManager::loadShader(L"text");
 			//	GetGUI()->getDevice()->SetFVF(D3DFVF_XYZ | D3DFVF_TEX1);
 
+				IGXContext *pCtx = GetGUI()->getDevice()->getThreadContext();
 				auto shader = GetGUI()->getShaders()->m_baseTexturedColored;
-				SGCore_ShaderBind(shader.m_idShaderKit);
+				GetGUI()->getRender()->bindShader(pCtx, shader.m_idShaderKit);
 
 			//	CTextureManager::bindShader(shText);
 				m_pParent->getNode()->getDocument()->getDesktopStack()->getTextureManager()->bindTexture(texWhite);
@@ -47,7 +48,6 @@ namespace gui
 					s_pColorConstant->update(&float4_t(1, 1, 1, 0.5));
 				}
 
-				IGXContext *pCtx = GetGUI()->getDevice()->getThreadContext();
 
 				pCtx->setPSConstant(s_pColorConstant);
 				//SGCore_ShaderSetVRF(SHADER_TYPE_PIXEL, shader.m_idPS, "g_vColor", (float*)&float4_t(1, 1, 1, 0.5), 1);

@@ -13,7 +13,7 @@ namespace gui
 			DECLARE_CLASS(IOPTION, IDOMnodeTag);
 			DECLARE_DOM_NODE(IOPTION);
 
-			void dispatchClientEvent(IEvent ev, bool * preventDefault);
+			void dispatchClientEvent(IEvent ev, bool * preventDefault) override;
 		};
 	};
 };

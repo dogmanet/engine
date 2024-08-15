@@ -30,15 +30,26 @@ See the license in LICENSE
 #include "Tools.h"
 
 #include <xEngine/IXEngine.h>
+#include <xWindow/IXWindowSystem.h>
 #include "Editor.h"
 
 #include "ProxyObject.h"
 
+#include "3DOverlayGraphNode.h"
+#include "2DGraphNode.h"
+#include "TextureViewGraphNode.h"
+#include "TextureWindow.h"
+#include "MaterialBrowserGraphNode.h"
+#include "CurveEditorGraphNode.h"
+#include "GradientPreviewGraphNode.h"
+
 #include <xcommon/editor/IXEditorImporter.h>
 
 #ifdef _DEBUG
+#	pragma comment(lib, "xWindow_d.lib")
 #	pragma comment(lib, "xEngine_d.lib")
 #else
+#	pragma comment(lib, "xWindow.lib")
 #	pragma comment(lib, "xEngine.lib")
 #endif
 
@@ -79,6 +90,8 @@ extern bool g_bViewportCaptionDirty[4];
 
 String g_sLevelName;
 
+DECLARE_PROFILER_INTERNAL();
+
 IEventChannel<XEventEditorXformType> *g_pXformEventChannel = NULL;
 
 void XUpdateWindowTitle();
@@ -86,16 +99,16 @@ void XUpdateWindowTitle();
 HACCEL g_hAccelTableMain = NULL;
 HACCEL g_hAccelTableEdit = NULL;
 IXEngine *g_pEngine = NULL;
+IXRender *g_pRender = NULL;
 
 IGXConstantBuffer *g_pCameraConstantBuffer = NULL;
-IGXSwapChain *g_pTopRightSwapChain = NULL;
-IGXSwapChain *g_pBottomLeftSwapChain = NULL;
-IGXSwapChain *g_pBottomRightSwapChain = NULL;
+
+IXRenderTarget *g_pTopLeftTarget = NULL;
+IXRenderTarget *g_pTopRightTarget = NULL;
+IXRenderTarget *g_pBottomLeftTarget = NULL;
+IXRenderTarget *g_pBottomRightTarget = NULL;
+
 IGXSwapChain *g_pGuiSwapChain = NULL;
-IGXSwapChain *g_pCurMatSwapChain = NULL;
-IGXDepthStencilSurface *g_pTopRightDepthStencilSurface = NULL;
-IGXDepthStencilSurface *g_pBottomLeftDepthStencilSurface = NULL;
-IGXDepthStencilSurface *g_BottomRightDepthStencilSurface = NULL;
 IGXDepthStencilSurface *g_pGuiDepthStencilSurface = NULL;
 //IGXDepthStencilSurface *g_pCurMatDepthStencilSurface = NULL;
 IGXDepthStencilState *g_pDSNoZ;
@@ -216,7 +229,7 @@ public:
 
 			if(IsEditMessage())
 			{
-				if(TranslateAccelerator(GetParent((HWND)SGCore_GetHWND()), g_hAccelTableEdit, &msg))
+				if(TranslateAccelerator(/*GetParent((HWND)SGCore_GetHWND())*/g_hWndMain, g_hAccelTableEdit, &msg))
 				{
 					continue;
 				}
@@ -283,7 +296,7 @@ public:
 					}
 				}
 
-				if(TranslateAccelerator(GetParent((HWND)SGCore_GetHWND()), g_hAccelTableMain, &msg))
+				if(TranslateAccelerator(/*GetParent((HWND)SGCore_GetHWND())*/g_hWndMain, g_hAccelTableMain, &msg))
 				{
 					continue;
 				}
@@ -322,7 +335,7 @@ public:
 			float fCoeff = SMToRadian(0.022) * *sense;
 			float dx = (float)x * fCoeff;
 			float dy = (float)y * fCoeff;
-			ICamera *pCamera = g_xConfig.m_pViewportCamera[XWP_TOP_LEFT];
+			IXCamera *pCamera = g_xConfig.m_pViewportCamera[XWP_TOP_LEFT];
 
 			if(g_is3DRotating)
 			{
@@ -351,7 +364,7 @@ public:
 			else if(g_is2DPanning)
 			{
 				// vWorldDelta
-				ICamera *pCamera = g_xConfig.m_pViewportCamera[g_xState.activeWindow];
+				IXCamera *pCamera = g_xConfig.m_pViewportCamera[g_xState.activeWindow];
 				X_2D_VIEW xCurView = g_xConfig.m_x2DView[g_xState.activeWindow];
 				float3 vWorldDelta = float2(-(float)x, (float)y) * g_xConfig.m_fViewportScale[g_xState.activeWindow];
 
@@ -434,7 +447,7 @@ public:
 		return(true);
 	}
 
-	ICamera* XMETHODCALLTYPE getCameraForFrame() override
+	IXCamera* XMETHODCALLTYPE getCameraForFrame() override
 	{
 		static const bool *terrax_detach_3d = m_pCore->getConsole()->getPCVarBool("terrax_detach_3d");
 		if(*terrax_detach_3d)
@@ -470,522 +483,7 @@ private:
 	float3 m_vPitchYawRoll;
 };
 
-class CRenderPipeline: public IXUnknownImplementation<IXRenderPipeline>
-{
-public:
-	CRenderPipeline(IXCore *pCore):
-		m_pCore(pCore)
-	{
-		pCore->getRenderPipeline(&m_pOldPipeline);
-		pCore->setRenderPipeline(this);
-
-		memset(m_pViewportCaptionRB, 0, sizeof(m_pViewportCaptionRB));
-
-		IPluginManager *pPluginManager = pCore->getPluginManager();
-		m_pMaterialSystem = (IXMaterialSystem*)pPluginManager->getInterface(IXMATERIALSYSTEM_GUID);
-
-		{
-			//m_pRenderPassGeometry2D = m_pMaterialSystem->getRenderPass("xGBuffer");
-			m_pRenderPassGeometry2D = m_pMaterialSystem->registerRenderPass("xEditor2D", "terrax/geom2d.ps", NULL, NULL, NULL, NULL, true);
-			m_pRenderPassGeometry3D = m_pMaterialSystem->registerRenderPass("xEditor3DWhite", "terrax/white.ps", NULL, NULL, NULL, NULL, true);
-		}
-
-		m_pCameraVisibility[0] = NULL;
-		for(UINT i = 0; i < 3; ++i)
-		{
-			newVisData(&m_pCameraVisibility[i + 1]);
-		}
-
-		IXRenderUtils *pUtils = (IXRenderUtils*)pPluginManager->getInterface(IXRENDERUTILS_GUID);
-		pUtils->newGizmoRenderer(&g_pSelectionRenderer);
-		pUtils->newGizmoRenderer(&g_pUnselectedRenderer);
-		pUtils->newGizmoRenderer(&m_pAxesRenderer);
-
-		IXTexture *pLineTexture;
-		m_pMaterialSystem->loadTexture("dev_line", &pLineTexture);
-		IGXBaseTexture *pGXTexture;
-		pLineTexture->getAPITexture(&pGXTexture);
-		m_pAxesRenderer->setTexture(pGXTexture);
-		mem_release(pGXTexture);
-		mem_release(pLineTexture);
-
-		m_pAxesRenderer->setColor(float4(1.0f, 0.0f, 0.0f, 1.0f));
-		m_pAxesRenderer->setLineWidth(0.04f);
-		//m_pTestRenderer->setLineWidth(20.0f);
-		m_pAxesRenderer->setLineWidth(3.0f);
-		m_pAxesRenderer->jumpTo(float3(0.0f, 0.0f, 0.0f));
-		m_pAxesRenderer->lineTo(float3(1.0f, 0.0f, 0.0f));
-		m_pAxesRenderer->setColor(float4(0.0f, 1.0f, 0.0f, 1.0f));
-		m_pAxesRenderer->jumpTo(float3(0.0f, 0.0f, 0.0f));
-		m_pAxesRenderer->lineTo(float3(0.0f, 1.0f, 0.0f));
-		m_pAxesRenderer->setColor(float4(0.0f, 0.0f, 1.0f, 1.0f));
-		m_pAxesRenderer->jumpTo(float3(0.0f, 0.0f, 0.0f));
-		m_pAxesRenderer->lineTo(float3(0.0f, 0.0f, 1.0f));
-
-#if 0
-		m_pTestRenderer->drawEllipsoid(float3(2.0f, 2.0f, 2.0f), float3(0.5f, 3.0f, 0.5f));
-		m_pTestRenderer->setLineWidth(5.0f);
-		m_pTestRenderer->setColor(float4(1.0f, 1.0f, 1.0f, 1.0f));
-		m_pTestRenderer->drawAABB(SMAABB(float3(2.0f, 2.0f, 2.0f), float3(3.0f, 4.0f, 5.0f)));
-
-		m_pMaterialSystem->loadTexture("dev_trigger", &pLineTexture);
-		pLineTexture->getAPITexture(&pGXTexture);
-		m_pTestRenderer->setTexture(NULL);
-		mem_release(pGXTexture);
-		mem_release(pLineTexture);
-
-
-		m_pTestRenderer->setPointSize(10.0f);
-		m_pTestRenderer->setPointMode(XGPM_ROUND);
-		m_pTestRenderer->drawPoint(float3(1.0f, 1.0f, 1.0f));
-#endif
-		// m_pTestRenderer->jumpTo(float3(0.0f, 0.0f, 3.0f));
-		// m_pTestRenderer->lineTo(float3(1.0f, 0.0f, 3.0f));
-		// m_pTestRenderer->lineTo(float3(1.0f, 1.0f, 3.0f));
-		// m_pTestRenderer->lineTo(float3(1.0f, 1.0f, 4.0f));
-
-		m_idScreenOutShader = SGCore_ShaderCreateKit(SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "pp_quad_render.vs"), SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "pp_quad_render.ps"));
-
-		m_idTextShader = SGCore_ShaderCreateKit(SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "gui_text.vs"), SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "gui_main.ps"));
-
-		m_pTextColorCB = getDevice()->createConstantBuffer(sizeof(float4_t));
-		m_pTextColorCB->update(&float4_t(198.0f / 255.0f, 240.0f / 255.0f, 253.0f / 255.0f, 1.0f));
-		m_pTextOffsetCB = getDevice()->createConstantBuffer(sizeof(float4_t));
-
-		initViewportCaptions();
-	}
-	~CRenderPipeline()
-	{
-		mem_release(m_pAxesRenderer);
-		mem_release(g_pSelectionRenderer);
-		mem_release(g_pUnselectedRenderer);
-
-		for(UINT i = 0; i < 3; ++i)
-		{
-			mem_release(m_pCameraVisibility[i + 1]);
-			mem_release(m_pViewportCaptionRB[i]);
-		}
-
-		mem_release(m_pViewportCaptionIB);
-
-		mem_release(m_pTextColorCB);
-		mem_release(m_pTextOffsetCB);
-
-		m_pCore->setRenderPipeline(m_pOldPipeline);
-		mem_release(m_pOldPipeline);
-
-		mem_release(m_pFont);
-	}
-
-	void resize(UINT uWidth, UINT uHeight, bool isWindowed = true) override
-	{
-		m_pOldPipeline->resize(uWidth, uHeight, isWindowed);
-	}
-
-	void renderFrame(float fDeltaTime) override
-	{
-		m_pOldPipeline->renderFrame(fDeltaTime);
-
-		static const bool *terrax_detach_3d = m_pCore->getConsole()->getPCVarBool("terrax_detach_3d");
-
-		if(*terrax_detach_3d)
-		{
-			return;
-		}
-		
-		IGXContext *pDXDevice = getDevice()->getThreadContext();
-		pDXDevice->setDepthStencilState(g_pDSDefault);
-
-		m_pMaterialSystem->bindRenderPass(m_pRenderPassGeometry3D);
-
-		XRender3D();
-
-
-		g_pEditor->render(true);
-
-		m_pAxesRenderer->render(false);
-
-		//#############################################################################
-		HWND hWnds[] = {g_hTopRightWnd, g_hBottomLeftWnd, g_hBottomRightWnd};
-		IGXSwapChain *p2DSwapChains[] = {g_pTopRightSwapChain, g_pBottomLeftSwapChain, g_pBottomRightSwapChain};
-		IGXDepthStencilSurface *p2DDepthStencilSurfaces[] = {g_pTopRightDepthStencilSurface, g_pBottomLeftDepthStencilSurface, g_BottomRightDepthStencilSurface};
-		
-		ICamera **pCameras = g_xConfig.m_pViewportCamera + 1;
-		float *fScales = g_xConfig.m_fViewportScale + 1;
-		X_2D_VIEW *views = g_xConfig.m_x2DView + 1;
-		IXRenderableVisibility **pCameraVisibility = m_pCameraVisibility + 1;
-
-		//[i + 1]
-		//ICamera *p3DCamera = SRender_GetCamera();
-		pDXDevice->setSamplerState(NULL, 0);
-		//#############################################################################
-
-		XUpdateSelectionBound();
-		XUpdateGizmos();
-
-
-		for(int i = 0; i < 3; ++i)
-		{
-			if(!IsWindowVisible(hWnds[i]))
-			{
-				continue;
-			}
-			SRender_SetCamera(pCameras[i]);
-			IGXSurface *pBackBuffer = p2DSwapChains[i]->getColorTarget();
-			pDXDevice->setColorTarget(pBackBuffer);
-			pDXDevice->setDepthStencilSurface(p2DDepthStencilSurfaces[i]);
-			pDXDevice->clear(GX_CLEAR_COLOR | GX_CLEAR_DEPTH | GX_CLEAR_STENCIL);
-
-			m_pMaterialSystem->setFillMode(GXFILL_WIREFRAME);
-//			pDXDevice->setRasterizerState(g_xRenderStates.pRSWireframe);
-			pDXDevice->setDepthStencilState(g_pDSNoZ);
- 			pDXDevice->setBlendState(NULL);
-			SMMATRIX mProj = SMMatrixOrthographicLH((float)pBackBuffer->getWidth() * fScales[i], (float)pBackBuffer->getHeight() * fScales[i], 1.0f, 2000.0f);
-			SMMATRIX mView = pCameras[i]->getViewMatrix();
-			Core_RMatrixSet(G_RI_MATRIX_OBSERVER_VIEW, &mView);
-			Core_RMatrixSet(G_RI_MATRIX_VIEW, &mView);
-			Core_RMatrixSet(G_RI_MATRIX_OBSERVER_PROJ, &mProj);
-			Core_RMatrixSet(G_RI_MATRIX_PROJECTION, &mProj);
-			Core_RMatrixSet(G_RI_MATRIX_VIEWPROJ, &(mView * mProj));
-
-			pCameras[i]->updateFrustum(mProj);
-
-			g_pCameraConstantBuffer->update(&SMMatrixIdentity());
-			pDXDevice->setVSConstant(g_pCameraConstantBuffer, SCR_OBJECT);
-
-			Core_RMatrixSet(G_RI_MATRIX_WORLD, &SMMatrixIdentity());
-			Core_RIntSet(G_RI_INT_RENDERSTATE, RENDER_STATE_FREE);
-
-			m_pMaterialSystem->bindRenderPass(m_pRenderPassGeometry2D);
-
-			XRender2D(views[i], fScales[i], true, false);
-
-			renderEditor2D(pCameraVisibility[i]);
-
-			Core_RIntSet(G_RI_INT_RENDERSTATE, RENDER_STATE_MATERIAL);
-			pDXDevice->setVSConstant(g_pCameraConstantBuffer, SCR_OBJECT);
-			XRender2D(views[i], fScales[i], false, false);
-
-			m_pMaterialSystem->bindRenderPass(m_pRenderPassGeometry3D);
-			XRender2D(views[i], fScales[i], false, true);
-
-			g_pEditor->render(false);
-			m_pAxesRenderer->render(true);
-
-			drawViewportCaption(i);
-
-			mem_release(pBackBuffer);
-		}
-
-
-
-		g_pMaterialBrowser->render();
-
-		renderCurrentMaterial();
-
-		/*
-		IGXSurface *pBackBuffer = g_pGuiSwapChain->getColorTarget();
-		pDXDevice->setColorTarget(pBackBuffer);
-		pDXDevice->setDepthStencilSurface(g_pGuiDepthStencilSurface);
-		pDXDevice->clear(GX_CLEAR_COLOR | GX_CLEAR_DEPTH | GX_CLEAR_STENCIL);
-		XGuiRender();
-		mem_release(pBackBuffer);
-		*/
-		//#############################################################################
-		//SRender_SetCamera(p3DCamera);
-		pDXDevice->setColorTarget(NULL);
-		pDXDevice->setDepthStencilSurface(NULL);
-
-	}
-	void endFrame() override
-	{
-		m_pOldPipeline->endFrame();
-
-		HWND hWnds[] = {g_hTopRightWnd, g_hBottomLeftWnd, g_hBottomRightWnd};
-		IGXSwapChain *p2DSwapChains[] = {g_pTopRightSwapChain, g_pBottomLeftSwapChain, g_pBottomRightSwapChain};
-		for(int i = 0; i < 3; ++i)
-		{
-			if(IsWindowVisible(hWnds[i]))
-			{
-				p2DSwapChains[i]->swapBuffers();
-			}
-		}
-
-		g_pMaterialBrowser->swapBuffers();
-	}
-	void updateVisibility() override
-	{
-		m_pOldPipeline->updateVisibility();
-
-		static const bool *terrax_detach_3d = m_pCore->getConsole()->getPCVarBool("terrax_detach_3d");
-
-		if(*terrax_detach_3d)
-		{
-			return;
-		}
-
-		HWND hWnds[] = {g_hTopRightWnd, g_hBottomLeftWnd, g_hBottomRightWnd};
-
-		for(UINT i = 0; i < 3; ++i)
-		{
-			if(!IsWindowVisible(hWnds[i]))
-			{
-				continue;
-			}
-
-			m_pCameraVisibility[i + 1]->updateForCamera(g_xConfig.m_pViewportCamera[i + 1]);
-		}
-	}
-
-	void renderStage(X_RENDER_STAGE stage, IXRenderableVisibility *pVisibility = NULL) override
-	{
-		m_pOldPipeline->renderStage(stage, pVisibility);
-	}
-
-	IGXDevice *getDevice() override
-	{
-		return(m_pOldPipeline->getDevice());
-	}
-
-	void newVisData(IXRenderableVisibility **ppVisibility) override
-	{
-		m_pOldPipeline->newVisData(ppVisibility);
-	}
-
-	
-
-//protected:
-
-	void renderPrepare() override
-	{
-		m_pOldPipeline->renderPrepare();
-	}
-	void renderGBuffer() override
-	{
-		m_pOldPipeline->renderGBuffer();
-	}
-	void renderShadows() override
-	{
-		m_pOldPipeline->renderShadows();
-	}
-	void renderGI() override
-	{
-		m_pOldPipeline->renderGI();
-	}
-	void renderPostprocessMain() override
-	{
-		m_pOldPipeline->renderPostprocessMain();
-	}
-	void renderTransparent() override
-	{
-		m_pOldPipeline->renderTransparent();
-	}
-	void renderPostprocessFinal()  override
-	{
-		m_pOldPipeline->renderPostprocessFinal();
-	}
-	void renderEditor2D(IXRenderableVisibility *pVisibility) override
-	{
-		m_pOldPipeline->renderEditor2D(pVisibility);
-	}
-
-	void renderCurrentMaterial()
-	{
-		if(g_isCurMatDirty)
-		{
-			g_isCurMatDirty = false;
-
-			//////////////////////////////////////////////////////
-
-			IGXSurface *pTarget = g_pCurMatSwapChain->getColorTarget();
-
-			IGXContext *pCtx = getDevice()->getThreadContext();
-			IGXSurface *pOldRT = pCtx->getColorTarget();
-			pCtx->setColorTarget(pTarget);
-			mem_release(pTarget);
-			IGXDepthStencilSurface *pOldDS = pCtx->getDepthStencilSurface();
-			pCtx->unsetDepthStencilSurface();
-
-			pCtx->clear(GX_CLEAR_COLOR, float4(0, 0, 0, 0));
-
-			pCtx->setPrimitiveTopology(GXPT_TRIANGLELIST);
-			pCtx->setRasterizerState(NULL);
-			pCtx->setBlendState(g_xRenderStates.pBlendAlpha);
-
-
-			{
-				IXMaterial *pMat = NULL;
-				IXTexture *pTex = NULL;
-
-				g_matBrowserCallback.getInfo(&pMat, &pTex);
-
-				if(!pMat || !pMat->isTransparent())
-				{
-					pCtx->setBlendState(NULL);
-				}
-
-				SGCore_ShaderBind(m_idScreenOutShader);
-
-				IGXBaseTexture *pTexture = NULL;
-
-				pTex->getAPITexture(&pTexture, /*item.uCurrentFrame*/ 0);
-				pCtx->setPSTexture(pTexture);
-				mem_release(pTexture);
-
-				SGCore_ScreenQuadDraw();
-
-				SGCore_ShaderUnBind();
-
-				mem_release(pMat);
-				mem_release(pTex);
-			}
-
-
-
-			pCtx->setDepthStencilSurface(pOldDS);
-			mem_release(pOldDS);
-			pCtx->setColorTarget(pOldRT);
-			mem_release(pOldRT);
-
-			
-
-
-
-			/////////////////////////////////////////////////////
-
-			g_pCurMatSwapChain->swapBuffers();
-		}
-			// g_pCurMatSwapChain
-	}
-
-	void initViewportCaptions()
-	{
-		m_pFontManager = (IXFontManager*)Core_GetIXCore()->getPluginManager()->getInterface(IXFONTMANAGER_GUID);
-		if(!m_pFontManager)
-		{
-			return;
-		}
-		IGXVertexDeclaration *pVD = NULL;
-		m_pFontManager->getFont(&m_pFont, "gui/fonts/tahoma.ttf", 10);
-		m_pFontManager->getFontVertexDeclaration(&pVD);
-
-		XFontBuildParams xfbp;
-		XFontStringMetrics xfsm = {};
-
-		// X_2D_VIEW
-
-		const char *aszCaptions[] = {
-			"Top (x/z)",
-			"Front (x/y)",
-			"Side (z/y)"
-		};
-
-		IGXDevice *pDev = getDevice();
-
-		UINT uMaxLen = 0;
-
-		for(UINT i = 0, l = ARRAYSIZE(aszCaptions); i < l; ++i)
-		{
-			xfbp.pVertices = NULL;
-			m_pFont->buildString(aszCaptions[i], xfbp, &xfsm);
-			xfbp.pVertices = (XFontVertex*)alloca(sizeof(XFontVertex) * xfsm.uVertexCount);
-			m_pFont->buildString(aszCaptions[i], xfbp, &xfsm);
-
-			XFontGPUVertex *pBuffer = (XFontGPUVertex*)alloca(sizeof(XFontGPUVertex) * xfsm.uVertexCount);
-
-			for(UINT j = 0; j < xfsm.uVertexCount; ++j)
-			{
-				pBuffer[j] = xfbp.pVertices[j];
-				pBuffer[j].vPos.y *= -1.0f;
-			}
-
-			m_uViewportCaptionQuadCount[i] = xfsm.uVertexCount / 4;
-
-			IGXVertexBuffer *pVB = pDev->createVertexBuffer(sizeof(XFontGPUVertex) * xfsm.uVertexCount, GXBUFFER_USAGE_STATIC, pBuffer);
-
-			m_pViewportCaptionRB[i] = pDev->createRenderBuffer(1, &pVB, pVD);
-
-			mem_release(pVB);
-
-			UINT uLen = (UINT)strlen(aszCaptions[i]);
-			if(uLen > uMaxLen)
-			{
-				uMaxLen = uLen;
-			}
-		}
-
-		m_pFontManager->getFontIndexBuffer(uMaxLen, &m_pViewportCaptionIB);
-	}
-
-	void drawViewportCaption(int iView)
-	{
-		iView = g_xConfig.m_x2DView[iView + 1];
-		if(!m_pViewportCaptionRB[iView])
-		{
-			return;
-		}
-
-		IGXContext *pCtx = getDevice()->getThreadContext();
-
-		pCtx->setPrimitiveTopology(GXPT_TRIANGLELIST);
-		pCtx->setRasterizerState(NULL);
-		IGXDepthStencilSurface *pOldDS = pCtx->getDepthStencilSurface();
-		pCtx->unsetDepthStencilSurface();
-		pCtx->setBlendState(g_xRenderStates.pBlendAlpha);
-
-		IGXSurface *pTarget = pCtx->getColorTarget();
-
-		float fWidth = (float)pTarget->getWidth();
-		float fHeight = (float)pTarget->getHeight();
-		mem_release(pTarget);
-
-		SMMATRIX mProj = SMMatrixTranslation(-0.5f, -0.5f, 0.0f) * SMMatrixOrthographicLH(fWidth, fHeight, 1.0f, 2000.0f);
-		SMMATRIX mView = SMMatrixLookToLH(float3(fWidth * 0.5f, -fHeight * 0.5f, -1.0f), float3(0.0f, 0.0f, 1.0f), float3(0.0f, 1.0f, 0.0f));
-
-		g_pCameraConstantBuffer->update(&SMMatrixTranspose(mView * mProj));
-
-		pCtx->setVSConstant(g_pCameraConstantBuffer, SCR_CAMERA);
-
-		IGXTexture2D *pTex;
-		m_pFont->getTexture(0, &pTex);
-		pCtx->setPSTexture(pTex);
-		mem_release(pTex);
-		pCtx->setRenderBuffer(m_pViewportCaptionRB[iView]);
-		pCtx->setIndexBuffer(m_pViewportCaptionIB);
-		pCtx->setPSConstant(m_pTextColorCB);
-		m_pTextOffsetCB->update(&float4_t(0.0f, 0.0f, 0.0f, 0.0f));
-		pCtx->setVSConstant(m_pTextOffsetCB, 6);
-		SGCore_ShaderBind(m_idTextShader);
-		pCtx->drawIndexed(m_uViewportCaptionQuadCount[iView] * 4, m_uViewportCaptionQuadCount[iView] * 2);
-		SGCore_ShaderUnBind();
-
-		pCtx->setDepthStencilSurface(pOldDS);
-		mem_release(pOldDS);
-	}
-
-	IXCore *m_pCore;
-	IXRenderPipeline *m_pOldPipeline = NULL;
-	IXMaterialSystem *m_pMaterialSystem = NULL;
-
-	XRenderPassHandler *m_pRenderPassGeometry2D = NULL;
-	XRenderPassHandler *m_pRenderPassGeometry3D = NULL;
-
-	IXRenderableVisibility *m_pCameraVisibility[4];
-
-	IXGizmoRenderer *m_pAxesRenderer = NULL;
-
-	ID m_idScreenOutShader = -1;
-	ID m_idTextShader = -1;
-
-	IXFontManager *m_pFontManager = NULL;
-	IXFont *m_pFont = NULL;
-	
-	IGXRenderBuffer *m_pViewportCaptionRB[3];
-	UINT m_uViewportCaptionQuadCount[3];
-	IGXIndexBuffer *m_pViewportCaptionIB = NULL;
-	IGXConstantBuffer *m_pTextColorCB = NULL;
-	IGXConstantBuffer *m_pTextOffsetCB = NULL;
-};
+//##########################################################################
 
 class CCVarEventListener: public IEventListener<XEventCvarChanged>
 {
@@ -1024,6 +522,15 @@ public:
 				{
 					g_pLevelObjects[i]->setSimulationMode(true);
 				}
+
+				IXRenderGraph *pGraph;
+				if(g_pRender->getGraph("xDefaultScene", &pGraph))
+				{
+					g_pTopLeftTarget->attachGraph(pGraph);
+					mem_release(pGraph);
+				}
+
+				g_pTopLeftTarget->setCamera(SGame_GetActiveCamera());
 			}
 			else
 			{
@@ -1044,6 +551,15 @@ public:
 				{
 					g_pLevelObjects[i]->setSimulationMode(false);
 				}
+
+				IXRenderGraph *pGraph;
+				if(g_pRender->getGraph("xTerraX3D", &pGraph))
+				{
+					g_pTopLeftTarget->attachGraph(pGraph);
+					mem_release(pGraph);
+				}
+
+				g_pTopLeftTarget->setCamera(g_xConfig.m_pViewportCamera[XWP_TOP_LEFT]);
 			}
 		}
 	}
@@ -1053,6 +569,8 @@ private:
 	LONG m_lOldStyle;
 	LONG m_lOldExStyle;
 };
+
+//##########################################################################
 
 CEngineCallback *g_pEngineCallback = NULL;
 
@@ -1088,9 +606,22 @@ int main(int argc, char **argv)
 
 	//SkyXEngine_Init(g_hTopLeftWnd, g_hWndMain, lpCmdLine);
 	IXEngine *pEngine = XEngineInit(argc, argv, "TerraX");
+	INIT_PROFILER_INTERNAL();
+
+	IXWindowSystem *pWindowSystem = XWindowInit();
+	pEngine->getCore()->getPluginManager()->registerInterface(IXWINDOWSYSTEM_GUID, pWindowSystem);
+
 	g_pEngine = pEngine;
 	CEngineCallback engineCb;
 	g_pEngineCallback = &engineCb;
+	C3DOverlayGraphNode *p3DOverlayGraphNode = new C3DOverlayGraphNode(pEngine->getCore());
+	C2DGraphNode *p2DGraphNode = new C2DGraphNode(pEngine->getCore());
+	pEngine->getCore()->getPluginManager()->registerInterface(IXRENDERGRAPHNODE_GUID, p3DOverlayGraphNode);
+	pEngine->getCore()->getPluginManager()->registerInterface(IXRENDERGRAPHNODE_GUID, p2DGraphNode);
+	pEngine->getCore()->getPluginManager()->registerInterface(IXRENDERGRAPHNODE_GUID, new CTextureViewGraphNode(pEngine->getCore()));
+	pEngine->getCore()->getPluginManager()->registerInterface(IXRENDERGRAPHNODE_GUID, new CMaterialBrowserGraphNode(pEngine->getCore()));
+	pEngine->getCore()->getPluginManager()->registerInterface(IXRENDERGRAPHNODE_GUID, new CCurveEditorGraphNode(pEngine->getCore()));
+	pEngine->getCore()->getPluginManager()->registerInterface(IXRENDERGRAPHNODE_GUID, new CGradientPreviewGraphNode(pEngine->getCore()));
 	pEngine->initGraphics((XWINDOW_OS_HANDLE)g_hTopLeftWnd, &engineCb);
 	engineCb.setCore(pEngine->getCore());
 	pEngine->getCore()->getConsole()->registerCVar("terrax_detach_3d", false, "", FCVAR_NOTIFY);
@@ -1117,7 +648,37 @@ int main(int argc, char **argv)
 		XExportToDSE(argv[1]);
 	}, "Export model to dse format");
 	
-	CRenderPipeline *pPipeline = new CRenderPipeline(Core_GetIXCore());
+	//IXRenderTarget *g_pTopRightTarget = NULL;
+	//IXRenderTarget *g_pBottomLeftTarget = NULL;
+	//IXRenderTarget *g_pBottomRightTarget = NULL;
+	g_pRender = (IXRender*)Core_GetIXCore()->getPluginManager()->getInterface(IXRENDER_GUID);
+
+	g_pRender->getFinalTarget("xMainWindow", &g_pTopLeftTarget);
+	g_pRender->newFinalTarget(g_hTopRightWnd, "xTopRightWindow", &g_pTopRightTarget);
+	g_pRender->newFinalTarget(g_hBottomLeftWnd, "xBottomLeftWindow", &g_pBottomLeftTarget);
+	g_pRender->newFinalTarget(g_hBottomRightWnd, "xBottomRightWindow", &g_pBottomRightTarget);
+
+	IXRenderGraph *pGraph;
+	if(g_pRender->getGraph("xTerraX2D", &pGraph))
+	{
+		g_pTopRightTarget->attachGraph(pGraph);
+		g_pBottomLeftTarget->attachGraph(pGraph);
+		g_pBottomRightTarget->attachGraph(pGraph);
+		mem_release(pGraph);
+	}
+
+	if(g_pRender->getGraph("xTerraX3D", &pGraph))
+	{
+		g_pTopLeftTarget->attachGraph(pGraph);
+		mem_release(pGraph);
+	}
+
+	IXRenderUtils *pUtils = (IXRenderUtils*)Core_GetIXCore()->getPluginManager()->getInterface(IXRENDERUTILS_GUID);
+	pUtils->newGizmoRenderer(&g_pSelectionRenderer);
+	pUtils->newGizmoRenderer(&g_pUnselectedRenderer);
+
+	CTextureWindow::Setup(pEngine->getCore());
+
 	g_pEditor = new CEditor(Core_GetIXCore());
 	Core_GetIXCore()->getPluginManager()->registerInterface(IXEDITOR_GUID, g_pEditor);
 
@@ -1141,6 +702,7 @@ int main(int argc, char **argv)
 
 	g_pEngine->getCore()->getConsole()->execCommand2("r_win_width %d\nr_win_height %d", rcTopLeft.right - rcTopLeft.left, rcTopLeft.bottom - rcTopLeft.top);
 
+	IGXDevice *pDevice = g_pRender->getDevice();
 
 	IPluginManager *pPluginManager = Core_GetIXCore()->getPluginManager();
 
@@ -1160,7 +722,7 @@ int main(int argc, char **argv)
 		t, w, w, w, t, t,
 		t, t, w, w, w, t
 	};
-	g_pDashedMaterial = SGCore_GetDXDevice()->createTexture2D(6, 6, 1, 0, GXFMT_A8B8G8R8, colorData);
+	g_pDashedMaterial = pDevice->createTexture2D(6, 6, 1, 0, GXFMT_A8B8G8R8, colorData);
 	//pMaterialSystem->addTexture("dev_dashed", pDashedMaterial);
 	//mem_release(pDashedMaterial);
 
@@ -1169,15 +731,34 @@ int main(int argc, char **argv)
 	////pMaterialSystem->addTexture("dev_white", pWhiteMaterial);
 	//mem_release(pDashedMaterial);
 
+
+	IXGizmoRenderer *pAxesRenderer = NULL;
+	pUtils->newGizmoRenderer(&pAxesRenderer);
+	pAxesRenderer->setColor(float4(1.0f, 0.0f, 0.0f, 1.0f));
+	pAxesRenderer->setLineWidth(0.04f);
+	pAxesRenderer->setLineWidth(3.0f);
+	pAxesRenderer->jumpTo(float3(0.0f, 0.0f, 0.0f));
+	pAxesRenderer->lineTo(float3(1.0f, 0.0f, 0.0f));
+	pAxesRenderer->setColor(float4(0.0f, 1.0f, 0.0f, 1.0f));
+	pAxesRenderer->jumpTo(float3(0.0f, 0.0f, 0.0f));
+	pAxesRenderer->lineTo(float3(0.0f, 1.0f, 0.0f));
+	pAxesRenderer->setColor(float4(0.0f, 0.0f, 1.0f, 1.0f));
+	pAxesRenderer->jumpTo(float3(0.0f, 0.0f, 0.0f));
+	pAxesRenderer->lineTo(float3(0.0f, 0.0f, 1.0f));
+	p3DOverlayGraphNode->setAxesRenderer(pAxesRenderer);
+	p2DGraphNode->setAxesRenderer(pAxesRenderer);
+	mem_release(pAxesRenderer);
+
 	UINT ic = 0;
 	IXEditable *pEditable;
 	IXEditorTool *pTool;
+	IXEditorResourceBrowser *pResourceBrowser;
 	while((pEditable = (IXEditable*)pPluginManager->getInterface(IXEDITABLE_GUID, ic++)))
 	{
 		if(pEditable->getVersion() == IXEDITABLE_VERSION)
 		{
 			g_pEditableSystems.push_back(pEditable);
-			pEditable->startup(SGCore_GetDXDevice());
+			pEditable->startup(pDevice);
 			
 			IXEditorExtension *pExt = pEditable->getEditorExtension();
 			if(pExt)
@@ -1195,6 +776,16 @@ int main(int argc, char **argv)
 					{
 						XInitTool(pTool, pEditable);
 					}
+				}
+
+				for(UINT i = 0, l = pExt->getResourceBrowserCount(); i < l; ++i)
+				{
+					if(pExt->getResourceBrowser(i, &pResourceBrowser))
+					{
+						g_pEditor->registerResourceBrowser(pResourceBrowser);
+						mem_release(pResourceBrowser);
+						// XInitTool(pResourceBrowser, pEditable);
+			}
 				}
 			}
 
@@ -1315,6 +906,7 @@ int main(int argc, char **argv)
 							if(sscanf(szVal, "%f", &fVal) && fVal > 0.0f)
 							{
 								g_xConfig.m_fViewportScale[i] = fVal;
+								g_xConfig.m_pViewportCamera[i]->setScale(fVal);
 							}
 						}
 
@@ -1628,34 +1220,48 @@ int main(int argc, char **argv)
 
 	static const float *r_default_fov = GET_PCVAR_FLOAT("r_default_fov");
 
-	g_xConfig.m_pViewportCamera[XWP_TOP_LEFT] = SGCore_CrCamera();
-	g_xConfig.m_pViewportCamera[XWP_TOP_LEFT]->setFOV(*r_default_fov);
+	IXRender *pRender = g_pRender;
 
-	g_xConfig.m_pViewportCamera[XWP_TOP_RIGHT] = SGCore_CrCamera();
+	pRender->newCamera(&g_xConfig.m_pViewportCamera[XWP_TOP_LEFT]);
+	g_xConfig.m_pViewportCamera[XWP_TOP_LEFT]->setFOV(SMToRadian(*r_default_fov));
+
+	pRender->newCamera(&g_xConfig.m_pViewportCamera[XWP_TOP_RIGHT]);
 	g_xConfig.m_pViewportCamera[XWP_TOP_RIGHT]->setPosition(X2D_TOP_POS);
 	g_xConfig.m_pViewportCamera[XWP_TOP_RIGHT]->setOrientation(X2D_TOP_ROT);
+	g_xConfig.m_pViewportCamera[XWP_TOP_RIGHT]->setProjectionMode(XCPM_ORTHOGONAL);
+	g_xConfig.m_pViewportCamera[XWP_TOP_RIGHT]->setFar(2000.0f);
+	g_xConfig.m_pViewportCamera[XWP_TOP_RIGHT]->setNear(1.0f);
 
-	g_xConfig.m_pViewportCamera[XWP_BOTTOM_LEFT] = SGCore_CrCamera();
+	pRender->newCamera(&g_xConfig.m_pViewportCamera[XWP_BOTTOM_LEFT]);
 	g_xConfig.m_pViewportCamera[XWP_BOTTOM_LEFT]->setPosition(X2D_SIDE_POS);
 	g_xConfig.m_pViewportCamera[XWP_BOTTOM_LEFT]->setOrientation(X2D_SIDE_ROT);
+	g_xConfig.m_pViewportCamera[XWP_BOTTOM_LEFT]->setProjectionMode(XCPM_ORTHOGONAL);
+	g_xConfig.m_pViewportCamera[XWP_BOTTOM_LEFT]->setFar(2000.0f);
+	g_xConfig.m_pViewportCamera[XWP_BOTTOM_LEFT]->setNear(1.0f);
 
-	g_xConfig.m_pViewportCamera[XWP_BOTTOM_RIGHT] = SGCore_CrCamera();
+	pRender->newCamera(&g_xConfig.m_pViewportCamera[XWP_BOTTOM_RIGHT]);
 	g_xConfig.m_pViewportCamera[XWP_BOTTOM_RIGHT]->setPosition(X2D_FRONT_POS);
 	g_xConfig.m_pViewportCamera[XWP_BOTTOM_RIGHT]->setOrientation(X2D_FRONT_ROT);
+	g_xConfig.m_pViewportCamera[XWP_BOTTOM_RIGHT]->setProjectionMode(XCPM_ORTHOGONAL);
+	g_xConfig.m_pViewportCamera[XWP_BOTTOM_RIGHT]->setFar(2000.0f);
+	g_xConfig.m_pViewportCamera[XWP_BOTTOM_RIGHT]->setNear(1.0f);
 
+	g_pTopLeftTarget->setCamera(g_xConfig.m_pViewportCamera[XWP_TOP_LEFT]);
+	g_pTopRightTarget->setCamera(g_xConfig.m_pViewportCamera[XWP_TOP_RIGHT]);
+	g_pBottomLeftTarget->setCamera(g_xConfig.m_pViewportCamera[XWP_BOTTOM_LEFT]);
+	g_pBottomRightTarget->setCamera(g_xConfig.m_pViewportCamera[XWP_BOTTOM_RIGHT]);
 
 //	SkyXEngine_RunGenPreview();
 	//Core_0SetCVarInt("r_final_image", DS_RT_COLOR);
 	Core_0SetCVarInt("r_final_image", DS_RT_SCENELIGHT);
 	
-	g_pGrid = new CGrid();
+	g_pGrid = new CGrid(pRender);
 	g_pGrid->setOpacity(0.7f);
 	
-	g_xRenderStates.idColoredShaderVS = SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "terrax_colored.vs");
-	g_xRenderStates.idColoredShaderPS = SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "terrax_colored.ps");
-	g_xRenderStates.idColoredShaderKit = SGCore_ShaderCreateKit(g_xRenderStates.idColoredShaderVS, g_xRenderStates.idColoredShaderPS);
+	g_xRenderStates.idColoredShaderVS = g_pRender->loadShader(SHADER_TYPE_VERTEX, "terrax_colored.vs");
+	g_xRenderStates.idColoredShaderPS = g_pRender->loadShader(SHADER_TYPE_PIXEL, "terrax_colored.ps");
+	g_xRenderStates.idColoredShaderKit = g_pRender->createShaderKit(g_xRenderStates.idColoredShaderVS, g_xRenderStates.idColoredShaderPS);
 //	SkyXEngine_PreviewKill();
-	IGXDevice *pDevice = SGCore_GetDXDevice();
 
 	GXBlendDesc blendDesc;
 	blendDesc.renderTarget[0].useBlend = true;
@@ -1669,14 +1275,14 @@ int main(int argc, char **argv)
 
 	GXRasterizerDesc rsDesc; 
 	rsDesc.cullMode = GXCULL_NONE;
-	g_xRenderStates.pRSSolidNoCull = SGCore_GetDXDevice()->createRasterizerState(&rsDesc);
+	g_xRenderStates.pRSSolidNoCull = pDevice->createRasterizerState(&rsDesc);
 
 	rsDesc.fillMode = GXFILL_WIREFRAME;
-	g_xRenderStates.pRSWireframe = SGCore_GetDXDevice()->createRasterizerState(&rsDesc);
+	g_xRenderStates.pRSWireframe = pDevice->createRasterizerState(&rsDesc);
 
-	g_xRenderStates.idTexturedShaderVS = SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "terrax_textured.vs");
-	g_xRenderStates.idTexturedShaderPS = SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "terrax_textured.ps");
-	g_xRenderStates.idTexturedShaderKit = SGCore_ShaderCreateKit(g_xRenderStates.idTexturedShaderVS, g_xRenderStates.idTexturedShaderPS);
+	g_xRenderStates.idTexturedShaderVS = g_pRender->loadShader(SHADER_TYPE_VERTEX, "terrax_textured.vs");
+	g_xRenderStates.idTexturedShaderPS = g_pRender->loadShader(SHADER_TYPE_PIXEL, "terrax_textured.ps");
+	g_xRenderStates.idTexturedShaderKit = g_pRender->createShaderKit(g_xRenderStates.idTexturedShaderVS, g_xRenderStates.idTexturedShaderPS);
 
 	GXVertexElement oLayout[] =
 	{
@@ -1701,13 +1307,13 @@ int main(int argc, char **argv)
 	g_xRenderStates.pHandlerInstanceVB = pDevice->createVertexBuffer(sizeof(float3_t) * 2 * X_MAX_HANDLERS_PER_DIP, GXBUFFER_USAGE_STREAM);
 	IGXVertexBuffer *ppVB[] = {g_xRenderStates.pHandlerVB, g_xRenderStates.pHandlerInstanceVB};
 	g_xRenderStates.pHandlerRB = pDevice->createRenderBuffer(2, ppVB, pVD);
-	g_xRenderStates.idHandlerShaderVS = SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "terrax_handler.vs");
-	g_xRenderStates.idHandlerShaderKit = SGCore_ShaderCreateKit(g_xRenderStates.idHandlerShaderVS, g_xRenderStates.idColoredShaderPS);
-	g_xRenderStates.idBoundShaderKit = SGCore_ShaderCreateKit(SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "terrax_bound.vs"), g_xRenderStates.idColoredShaderPS);
+	g_xRenderStates.idHandlerShaderVS = g_pRender->loadShader(SHADER_TYPE_VERTEX, "terrax_handler.vs");
+	g_xRenderStates.idHandlerShaderKit = g_pRender->createShaderKit(g_xRenderStates.idHandlerShaderVS, g_xRenderStates.idColoredShaderPS);
+	g_xRenderStates.idBoundShaderKit = g_pRender->createShaderKit(g_pRender->loadShader(SHADER_TYPE_VERTEX, "terrax_bound.vs"), g_xRenderStates.idColoredShaderPS);
 	USHORT pHandlerIndices[] = {0, 1, 2, 3, 4, 5, 6, 7};
 	g_xRenderStates.pHandlerIB = pDevice->createIndexBuffer(sizeof(USHORT)* 8, GXBUFFER_USAGE_STATIC, GXIT_UINT16, pHandlerIndices);
 
-	g_xRenderStates.idIconShaderKit = SGCore_ShaderCreateKit(SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "terrax_icon.vs"), g_xRenderStates.idTexturedShaderPS);
+	g_xRenderStates.idIconShaderKit = g_pRender->createShaderKit(g_pRender->loadShader(SHADER_TYPE_VERTEX, "terrax_icon.vs"), g_xRenderStates.idTexturedShaderPS);
 
 	float3_t cubeData[] = {
 		{-0.5f, -0.5f, -0.5f},
@@ -1809,22 +1415,17 @@ int main(int argc, char **argv)
 
 	GXDepthStencilDesc dsDesc;
 	dsDesc.cmpFuncDepth = GXCMP_GREATER_EQUAL;
-	g_pDSDefault = SGCore_GetDXDevice()->createDepthStencilState(&dsDesc);
+	g_pDSDefault = pDevice->createDepthStencilState(&dsDesc);
 
 	dsDesc.useDepthTest = FALSE;
 	dsDesc.useDepthWrite = FALSE;
-	g_pDSNoZ = SGCore_GetDXDevice()->createDepthStencilState(&dsDesc);
+	g_pDSNoZ = pDevice->createDepthStencilState(&dsDesc);
 
 	XInitViewports();
 
-	IGXDevice *pContext = SGCore_GetDXDevice();
-	RECT rc;
-	GetClientRect(g_hCurMatWnd, &rc);
-	g_pCurMatSwapChain = pContext->createSwapChain(rc.right - rc.left, rc.bottom - rc.top, g_hCurMatWnd);
+	g_pMaterialBrowser->initGraphics(pRender);
 
-	g_pMaterialBrowser->initGraphics(SGCore_GetDXDevice());
-
-	g_pCameraConstantBuffer = SGCore_GetDXDevice()->createConstantBuffer(sizeof(SMMATRIX));
+	g_pCameraConstantBuffer = pDevice->createConstantBuffer(sizeof(SMMATRIX));
 
 	for(UINT i = 0; i < 4; ++i)
 	{
@@ -1842,15 +1443,21 @@ int main(int argc, char **argv)
 	{
 		g_pEditableSystems[i]->shutdown();
 	}
-	mem_release(g_pCurMatSwapChain);
 	XReleaseViewports();
 
 	pChannel->removeListener(&cvarListener);
 
+	mem_release(g_pTopLeftTarget);
+	mem_release(g_pTopRightTarget);
+	mem_release(g_pBottomLeftTarget);
+	mem_release(g_pBottomRightTarget);
+
+	mem_release(g_pSelectionRenderer);
+	mem_release(g_pUnselectedRenderer);
+
 	mem_release(g_pDashedMaterial);
 	mem_release(g_pDSNoZ);
 	mem_release(g_pDSDefault);
-	mem_delete(pPipeline);
 	mem_release(g_pCameraConstantBuffer);
 	mem_delete(g_pGrid);
 	//SkyXEngine_Kill();
@@ -1861,19 +1468,15 @@ int main(int argc, char **argv)
 
 void XInitViewports()
 {
-	IGXDevice *pContext = SGCore_GetDXDevice();
 	RECT rc;
 	GetClientRect(g_hTopRightWnd, &rc);
-	g_pTopRightSwapChain = pContext->createSwapChain(rc.right - rc.left, rc.bottom - rc.top, g_hTopRightWnd);
-	g_pTopRightDepthStencilSurface = pContext->createDepthStencilSurface(rc.right - rc.left, rc.bottom - rc.top, GXFMT_D24S8, GXMULTISAMPLE_NONE);
+	g_pTopRightTarget->resize(rc.right - rc.left, rc.bottom - rc.top);
 
 	GetClientRect(g_hBottomLeftWnd, &rc);
-	g_pBottomLeftSwapChain = pContext->createSwapChain(rc.right - rc.left, rc.bottom - rc.top, g_hBottomLeftWnd);
-	g_pBottomLeftDepthStencilSurface = pContext->createDepthStencilSurface(rc.right - rc.left, rc.bottom - rc.top, GXFMT_D24S8, GXMULTISAMPLE_NONE);
+	g_pBottomLeftTarget->resize(rc.right - rc.left, rc.bottom - rc.top);
 
 	GetClientRect(g_hBottomRightWnd, &rc);
-	g_pBottomRightSwapChain = pContext->createSwapChain(rc.right - rc.left, rc.bottom - rc.top, g_hBottomRightWnd);
-	g_BottomRightDepthStencilSurface = pContext->createDepthStencilSurface(rc.right - rc.left, rc.bottom - rc.top, GXFMT_D24S8, GXMULTISAMPLE_NONE);
+	g_pBottomRightTarget->resize(rc.right - rc.left, rc.bottom - rc.top);
 	/*
 	GetClientRect(g_pGuiWnd, &rc);
 	g_pGuiSwapChain = pContext->createSwapChain(rc.right - rc.left, rc.bottom - rc.top, g_pGuiWnd);
@@ -1883,13 +1486,7 @@ void XInitViewports()
 
 void XReleaseViewports()
 {
-	mem_release(g_pTopRightSwapChain);
-	mem_release(g_pBottomLeftSwapChain);
-	mem_release(g_pBottomRightSwapChain);
 	mem_release(g_pGuiSwapChain);
-	mem_release(g_pTopRightDepthStencilSurface);
-	mem_release(g_pBottomLeftDepthStencilSurface);
-	mem_release(g_BottomRightDepthStencilSurface);
 	mem_release(g_pGuiDepthStencilSurface);
 }
 
@@ -1899,7 +1496,9 @@ bool g_isRenderedUnselected3D = false;
 
 void XRender3D()
 {
-	IGXDevice *pDevice = SGCore_GetDXDevice();
+	XPROFILE_FUNCTION();
+
+	IGXDevice *pDevice = g_pRender->getDevice();
 	IGXContext *pCtx = pDevice->getThreadContext();
 
 	g_isRenderedSelection3D = true;
@@ -1974,7 +1573,7 @@ void XRender3D()
 		pCtx->setRasterizerState(g_xRenderStates.pRSSolidNoCull);
 		pCtx->setVSConstant(s_mConstW, SCR_OBJECT);
 		pCtx->setPSConstant(s_pColorBuffer);
-		SGCore_ShaderBind(g_xRenderStates.idColoredShaderKit);
+		g_pRender->bindShader(pCtx, g_xRenderStates.idColoredShaderKit);
 
 		pCtx->setRenderBuffer(g_xRenderStates.pCreateCrossRB);
 		s_mConstW->update(&SMMatrixTranspose(SMMatrixTranslation(g_xState.vCreateOrigin)));
@@ -1997,7 +1596,7 @@ void XRender3D()
 		pCtx->setPSConstant(s_pColorBuffer);
 
 		pCtx->setPrimitiveTopology(GXPT_LINELIST);
-		SGCore_ShaderBind(g_xRenderStates.idBoundShaderKit);
+		g_pRender->bindShader(pCtx, g_xRenderStates.idBoundShaderKit);
 		//SGCore_ShaderBind(g_xRenderStates.idHandlerShaderKit);
 		pCtx->setIndexBuffer(g_xRenderStates.pHandler3DIB);
 
@@ -2061,7 +1660,7 @@ void XRender3D()
 			s_pColorBuffer->update(&float4(1.0f, 0.0f, 0.0f, 1.0f));
 		}
 
-		SGCore_ShaderUnBind();
+		g_pRender->unbindShader(pCtx);
 
 		pCtx->setRasterizerState(pOldRS);
 		mem_release(pOldRS);
@@ -2093,7 +1692,7 @@ void XRender3D()
 
 			s_pColorBuffer->update(&float4(1.0f, 1.0f, 1.0f, 1.0f));
 			pCtx->setPrimitiveTopology(GXPT_TRIANGLELIST);
-			SGCore_ShaderBind(g_xRenderStates.idIconShaderKit);
+			g_pRender->bindShader(pCtx, g_xRenderStates.idIconShaderKit);
 			pCtx->setIndexBuffer(g_xRenderStates.pIcon3DIB);
 			pCtx->setRenderBuffer(g_xRenderStates.pIcon3DRB);
 			pCtx->setSamplerState(g_xRenderStates.pSamplerLinearClamp, 0);
@@ -2170,9 +1769,11 @@ void XRender3D()
 	}
 }
 
-void XRender2D(X_2D_VIEW view, float fScale, bool preScene, bool bRenderSelection)
+void XRender2D(IXCamera *pCamera, X_2D_VIEW view, float fScale, bool preScene, bool bRenderSelection)
 {
-	IGXDevice *pDevice = SGCore_GetDXDevice();
+	XPROFILE_FUNCTION();
+
+	IGXDevice *pDevice = g_pRender->getDevice();
 	IGXContext *pCtx = pDevice->getThreadContext();
 
 	if(preScene)
@@ -2185,21 +1786,19 @@ void XRender2D(X_2D_VIEW view, float fScale, bool preScene, bool bRenderSelectio
 			{
 				step = minStep;
 			}
+			SMMATRIX mWorld;
 			switch(view)
 			{
 			case X2D_FRONT:
-				Core_RMatrixSet(G_RI_MATRIX_WORLD, &SMMatrixRotationX(SM_PIDIV2));
+				mWorld = SMMatrixRotationX(SM_PIDIV2);
 				break;
 			case X2D_SIDE:
-				Core_RMatrixSet(G_RI_MATRIX_WORLD, &SMMatrixRotationZ(SM_PIDIV2));
+				mWorld = SMMatrixRotationZ(SM_PIDIV2);
 				break;
 			}
 			g_pGrid->setOpacity(g_xConfig.m_fGridOpacity);
 			g_pGrid->setDottedMode(g_xConfig.m_bDottedGrid);
-			g_pGrid->render(step);
-
-			Core_RMatrixSet(G_RI_MATRIX_WORLD, &SMMatrixIdentity());
-
+			g_pGrid->render(mWorld, pCamera, step);
 		}
 	}
 	else
@@ -2249,7 +1848,7 @@ void XRender2D(X_2D_VIEW view, float fScale, bool preScene, bool bRenderSelectio
 			pCtx->setPSConstant(s_pColorBuffer);
 
 			pCtx->setPrimitiveTopology(GXPT_LINELIST);
-			SGCore_ShaderBind(g_xRenderStates.idHandlerShaderKit);
+			g_pRender->bindShader(pCtx, g_xRenderStates.idHandlerShaderKit);
 			pCtx->setIndexBuffer(g_xRenderStates.pHandlerIB);
 
 			s_pColorBuffer->update(&float4(0.0f, 1.0f, 0.0f, 1.0f));
@@ -2324,7 +1923,7 @@ void XRender2D(X_2D_VIEW view, float fScale, bool preScene, bool bRenderSelectio
 				s_pColorBuffer->update(&float4(1.0f, 0.0f, 0.0f, 1.0f));
 			}
 
-			SGCore_ShaderUnBind();
+			g_pRender->unbindShader(pCtx);
 		}
 
 		// Draw entity boxes
@@ -2336,7 +1935,7 @@ void XRender2D(X_2D_VIEW view, float fScale, bool preScene, bool bRenderSelectio
 			pCtx->setPSConstant(s_pColorBuffer);
 
 			pCtx->setPrimitiveTopology(GXPT_LINELIST);
-			SGCore_ShaderBind(g_xRenderStates.idBoundShaderKit);
+			g_pRender->bindShader(pCtx, g_xRenderStates.idBoundShaderKit);
 			//SGCore_ShaderBind(g_xRenderStates.idHandlerShaderKit);
 			pCtx->setIndexBuffer(g_xRenderStates.pHandler3DIB);
 
@@ -2400,7 +1999,7 @@ void XRender2D(X_2D_VIEW view, float fScale, bool preScene, bool bRenderSelectio
 				s_pColorBuffer->update(&float4(1.0f, 0.0f, 0.0f, 1.0f));
 			}
 
-			SGCore_ShaderUnBind();
+			g_pRender->unbindShader(pCtx);
 
 			pCtx->setRasterizerState(pOldRS);
 			mem_release(pOldRS);
@@ -2581,9 +2180,8 @@ void XRender2D(X_2D_VIEW view, float fScale, bool preScene, bool bRenderSelectio
 				g_xRenderStates.pTransformHandlerVB->unlock();
 			}
 
-			SMMATRIX mViewProj;
+			SMMATRIX mViewProj = pCamera->getViewMatrix() * pCamera->getProjMatrix();
 			SMMATRIX mWorld;
-			Core_RMatrixGet(G_RI_MATRIX_VIEWPROJ, &mViewProj);
 			switch(view)
 			{
 			case X2D_FRONT:
@@ -2600,7 +2198,7 @@ void XRender2D(X_2D_VIEW view, float fScale, bool preScene, bool bRenderSelectio
 			IGXRasterizerState *pOldRS = pCtx->getRasterizerState();
 			pCtx->setRasterizerState(g_xRenderStates.pRSSolidNoCull);
 			pCtx->setPrimitiveTopology(GXPT_TRIANGLELIST);
-			SGCore_ShaderBind(g_xRenderStates.idColoredShaderKit);
+			g_pRender->bindShader(pCtx, g_xRenderStates.idColoredShaderKit);
 			pCtx->setRenderBuffer(g_xRenderStates.pTransformHandlerRB);
 			s_pColorBuffer->update(&float4(1.0f, 1.0f, 1.0f, 1.0f));
 			pCtx->setPSConstant(s_pColorBuffer);
@@ -2616,7 +2214,7 @@ void XRender2D(X_2D_VIEW view, float fScale, bool preScene, bool bRenderSelectio
 			}
 
 
-			SGCore_ShaderUnBind();
+			g_pRender->unbindShader(pCtx);
 			pCtx->setRasterizerState(pOldRS);
 			mem_release(pOldRS);
 		}
@@ -2627,7 +2225,7 @@ void XRender2D(X_2D_VIEW view, float fScale, bool preScene, bool bRenderSelectio
 			pCtx->setRasterizerState(g_xRenderStates.pRSSolidNoCull);
 			pCtx->setVSConstant(s_mConstW, SCR_OBJECT);
 			pCtx->setPSConstant(s_pColorBuffer);
-			SGCore_ShaderBind(g_xRenderStates.idColoredShaderKit);
+			g_pRender->bindShader(pCtx, g_xRenderStates.idColoredShaderKit);
 
 			pCtx->setRenderBuffer(g_xRenderStates.pCreateCrossRB);
 			s_mConstW->update(&SMMatrixTranspose(SMMatrixTranslation(g_xState.vCreateOrigin)));
@@ -2731,11 +2329,11 @@ void XDrawBorder(GXCOLOR color, const float3_t &vA, const float3_t &vB, const fl
 		g_pBorderVertexBuffer->unlock();
 	}
 
-	IGXDevice *pDevice = SGCore_GetDXDevice();
+	IGXDevice *pDevice = g_pRender->getDevice();
 	IGXContext *pCtx = pDevice->getThreadContext();
 
 	IGXBlendState *pOldBlendState = pCtx->getBlendState();
-	SGCore_ShaderBind(g_xRenderStates.idTexturedShaderKit);
+	g_pRender->bindShader(pCtx, g_xRenderStates.idTexturedShaderKit);
 
 	static IGXConstantBuffer *s_pColorBuffer = pDevice->createConstantBuffer(sizeof(float4));
 	s_pColorBuffer->update(&GX_COLOR_COLOR_TO_F4(color));
@@ -2746,7 +2344,7 @@ void XDrawBorder(GXCOLOR color, const float3_t &vA, const float3_t &vB, const fl
 	pCtx->setRenderBuffer(g_pBorderRenderBuffer);
 	pCtx->setPrimitiveTopology(GXPT_LINESTRIP);
 	pCtx->drawPrimitive(0, 4);
-	SGCore_ShaderUnBind();
+	g_pRender->unbindShader(pCtx);
 
 	pCtx->setBlendState(pOldBlendState);
 	mem_release(pOldBlendState);
@@ -3088,7 +2686,9 @@ void BeginMaterialEdit(const char *szMaterialName)
 {
 	extern HINSTANCE hInst;
 
+	IXCore *pCore = g_pEngine->getCore();
+
 	IXMaterial *pMat;
-	((IXMaterialSystem*)Core_GetIXCore()->getPluginManager()->getInterface(IXMATERIALSYSTEM_GUID))->loadMaterial(szMaterialName, &pMat);
-	new CMaterialEditor(hInst, g_hWndMain, pMat);
+	((IXMaterialSystem*)pCore->getPluginManager()->getInterface(IXMATERIALSYSTEM_GUID))->loadMaterial(szMaterialName, &pMat);
+	new CMaterialEditor(hInst, g_hWndMain, pCore, pMat);
 }

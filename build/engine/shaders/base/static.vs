@@ -60,6 +60,7 @@ VSO_SceneCommon main(VSI_Geometry IN
 	OUT.vPosition = mul(OUT.vPosition, g_mVP);
 	OUT.vTexUV = IN.vTexUV;
 	OUT.vPos = OUT.vPosition;
+	OUT.vColor = float4(1.0f, 1.0f, 1.0f, 1.0f);
 
 	return OUT;
 }

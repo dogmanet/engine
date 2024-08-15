@@ -23,28 +23,30 @@ IGXSamplerState *CShadowMap::ms_pSamplerComparisonLinearClamp = NULL;
 
 IGXTexture2D *CShadowMap::ms_pRandomTexture = NULL;
 
-void CShadowMap::InitDepthStencilSurface(IGXDevice *pContext, UINT uSize)
+void CShadowMap::InitDepthStencilSurface(IXRender *pRender, UINT uSize)
 {
 	if(!ms_pDepthStencilSurface)
 	{
-		ms_pDepthStencilSurface = pContext->createDepthStencilSurface(uSize, uSize, GXFMT_D24S8, GXMULTISAMPLE_NONE, false);
+		IGXDevice *pDev = pRender->getDevice();
+
+		ms_pDepthStencilSurface = pDev->createDepthStencilSurface(uSize, uSize, GXFMT_D24S8, GXMULTISAMPLE_NONE);
 
 		GXSamplerDesc samplerDesc;
 		samplerDesc.filter = GXFILTER_MIN_MAG_MIP_POINT;
-		ms_pSamplerPointWrap = pContext->createSamplerState(&samplerDesc);
+		ms_pSamplerPointWrap = pDev->createSamplerState(&samplerDesc);
 
 		samplerDesc.addressU = GXTEXTURE_ADDRESS_CLAMP;
 		samplerDesc.addressV = GXTEXTURE_ADDRESS_CLAMP;
 		samplerDesc.addressW = GXTEXTURE_ADDRESS_CLAMP;
 		samplerDesc.filter = GXFILTER_MIN_MAG_MIP_POINT;
-		ms_pSamplerPointClamp = pContext->createSamplerState(&samplerDesc);
+		ms_pSamplerPointClamp = pDev->createSamplerState(&samplerDesc);
 
 		samplerDesc.filter = GXFILTER_MIN_MAG_MIP_LINEAR;
-		ms_pSamplerLinearClamp = pContext->createSamplerState(&samplerDesc);
+		ms_pSamplerLinearClamp = pDev->createSamplerState(&samplerDesc);
 
 		samplerDesc.comparisonFunc = GXCMP_LESS;
 		samplerDesc.filter = GXFILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT;
-		ms_pSamplerComparisonLinearClamp = pContext->createSamplerState(&samplerDesc);
+		ms_pSamplerComparisonLinearClamp = pDev->createSamplerState(&samplerDesc);
 		
 
 	//	ID idResPosDepth = SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "pp_res_pos.vs");
@@ -57,7 +59,7 @@ void CShadowMap::InitDepthStencilSurface(IGXDevice *pContext, UINT uSize)
 		for(int i = 0; i < 16; ++i)
 			aRndColors[i] = GX_COLOR_ARGB(255, rand() % 255, rand() % 255, rand() % 255);
 
-		ms_pRandomTexture = pContext->createTexture2D(4, 4, 1, 0, GXFMT_A8B8G8R8, aRndColors);
+		ms_pRandomTexture = pDev->createTexture2D(4, 4, 1, 0, GXFMT_A8B8G8R8, aRndColors);
 
 		static char tmp[32];
 		sprintf(tmp, "%u", uSize);
@@ -84,9 +86,10 @@ UINT CShadowMap::GetMapMemory(UINT uSize)
 	return(uSize * uSize * 4);
 }
 
-void CShadowMap::init(IGXDevice *pContext, UINT uSize)
+void CShadowMap::init(IXRender *pRender, UINT uSize)
 {
-	m_pDevice = pContext;
+	m_pRender = pRender;
+	m_pDevice = m_pRender->getDevice();
 
 	//GXFMT_R32F
 	m_pDepthMap = m_pDevice->createTexture2D(uSize, uSize, 1, GX_TEXFLAG_RENDERTARGET, GXFMT_R32F);
@@ -101,7 +104,7 @@ void CShadowMap::init(IGXDevice *pContext, UINT uSize)
 
 	m_fSize = (float)uSize;
 
-	InitDepthStencilSurface(pContext, uSize);
+	InitDepthStencilSurface(m_pRender, uSize);
 
 	m_pShaderDataPS = m_pDevice->createConstantBuffer(sizeof(m_shaderData.ps));
 	m_pShaderDataInjectVS = m_pDevice->createConstantBuffer(sizeof(SMMATRIX));
@@ -113,7 +116,7 @@ void CShadowMap::setLight(CXLight *pLight)
 	m_pLight = pLight;
 }
 
-void CShadowMap::process(IXRenderPipeline *pRenderPipeline)
+void CShadowMap::process()
 {
 	assert(m_pLight && m_pLight->getType() == LIGHT_TYPE_SPOT);
 	if(!m_pDevice)
@@ -132,9 +135,6 @@ void CShadowMap::process(IXRenderPipeline *pRenderPipeline)
 
 	m_mView = SMMatrixLookAtLH(vPos, vPos + vDir, vUp);
 	m_mProj = SMMatrixPerspectiveFovLH(pSpotLight->getOuterAngle(), 1.0f, 0.025f, pSpotLight->getMaxDistance());
-
-	Core_RMatrixSet(G_RI_MATRIX_VIEW, &m_mView);
-	Core_RMatrixSet(G_RI_MATRIX_PROJECTION, &m_mProj);
 
 	m_cameraShaderData.vs.mVP = SMMatrixTranspose(m_mView * m_mProj);
 	m_cameraShaderData.vs.vPosCam = vPos;
@@ -158,8 +158,9 @@ void CShadowMap::process(IXRenderPipeline *pRenderPipeline)
 	
 	//m_pLight->setPSConstants(m_pDevice, 5);
 
-	pRenderPipeline->renderShadows();
-	pRenderPipeline->renderStage(XRS_SHADOWS, m_pLight->getVisibility());
+	m_pRender->setSceneFilter(pCtx);
+	pCtx->setSamplerState(ms_pSamplerPointClamp, 1);
+	m_pRender->renderStage(XRS_SHADOWS, m_pLight->getVisibility());
 
 	pCtx->setColorTarget(NULL);
 
@@ -171,7 +172,7 @@ void CShadowMap::process(IXRenderPipeline *pRenderPipeline)
 	}*/
 }
 
-void CShadowMap::genShadow(IGXTexture2D *pGBufferDepth, IGXTexture2D *pGBufferNormals)
+void CShadowMap::genShadow(IGXBaseTexture *pGBufferDepth, IGXBaseTexture *pGBufferNormals)
 {
 	if(!m_pDevice)
 	{
@@ -281,39 +282,40 @@ IGXSamplerState *CReflectiveShadowMap::ms_pSamplerLinearClamp = NULL;
 ID CReflectiveShadowMap::ms_idInjectShader32 = -1;
 ID CReflectiveShadowMap::ms_idInjectDebugShader32 = -1;
 
-void CReflectiveShadowMap::InitDepthStencilSurface(IGXDevice *pContext, UINT uSize)
+void CReflectiveShadowMap::InitDepthStencilSurface(IXRender *pRender, UINT uSize)
 {
 	if(!ms_pDepthStencilSurface32)
 	{
-		ms_pDepthStencilSurface32 = pContext->createDepthStencilSurface(32, 32, GXFMT_D24S8, GXMULTISAMPLE_NONE, false);
+		IGXDevice *pDev = pRender->getDevice();
+		ms_pDepthStencilSurface32 = pDev->createDepthStencilSurface(32, 32, GXFMT_D24S8, GXMULTISAMPLE_NONE);
 
 		GXSamplerDesc samplerDesc;
 		samplerDesc.filter = GXFILTER_MIN_MAG_MIP_POINT;
-		ms_pSamplerPointWrap = pContext->createSamplerState(&samplerDesc);
+		ms_pSamplerPointWrap = pDev->createSamplerState(&samplerDesc);
 
 		samplerDesc.addressU = GXTEXTURE_ADDRESS_CLAMP;
 		samplerDesc.addressV = GXTEXTURE_ADDRESS_CLAMP;
 		samplerDesc.addressW = GXTEXTURE_ADDRESS_CLAMP;
 		samplerDesc.filter = GXFILTER_MIN_MAG_MIP_POINT;
-		ms_pSamplerPointClamp = pContext->createSamplerState(&samplerDesc);
+		ms_pSamplerPointClamp = pDev->createSamplerState(&samplerDesc);
 
 		samplerDesc.filter = GXFILTER_MIN_MAG_MIP_LINEAR;
-		ms_pSamplerLinearClamp = pContext->createSamplerState(&samplerDesc);
+		ms_pSamplerLinearClamp = pDev->createSamplerState(&samplerDesc);
 
 		static char tmp[32];
 		sprintf(tmp, "%u", uSize);
 
 		GXMacro definesInject32[] = {{"LPV_POINT_COUNT", "32"}, {"LPV_MAP_SIZE", "32"}, {0, 0}};
-		ms_idInjectShader32 = SGCore_ShaderCreateKit(
-			SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "gi_inject.vs", 0, definesInject32),
-			SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "gi_inject.ps", 0, definesInject32),
-			SGCore_ShaderLoad(SHADER_TYPE_GEOMETRY, "gi_inject.gs", 0, definesInject32)
+		ms_idInjectShader32 = pRender->createShaderKit(
+			pRender->loadShader(SHADER_TYPE_VERTEX, "gi_inject.vs", definesInject32),
+			pRender->loadShader(SHADER_TYPE_PIXEL, "gi_inject.ps", definesInject32),
+			pRender->loadShader(SHADER_TYPE_GEOMETRY, "gi_inject.gs", definesInject32)
 			);
 
 		GXMacro definesInjectDebug32[] = {{"_DEBUG", "1"}, {"LPV_POINT_COUNT", "32"}, {"LPV_MAP_SIZE", "32"}, {0, 0}};
-		ms_idInjectDebugShader32 = SGCore_ShaderCreateKit(
-			SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "gi_inject.vs", 0, definesInjectDebug32),
-			SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "gi_inject.ps", 0, definesInjectDebug32)
+		ms_idInjectDebugShader32 = pRender->createShaderKit(
+			pRender->loadShader(SHADER_TYPE_VERTEX, "gi_inject.vs", definesInjectDebug32),
+			pRender->loadShader(SHADER_TYPE_PIXEL, "gi_inject.ps", definesInjectDebug32)
 			);
 	}
 	++ms_uDepthStencilSurfaceRefCount;
@@ -338,9 +340,10 @@ UINT CReflectiveShadowMap::GetMapMemory(UINT uSize)
 	return(32 * 32 * 12);
 }
 
-void CReflectiveShadowMap::init(IGXDevice *pContext, UINT uSize)
+void CReflectiveShadowMap::init(IXRender *pRender, UINT uSize)
 {
-	m_pDevice = pContext;
+	m_pRender = pRender;
+	m_pDevice = pRender->getDevice();
 
 	//GXFMT_A8R8G8B8
 	m_pNormalMap32 = m_pDevice->createTexture2D(32, 32, 1, GX_TEXFLAG_RENDERTARGET, GXFMT_A8B8G8R8);
@@ -359,7 +362,7 @@ void CReflectiveShadowMap::init(IGXDevice *pContext, UINT uSize)
 
 	m_fSize = (float)uSize;
 
-	InitDepthStencilSurface(pContext, uSize);
+	InitDepthStencilSurface(pRender, uSize);
 
 	m_pShaderDataPS = m_pDevice->createConstantBuffer(sizeof(m_shaderData.ps));
 	m_pShaderDataInjectVS = m_pDevice->createConstantBuffer(sizeof(SMMATRIX));
@@ -371,7 +374,7 @@ void CReflectiveShadowMap::setLight(CXLight *pLight)
 	m_pLight = pLight;
 }
 
-void CReflectiveShadowMap::process(IXRenderPipeline *pRenderPipeline)
+void CReflectiveShadowMap::process()
 {
 	assert(m_pLight && m_pLight->getType() == LIGHT_TYPE_SPOT);
 	if(!m_pDevice)
@@ -390,9 +393,6 @@ void CReflectiveShadowMap::process(IXRenderPipeline *pRenderPipeline)
 
 	m_mView = SMMatrixLookAtLH(vPos, vPos + vDir, vUp);
 	m_mProj = SMMatrixPerspectiveFovLH(pSpotLight->getOuterAngle(), 1.0f, 0.025f, pSpotLight->getMaxDistance());
-
-	Core_RMatrixSet(G_RI_MATRIX_VIEW, &m_mView);
-	Core_RMatrixSet(G_RI_MATRIX_PROJECTION, &m_mProj);
 
 	m_cameraShaderData.vs.mVP = SMMatrixTranspose(m_mView * m_mProj);
 	m_cameraShaderData.vs.vPosCam = vPos;
@@ -426,8 +426,9 @@ void CReflectiveShadowMap::process(IXRenderPipeline *pRenderPipeline)
 
 	//m_pLight->setPSConstants(m_pDevice, 5);
 
-	pRenderPipeline->renderShadows();
-	pRenderPipeline->renderStage(XRS_SHADOWS, m_pLight->getVisibility());
+	m_pRender->setSceneFilter(pCtx);
+	pCtx->setSamplerState(ms_pSamplerPointClamp, 1);
+	m_pRender->renderStage(XRS_SHADOWS, m_pLight->getVisibility());
 
 	pCtx->setColorTarget(NULL);
 	pCtx->setColorTarget(NULL, 1);
@@ -466,10 +467,10 @@ void CReflectiveShadowMap::genLPV(bool isDebug)
 	pCtx->setVSConstant(pLightConstant, 7);
 	mem_release(pLightConstant);
 
-	SGCore_ShaderBind(isDebug ? ms_idInjectDebugShader32 : ms_idInjectShader32);
+	m_pRender->bindShader(pCtx, isDebug ? ms_idInjectDebugShader32 : ms_idInjectShader32);
 	pCtx->drawPrimitive(0, 32 * 32);
 
-	SGCore_ShaderUnBind();
+	m_pRender->unbindShader(pCtx);
 	pCtx->setPrimitiveTopology(GXPT_TRIANGLELIST);
 
 	pCtx->setVSTexture(NULL);
@@ -506,17 +507,18 @@ UINT CShadowPSSM::GetMapMemory(UINT uSize)
 	return(uSize * uSize * 4 * PSSM_MAX_SPLITS);
 }
 
-void CShadowPSSM::setObserverCamera(ICamera *pCamera)
+void CShadowPSSM::setObserverCamera(IXCamera *pCamera)
 {
 	m_pCamera = pCamera;
 }
 
-void CShadowPSSM::init(IGXDevice *pContext, UINT uSize)
+void CShadowPSSM::init(IXRender *pRender, UINT uSize)
 {
-	m_pDevice = pContext;
+	m_pRender = pRender;
+	m_pDevice = pRender->getDevice();
 
 	m_pDepthMap = m_pDevice->createTextureCube(uSize, 1, GX_TEXFLAG_RENDERTARGET, GXFMT_R32F);
-	m_pDepthStencilSurface = pContext->createDepthStencilSurfaceCube(uSize, GXFMT_D24S8, GXMULTISAMPLE_NONE, false);
+	m_pDepthStencilSurface = m_pDevice->createDepthStencilSurfaceCube(uSize, GXFMT_D24S8, GXMULTISAMPLE_NONE);
 
 	float fOffset = 0.5f + (0.5f / (float)uSize);
 	float fRange = 1.0f;
@@ -530,20 +532,20 @@ void CShadowPSSM::init(IGXDevice *pContext, UINT uSize)
 
 	GXSamplerDesc samplerDesc;
 	samplerDesc.filter = GXFILTER_MIN_MAG_MIP_POINT;
-	m_pSamplerPointWrap = pContext->createSamplerState(&samplerDesc);
+	m_pSamplerPointWrap = m_pDevice->createSamplerState(&samplerDesc);
 
 	samplerDesc.addressU = GXTEXTURE_ADDRESS_CLAMP;
 	samplerDesc.addressV = GXTEXTURE_ADDRESS_CLAMP;
 	samplerDesc.addressW = GXTEXTURE_ADDRESS_CLAMP;
 	samplerDesc.filter = GXFILTER_MIN_MAG_MIP_POINT;
-	m_pSamplerPointClamp = pContext->createSamplerState(&samplerDesc);
+	m_pSamplerPointClamp = m_pDevice->createSamplerState(&samplerDesc);
 
 	samplerDesc.filter = GXFILTER_MIN_MAG_MIP_LINEAR;
-	m_pSamplerLinearClamp = pContext->createSamplerState(&samplerDesc);
+	m_pSamplerLinearClamp = m_pDevice->createSamplerState(&samplerDesc);
 
 	samplerDesc.comparisonFunc = GXCMP_LESS;
 	samplerDesc.filter = GXFILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT;
-	m_pSamplerComparisonLinearClamp = pContext->createSamplerState(&samplerDesc);
+	m_pSamplerComparisonLinearClamp = m_pDevice->createSamplerState(&samplerDesc);
 
 	
 	m_pShaderDataPS = m_pDevice->createConstantBuffer(sizeof(m_shaderData.ps));
@@ -556,7 +558,7 @@ void CShadowPSSM::setLight(CXLight *pLight)
 	m_pLight = pLight;
 }
 
-void CShadowPSSM::process(IXRenderPipeline *pRenderPipeline)
+void CShadowPSSM::process()
 {
 	assert(m_pLight && m_pLight->getType() == LIGHT_TYPE_SUN);
 	if(!m_pDevice)
@@ -580,9 +582,6 @@ void CShadowPSSM::process(IXRenderPipeline *pRenderPipeline)
 
 	pCtx->setBlendState(NULL);
 
-	Core_RMatrixSet(G_RI_MATRIX_VIEW, &SMMatrixIdentity());
-	Core_RMatrixSet(G_RI_MATRIX_PROJECTION, &SMMatrixIdentity());
-
 	m_cameraShaderData.vs.vPosCam = vPos;
 	m_pCameraShaderDataVS->update(&m_cameraShaderData.vs);
 	pCtx->setVSConstant(m_pCameraShaderDataVS, SCR_CAMERA);
@@ -601,8 +600,9 @@ void CShadowPSSM::process(IXRenderPipeline *pRenderPipeline)
 	pCtx->setGSConstant(pLightConstants, SCR_OBJECT);
 	mem_release(pLightConstants);
 
-	pRenderPipeline->renderShadows();
-	pRenderPipeline->renderStage(XRS_SHADOWS, m_pLight->getVisibility());
+	m_pRender->setSceneFilter(pCtx);
+	pCtx->setSamplerState(m_pSamplerPointClamp, 1);
+	m_pRender->renderStage(XRS_SHADOWS, m_pLight->getVisibility());
 
 	pCtx->setColorTarget(NULL);
 
@@ -619,7 +619,7 @@ void CShadowPSSM::updateFrustums()
 	m_pShaderDataGS->update(pSunLight->getPSSMVPs());
 }
 
-void CShadowPSSM::genShadow(IGXTexture2D *pGBufferDepth, IGXTexture2D *pGBufferNormals)
+void CShadowPSSM::genShadow(IGXBaseTexture *pGBufferDepth, IGXBaseTexture *pGBufferNormals)
 {
 	if(!m_pDevice)
 	{
@@ -706,14 +706,15 @@ UINT CReflectiveShadowSun::GetMapMemory(UINT uSize)
 	return(RSM_SUN_SIZE * RSM_SUN_SIZE * 12 * PSSM_MAX_SPLITS);
 }
 
-void CReflectiveShadowSun::setObserverCamera(ICamera *pCamera)
+void CReflectiveShadowSun::setObserverCamera(IXCamera *pCamera)
 {
 	m_pCamera = pCamera;
 }
 
-void CReflectiveShadowSun::init(IGXDevice *pContext, UINT uSize)
+void CReflectiveShadowSun::init(IXRender *pRender, UINT uSize)
 {
-	m_pDevice = pContext;
+	m_pRender = pRender;
+	m_pDevice = pRender->getDevice();
 
 	//GXFMT_A8R8G8B8
 	m_pNormalMap = m_pDevice->createTexture2D(RSM_SUN_SIZE, RSM_SUN_SIZE, 1, GX_TEXFLAG_RENDERTARGET, GXFMT_A8B8G8R8);
@@ -732,36 +733,36 @@ void CReflectiveShadowSun::init(IGXDevice *pContext, UINT uSize)
 
 	m_fSize = (float)RSM_SUN_SIZE;
 
-	m_pDepthStencilSurface = pContext->createDepthStencilSurface(RSM_SUN_SIZE, RSM_SUN_SIZE, GXFMT_D24S8, GXMULTISAMPLE_NONE, false);
+	m_pDepthStencilSurface = m_pDevice->createDepthStencilSurface(RSM_SUN_SIZE, RSM_SUN_SIZE, GXFMT_D24S8, GXMULTISAMPLE_NONE);
 
 	GXSamplerDesc samplerDesc;
 	samplerDesc.filter = GXFILTER_MIN_MAG_MIP_POINT;
-	m_pSamplerPointWrap = pContext->createSamplerState(&samplerDesc);
+	m_pSamplerPointWrap = m_pDevice->createSamplerState(&samplerDesc);
 
 	samplerDesc.addressU = GXTEXTURE_ADDRESS_CLAMP;
 	samplerDesc.addressV = GXTEXTURE_ADDRESS_CLAMP;
 	samplerDesc.addressW = GXTEXTURE_ADDRESS_CLAMP;
 	samplerDesc.filter = GXFILTER_MIN_MAG_MIP_POINT;
-	m_pSamplerPointClamp = pContext->createSamplerState(&samplerDesc);
+	m_pSamplerPointClamp = m_pDevice->createSamplerState(&samplerDesc);
 
 	samplerDesc.filter = GXFILTER_MIN_MAG_MIP_LINEAR;
-	m_pSamplerLinearClamp = pContext->createSamplerState(&samplerDesc);
+	m_pSamplerLinearClamp = m_pDevice->createSamplerState(&samplerDesc);
 
 	samplerDesc.comparisonFunc = GXCMP_LESS;
 	samplerDesc.filter = GXFILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT;
-	m_pSamplerComparisonLinearClamp = pContext->createSamplerState(&samplerDesc);
+	m_pSamplerComparisonLinearClamp = m_pDevice->createSamplerState(&samplerDesc);
 
 	GXMacro definesInject[] = {{"IS_SUN", "1"}, {"LPV_POINT_COUNT", MACRO_TEXT(RSM_SUN_POINTS)}, {"LPV_MAP_SIZE", MACRO_TEXT(RSM_SUN_SIZE)}, {0, 0}};
-	m_idInjectShader = SGCore_ShaderCreateKit(
-		SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "gi_inject.vs", 0, definesInject),
-		SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "gi_inject.ps", 0, definesInject),
-		SGCore_ShaderLoad(SHADER_TYPE_GEOMETRY, "gi_inject.gs", 0, definesInject)
+	m_idInjectShader = m_pRender->createShaderKit(
+		m_pRender->loadShader(SHADER_TYPE_VERTEX, "gi_inject.vs", definesInject),
+		m_pRender->loadShader(SHADER_TYPE_PIXEL, "gi_inject.ps", definesInject),
+		m_pRender->loadShader(SHADER_TYPE_GEOMETRY, "gi_inject.gs", definesInject)
 		);
 
 	GXMacro definesInjectDebug[] = {{"IS_SUN", "1"}, {"_DEBUG", "1"}, {"LPV_POINT_COUNT", MACRO_TEXT(RSM_SUN_POINTS)}, {"LPV_MAP_SIZE", MACRO_TEXT(RSM_SUN_SIZE)}, {0, 0}};
-	m_idInjectDebugShader = SGCore_ShaderCreateKit(
-		SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "gi_inject.vs", 0, definesInjectDebug),
-		SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "gi_inject.ps", 0, definesInjectDebug)
+	m_idInjectDebugShader = m_pRender->createShaderKit(
+		m_pRender->loadShader(SHADER_TYPE_VERTEX, "gi_inject.vs", definesInjectDebug),
+		m_pRender->loadShader(SHADER_TYPE_PIXEL, "gi_inject.ps", definesInjectDebug)
 		);
 
 	m_pShaderDataPS = m_pDevice->createConstantBuffer(sizeof(m_shaderData.ps));
@@ -774,7 +775,7 @@ void CReflectiveShadowSun::setLight(CXLight *pLight)
 	m_pLight = pLight;
 }
 
-void CReflectiveShadowSun::process(IXRenderPipeline *pRenderPipeline)
+void CReflectiveShadowSun::process()
 {
 	assert(m_pLight && m_pLight->getType() == LIGHT_TYPE_SUN);
 	if(!m_pDevice)
@@ -794,9 +795,6 @@ void CReflectiveShadowSun::process(IXRenderPipeline *pRenderPipeline)
 
 
 	updateFrustum();
-
-	Core_RMatrixSet(G_RI_MATRIX_VIEW, &m_mView);
-	Core_RMatrixSet(G_RI_MATRIX_PROJECTION, &m_mProj);
 
 	m_cameraShaderData.vs.mVP = SMMatrixTranspose(m_mView * m_mProj);
 	m_cameraShaderData.vs.vPosCam = vPos;
@@ -829,8 +827,9 @@ void CReflectiveShadowSun::process(IXRenderPipeline *pRenderPipeline)
 	mem_release(pFluxSurface);
 
 	//m_pLight->setPSConstants(m_pDevice, 5);
-	pRenderPipeline->renderShadows();
-	pRenderPipeline->renderStage(XRS_SHADOWS, ((CXLightSun*)m_pLight)->getReflectiveVisibility());
+	m_pRender->setSceneFilter(pCtx);
+	pCtx->setSamplerState(m_pSamplerPointClamp, 1);
+	m_pRender->renderStage(XRS_SHADOWS, ((CXLightSun*)m_pLight)->getReflectiveVisibility());
 
 	pCtx->setColorTarget(NULL);
 	pCtx->setColorTarget(NULL, 1);
@@ -876,10 +875,10 @@ void CReflectiveShadowSun::genLPV(bool isDebug)
 	pCtx->setVSConstant(pLightConstant, 7);
 	mem_release(pLightConstant);
 
-	SGCore_ShaderBind(isDebug ? m_idInjectDebugShader : m_idInjectShader);
+	m_pRender->bindShader(pCtx, isDebug ? m_idInjectDebugShader : m_idInjectShader);
 	pCtx->drawPrimitive(0, RSM_SUN_POINTS * RSM_SUN_POINTS);
 
-	SGCore_ShaderUnBind();
+	m_pRender->unbindShader(pCtx);
 	pCtx->setPrimitiveTopology(GXPT_TRIANGLELIST);
 
 	pCtx->setVSTexture(NULL);
@@ -909,28 +908,30 @@ IGXSamplerState *CShadowCubeMap::ms_pSamplerPointClamp = NULL;
 IGXSamplerState *CShadowCubeMap::ms_pSamplerLinearClamp = NULL;
 IGXSamplerState *CShadowCubeMap::ms_pSamplerComparisonLinearClamp = NULL;
 
-void CShadowCubeMap::InitDepthStencilSurface(IGXDevice *pContext, UINT uSize)
+void CShadowCubeMap::InitDepthStencilSurface(IXRender *pRender, UINT uSize)
 {
 	if(!ms_pDepthStencilSurface)
 	{
-		ms_pDepthStencilSurface = pContext->createDepthStencilSurfaceCube(uSize, GXFMT_D24S8, GXMULTISAMPLE_NONE, false);
+		IGXDevice *pDev = pRender->getDevice();
+
+		ms_pDepthStencilSurface = pDev->createDepthStencilSurfaceCube(uSize, GXFMT_D24S8, GXMULTISAMPLE_NONE);
 
 		GXSamplerDesc samplerDesc;
 		samplerDesc.filter = GXFILTER_MIN_MAG_MIP_POINT;
-		ms_pSamplerPointWrap = pContext->createSamplerState(&samplerDesc);
+		ms_pSamplerPointWrap = pDev->createSamplerState(&samplerDesc);
 
 		samplerDesc.addressU = GXTEXTURE_ADDRESS_CLAMP;
 		samplerDesc.addressV = GXTEXTURE_ADDRESS_CLAMP;
 		samplerDesc.addressW = GXTEXTURE_ADDRESS_CLAMP;
 		samplerDesc.filter = GXFILTER_MIN_MAG_MIP_POINT;
-		ms_pSamplerPointClamp = pContext->createSamplerState(&samplerDesc);
+		ms_pSamplerPointClamp = pDev->createSamplerState(&samplerDesc);
 
 		samplerDesc.filter = GXFILTER_MIN_MAG_MIP_LINEAR;
-		ms_pSamplerLinearClamp = pContext->createSamplerState(&samplerDesc);
+		ms_pSamplerLinearClamp = pDev->createSamplerState(&samplerDesc);
 
 		samplerDesc.comparisonFunc = GXCMP_LESS;
 		samplerDesc.filter = GXFILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT;
-		ms_pSamplerComparisonLinearClamp = pContext->createSamplerState(&samplerDesc);
+		ms_pSamplerComparisonLinearClamp = pDev->createSamplerState(&samplerDesc);
 
 	//	ID idResPosDepth = SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "pp_res_pos.vs");
 	//	GXMacro Defines_GSC_6[] = {{"GSC_6", ""}, {0, 0}};
@@ -958,9 +959,10 @@ UINT CShadowCubeMap::GetMapMemory(UINT uSize)
 	return(uSize * uSize * 4 * 6);
 }
 
-void CShadowCubeMap::init(IGXDevice *pDevice, UINT uSize)
+void CShadowCubeMap::init(IXRender *pRender, UINT uSize)
 {
-	m_pDevice = pDevice;
+	m_pRender = pRender;
+	m_pDevice = pRender->getDevice();
 
 	//GXFMT_R32F
 	m_pDepthMap = m_pDevice->createTextureCube(uSize, 1, GX_TEXFLAG_RENDERTARGET, GXFMT_R32F);
@@ -975,7 +977,7 @@ void CShadowCubeMap::init(IGXDevice *pDevice, UINT uSize)
 
 	m_fSize = (float)uSize;
 
-	InitDepthStencilSurface(m_pDevice, uSize);
+	InitDepthStencilSurface(pRender, uSize);
 
 	m_pShaderDataPS = m_pDevice->createConstantBuffer(sizeof(m_shaderData.ps));
 	m_pShaderDataGS = m_pDevice->createConstantBuffer(sizeof(m_shaderData.gs));
@@ -987,7 +989,7 @@ void CShadowCubeMap::setLight(CXLight *pLight)
 	m_pLight = pLight;
 }
 
-void CShadowCubeMap::process(IXRenderPipeline *pRenderPipeline)
+void CShadowCubeMap::process()
 {
 	assert(m_pLight && m_pLight->getType() == LIGHT_TYPE_POINT);
 	if(!m_pDevice)
@@ -1016,9 +1018,6 @@ void CShadowCubeMap::process(IXRenderPipeline *pRenderPipeline)
 
 	pCtx->setBlendState(NULL);
 
-	Core_RMatrixSet(G_RI_MATRIX_VIEW, &SMMatrixIdentity());
-	Core_RMatrixSet(G_RI_MATRIX_PROJECTION, &SMMatrixIdentity());
-
 	//m_lightingShaderData.vs.mViewInv = SMMatrixTranspose(SMMatrixInverse(NULL, m_mView));
 	////m_lightingShaderData.vs.mVP = SMMatrixIdentity();
 	//m_lightingShaderData.vs.vNearFar = float2(0.025f, pPointLight->getMaxDistance());
@@ -1044,8 +1043,9 @@ void CShadowCubeMap::process(IXRenderPipeline *pRenderPipeline)
 	pCtx->setGSConstant(pLightConstants, SCR_OBJECT);
 	mem_release(pLightConstants);
 
-	pRenderPipeline->renderShadows();
-	pRenderPipeline->renderStage(XRS_SHADOWS, m_pLight->getVisibility());
+	m_pRender->setSceneFilter(pCtx);
+	pCtx->setSamplerState(ms_pSamplerPointClamp, 1);
+	m_pRender->renderStage(XRS_SHADOWS, m_pLight->getVisibility());
 
 	pCtx->setColorTarget(NULL);
 
@@ -1057,7 +1057,7 @@ void CShadowCubeMap::process(IXRenderPipeline *pRenderPipeline)
 	}*/
 }
 
-void CShadowCubeMap::genShadow(IGXTexture2D *pGBufferDepth, IGXTexture2D *pGBufferNormals)
+void CShadowCubeMap::genShadow(IGXBaseTexture *pGBufferDepth, IGXBaseTexture *pGBufferNormals)
 {
 	if(!m_pDevice)
 	{
@@ -1135,36 +1135,38 @@ IGXSamplerState *CReflectiveShadowCubeMap::ms_pSamplerLinearClamp = NULL;
 ID CReflectiveShadowCubeMap::ms_idInjectShader32 = -1;
 ID CReflectiveShadowCubeMap::ms_idInjectDebugShader32 = -1;
 
-void CReflectiveShadowCubeMap::InitDepthStencilSurface(IGXDevice *pContext, UINT uSize)
+void CReflectiveShadowCubeMap::InitDepthStencilSurface(IXRender *pRender, UINT uSize)
 {
 	if(!ms_pDepthStencilSurface32)
 	{
-		ms_pDepthStencilSurface32 = pContext->createDepthStencilSurfaceCube(32, GXFMT_D24S8, GXMULTISAMPLE_NONE, false);
+		IGXDevice *pDev = pRender->getDevice();
+
+		ms_pDepthStencilSurface32 = pDev->createDepthStencilSurfaceCube(32, GXFMT_D24S8, GXMULTISAMPLE_NONE);
 
 		GXSamplerDesc samplerDesc;
 		samplerDesc.filter = GXFILTER_MIN_MAG_MIP_POINT;
-		ms_pSamplerPointWrap = pContext->createSamplerState(&samplerDesc);
+		ms_pSamplerPointWrap = pDev->createSamplerState(&samplerDesc);
 
 		samplerDesc.addressU = GXTEXTURE_ADDRESS_CLAMP;
 		samplerDesc.addressV = GXTEXTURE_ADDRESS_CLAMP;
 		samplerDesc.addressW = GXTEXTURE_ADDRESS_CLAMP;
 		samplerDesc.filter = GXFILTER_MIN_MAG_MIP_POINT;
-		ms_pSamplerPointClamp = pContext->createSamplerState(&samplerDesc);
+		ms_pSamplerPointClamp = pDev->createSamplerState(&samplerDesc);
 
 		samplerDesc.filter = GXFILTER_MIN_MAG_MIP_LINEAR;
-		ms_pSamplerLinearClamp = pContext->createSamplerState(&samplerDesc);
+		ms_pSamplerLinearClamp = pDev->createSamplerState(&samplerDesc);
 
 		GXMacro definesInject32[] = {{"IS_CUBEMAP", "1"}, {"LPV_POINT_COUNT", "32"}, {"LPV_MAP_SIZE", "32"}, {0, 0}};
-		ms_idInjectShader32 = SGCore_ShaderCreateKit(
-			SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "gi_inject_cube.vs", 0, definesInject32),
-			SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "gi_inject.ps", 0, definesInject32),
-			SGCore_ShaderLoad(SHADER_TYPE_GEOMETRY, "gi_inject.gs", 0, definesInject32)
+		ms_idInjectShader32 = pRender->createShaderKit(
+			pRender->loadShader(SHADER_TYPE_VERTEX, "gi_inject_cube.vs", definesInject32),
+			pRender->loadShader(SHADER_TYPE_PIXEL, "gi_inject.ps", definesInject32),
+			pRender->loadShader(SHADER_TYPE_GEOMETRY, "gi_inject.gs", definesInject32)
 			);
 
 		GXMacro definesInjectDebug32[] = {{"_DEBUG", "1"}, {"IS_CUBEMAP", "1"}, {"LPV_POINT_COUNT", "32"}, {"LPV_MAP_SIZE", "32"}, {0, 0}};
-		ms_idInjectDebugShader32 = SGCore_ShaderCreateKit(
-			SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "gi_inject_cube.vs", 0, definesInjectDebug32),
-			SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "gi_inject.ps", 0, definesInjectDebug32)
+		ms_idInjectDebugShader32 = pRender->createShaderKit(
+			pRender->loadShader(SHADER_TYPE_VERTEX, "gi_inject_cube.vs", definesInjectDebug32),
+			pRender->loadShader(SHADER_TYPE_PIXEL, "gi_inject.ps", definesInjectDebug32)
 			);
 	}
 	++ms_uDepthStencilSurfaceRefCount;
@@ -1189,9 +1191,10 @@ UINT CReflectiveShadowCubeMap::GetMapMemory(UINT uSize)
 	return(32 * 32 * 12 * 6);
 }
 
-void CReflectiveShadowCubeMap::init(IGXDevice *pDevice, UINT uSize)
+void CReflectiveShadowCubeMap::init(IXRender *pRender, UINT uSize)
 {
-	m_pDevice = pDevice;
+	m_pRender = pRender;
+	m_pDevice = pRender->getDevice();
 
 	//GXFMT_A8R8G8B8
 	m_pNormalMap32 = m_pDevice->createTextureCube(32, 1, GX_TEXFLAG_RENDERTARGET, GXFMT_A8B8G8R8);
@@ -1210,7 +1213,7 @@ void CReflectiveShadowCubeMap::init(IGXDevice *pDevice, UINT uSize)
 
 	m_fSize = (float)uSize;
 
-	InitDepthStencilSurface(m_pDevice, uSize);
+	InitDepthStencilSurface(pRender, uSize);
 
 	m_pShaderDataPS = m_pDevice->createConstantBuffer(sizeof(m_shaderData.ps));
 	m_pShaderDataGS = m_pDevice->createConstantBuffer(sizeof(m_shaderData.gs));
@@ -1222,7 +1225,7 @@ void CReflectiveShadowCubeMap::setLight(CXLight *pLight)
 	m_pLight = pLight;
 }
 
-void CReflectiveShadowCubeMap::process(IXRenderPipeline *pRenderPipeline)
+void CReflectiveShadowCubeMap::process()
 {
 	assert(m_pLight && m_pLight->getType() == LIGHT_TYPE_POINT);
 	if(!m_pDevice)
@@ -1250,9 +1253,6 @@ void CReflectiveShadowCubeMap::process(IXRenderPipeline *pRenderPipeline)
 	pCtx->setDepthStencilSurface(ms_pDepthStencilSurface32);
 
 	pCtx->setBlendState(NULL);
-
-	Core_RMatrixSet(G_RI_MATRIX_VIEW, &SMMatrixIdentity());
-	Core_RMatrixSet(G_RI_MATRIX_PROJECTION, &SMMatrixIdentity());
 
 	//m_lightingShaderData.vs.mViewInv = SMMatrixTranspose(SMMatrixInverse(NULL, m_mView));
 	////m_lightingShaderData.vs.mVP = SMMatrixIdentity();
@@ -1291,8 +1291,9 @@ void CReflectiveShadowCubeMap::process(IXRenderPipeline *pRenderPipeline)
 	pCtx->setGSConstant(pLightConstants, SCR_OBJECT);
 	mem_release(pLightConstants);
 
-	pRenderPipeline->renderShadows();
-	pRenderPipeline->renderStage(XRS_SHADOWS, m_pLight->getVisibility());
+	m_pRender->setSceneFilter(pCtx);
+	pCtx->setSamplerState(ms_pSamplerPointClamp, 1);
+	m_pRender->renderStage(XRS_SHADOWS, m_pLight->getVisibility());
 
 	pCtx->setColorTarget(NULL);
 	pCtx->setColorTarget(NULL, 1);
@@ -1327,10 +1328,10 @@ void CReflectiveShadowCubeMap::genLPV(bool isDebug)
 	pCtx->setVSConstant(pLightConstant, 7);
 	mem_release(pLightConstant);
 
-	SGCore_ShaderBind(isDebug ? ms_idInjectDebugShader32 : ms_idInjectShader32);
+	m_pRender->bindShader(pCtx, isDebug ? ms_idInjectDebugShader32 : ms_idInjectShader32);
 	pCtx->drawPrimitive(0, 32 * 32 * 6);
 
-	SGCore_ShaderUnBind();
+	m_pRender->unbindShader(pCtx);
 	pCtx->setPrimitiveTopology(GXPT_TRIANGLELIST);
 
 	pCtx->setVSTexture(NULL);

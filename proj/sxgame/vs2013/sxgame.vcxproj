@@ -205,6 +205,7 @@
     <ClCompile Include="..\..\..\source\game\GameStateManager.cpp" />
     <ClCompile Include="..\..\..\source\game\GameStates.cpp" />
     <ClCompile Include="..\..\..\source\game\HUDcontroller.cpp" />
+    <ClCompile Include="..\..\..\source\game\InfoParticlePlayer.cpp" />
     <ClCompile Include="..\..\..\source\game\LightDirectional.cpp" />
     <ClCompile Include="..\..\..\source\game\LightPoint.cpp" />
     <ClCompile Include="..\..\..\source\game\LightSun.cpp" />
@@ -251,6 +252,8 @@
     <ClCompile Include="..\..\..\source\game\TriggerHurt.cpp" />
     <ClCompile Include="..\..\..\source\game\TriggerItemUse.cpp" />
     <ClCompile Include="..\..\..\source\game\TriggerTeleport.cpp" />
+    <ClCompile Include="..\..\..\source\game\UICalcContainer.cpp" />
+    <ClCompile Include="..\..\..\source\game\UIDemoContainer.cpp" />
     <ClCompile Include="..\..\..\source\game\ZombieHands.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -280,6 +283,7 @@
     <ClInclude Include="..\..\..\source\game\GameStates.h" />
     <ClInclude Include="..\..\..\source\game\HUDcontroller.h" />
     <ClInclude Include="..\..\..\source\game\IGameState.h" />
+    <ClInclude Include="..\..\..\source\game\InfoParticlePlayer.h" />
     <ClInclude Include="..\..\..\source\game\LightSun.h" />
     <ClInclude Include="..\..\..\source\game\LogicAuto.h" />
     <ClInclude Include="..\..\..\source\game\LogicConsole.h" />
@@ -332,6 +336,8 @@
     <ClInclude Include="..\..\..\source\game\TriggerHurt.h" />
     <ClInclude Include="..\..\..\source\game\TriggerItemUse.h" />
     <ClInclude Include="..\..\..\source\game\TriggerTeleport.h" />
+    <ClInclude Include="..\..\..\source\game\UICalcContainer.h" />
+    <ClInclude Include="..\..\..\source\game\UIDemoContainer.h" />
     <ClInclude Include="..\..\..\source\game\ZombieHands.h" />
     <ClInclude Include="..\..\..\source\game\resource.h" />
   </ItemGroup>

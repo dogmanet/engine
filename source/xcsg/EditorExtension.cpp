@@ -69,6 +69,15 @@ void XMETHODCALLTYPE CEditorExtension::render(bool is3D)
 	m_pVertexTool->render(is3D);
 }
 
+UINT XMETHODCALLTYPE CEditorExtension::getResourceBrowserCount()
+{
+	return(0);
+}
+bool XMETHODCALLTYPE CEditorExtension::getResourceBrowser(UINT uId, IXEditorResourceBrowser **ppOut)
+{
+	return(false);
+}
+
 void CEditorExtension::onSelectionChanged(CEditorObject *pObject)
 {
 	m_pVertexTool->onSelectionChanged(pObject);

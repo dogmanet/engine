@@ -456,3 +456,13 @@ bool XMETHODCALLTYPE CDynamicModel::rayTest(const float3 &vStart, const float3 &
 	
 	return(false);
 }
+
+void XMETHODCALLTYPE CDynamicModel::setLayer(UINT uLayer)
+{
+	m_uLayer = uLayer;
+	m_pSceneObject->setLayer(uLayer);
+}
+UINT XMETHODCALLTYPE CDynamicModel::getLayer()
+{
+	return(m_uLayer);
+}

@@ -68,13 +68,13 @@ namespace gui
 
 	void CDesktop::createRenderTarget()
 	{
-		m_pRenderSurface = GetGUI()->getDevice()->createColorTarget(m_iWidth, m_iHeight, GXFMT_A8B8G8R8, GXMULTISAMPLE_4_SAMPLES, false);
-		m_pDepthStencilSurface = GetGUI()->getDevice()->createDepthStencilSurface(m_iWidth, m_iHeight, GXFMT_D24S8, GXMULTISAMPLE_4_SAMPLES, false);
+		m_pRenderSurface = GetGUI()->getDevice()->createColorTarget(m_iWidth, m_iHeight, GXFMT_A8B8G8R8, GXMULTISAMPLE_4_SAMPLES);
+		m_pDepthStencilSurface = GetGUI()->getDevice()->createDepthStencilSurface(m_iWidth, m_iHeight, GXFMT_D24S8, GXMULTISAMPLE_4_SAMPLES);
 
 
 		GetGUI()->getMaterialSystem()->addTexture(
 			(String("@gui/") + String(m_sName)).c_str(), 
-			GetGUI()->getDevice()->createTexture2D(m_iWidth, m_iHeight, 1, GX_TEXFLAG_RENDERTARGET, GXFMT_A8B8G8R8), 
+			GetGUI()->getDevice()->createTexture2D(m_iWidth, m_iHeight, 1, GX_TEXFLAG_RENDERTARGET, GXFMT_A8B8G8R8_SRGB), 
 			&m_txFinal
 		);
 
@@ -216,7 +216,7 @@ namespace gui
 			};*/
 
 			auto shader = GetGUI()->getShaders()->m_baseTexturedColored;
-			SGCore_ShaderBind(shader.m_idShaderKit);
+			GetGUI()->getRender()->bindShader(pCtx, shader.m_idShaderKit);
 
 		//	static CSHADER def_sh = CTextureManager::loadShader(L"text");
 
@@ -253,7 +253,7 @@ namespace gui
 		return(getDocument()->createFromText(html));
 	}
 
-	void CDesktop::dispatchEvent(IEvent ev)
+	void CDesktop::dispatchEvent(IEvent &ev)
 	{
 		//__try
 		{
@@ -268,7 +268,11 @@ namespace gui
 			RECT rc;
 			if(IsMouseEvent)
 			{
-				pTarget = (dom::CDOMnode*)m_pDoc->getElementByXY(ev.clientX, ev.clientY, true);
+				pTarget = m_pDoc->getCapture();
+				if(!pTarget)
+				{
+					pTarget = (dom::CDOMnode*)m_pDoc->getElementByXY(ev.clientX, ev.clientY, true);
+				}
 				if(!pTarget)
 				{
 					return;

@@ -793,6 +793,6 @@ Texture2D g_txScene :register(t0);
 float4 main(VSO_PP IN) : SV_TARGET 
 {
 	FxaaTex tex = {g_sAnisotropic, g_txScene};
-	return float4(FxaaPixelShader(IN.vTexUV, tex, g_vNearFarInvWinSize.zw), 1.0f); 
+	return float4(FxaaPixelShader(IN.vTexUV, tex, g_vNearFar.zw), 1.0f); 
 }
 

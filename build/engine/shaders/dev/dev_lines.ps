@@ -19,16 +19,11 @@ float4 main(VSO_DevLines IN):COLOR0
 #ifdef IS_BACKWARD
 	fMult = 0.6f;
 #endif
-	
+	float4 vFinalColor;
 #ifdef USE_TEXTURE
-	float4 vFinalColor = g_txDiffuse.Sample(g_sSampler, IN.vTexUV);
-	return(vFinalColor * IN.vColor * fMult);
+	vFinalColor = g_txDiffuse.Sample(g_sSampler, IN.vTexUV) * IN.vColor * fMult;
 #else
-	return(IN.vColor * fMult);
+	vFinalColor = IN.vColor * fMult;
 #endif
-	// half4 vFinalColor = g_txDiffuse.Sample(g_sSampler, IN.vTexUV);
-	// clip(vFinalColor.a - 0.5);
-	// vFinalColor *= g_vColor;
-	// return(vFinalColor);
-	return(IN.vColor);
+	return(float4(pow(vFinalColor.rgb, 2.2), vFinalColor.a));
 }

@@ -22,6 +22,9 @@ See the license in LICENSE
 #include "FuncTrain.h"
 #include "LogicAuto.h"
 
+#include "UICalcContainer.h"
+#include "UIDemoContainer.h"
+
 #include <common/file_utils.h>
 
 #include <xcommon/XEvents.h>
@@ -31,6 +34,8 @@ See the license in LICENSE
 #include "Editable.h"
 
 #include <xUI/IXUI.h>
+
+#include <xcommon/particles/IXParticleSystem.h>
 
 CPlayer* GameData::m_pPlayer;
 CPointCamera* GameData::m_pActiveCamera;
@@ -72,10 +77,12 @@ static UINT g_uFrameCount = 0;
 static UINT g_uFPS = 0;
 static IXPhysics *g_pPhysics = NULL;
 static IXPhysicsWorld *g_pPhysWorld = NULL;
+static IXRender *g_pRender = NULL;
+static IXParticleSystem *g_pParticleSystem = NULL;
 
 //##########################################################################
 
-static void RenderText(const wchar_t *szText)
+static void RenderText(const wchar_t *szText, UINT uMaxWidth)
 {
 	if(!g_pFont)
 	{
@@ -85,10 +92,8 @@ static void RenderText(const wchar_t *szText)
 	mem_release(g_pTextRenderBuffer);
 	mem_release(g_pTextIndexBuffer);
 
-	static const int *r_win_width = GET_PCVAR_INT("r_win_width");
-
 	g_pFont->buildString(szText, gui::IFont::DECORATION_NONE, gui::IFont::TEXT_ALIGN_LEFT,
-		&g_pTextRenderBuffer, &g_pTextIndexBuffer, &g_uVertexCount, &g_uIndexCount, NULL, *r_win_width, 0, 0);
+		&g_pTextRenderBuffer, &g_pTextIndexBuffer, &g_uVertexCount, &g_uIndexCount, NULL, uMaxWidth, 0, 0);
 }
 
 IXPhysics* GetPhysics()
@@ -98,6 +103,14 @@ IXPhysics* GetPhysics()
 IXPhysicsWorld* GetPhysWorld()
 {
 	return(g_pPhysWorld);
+}
+IXRender* GetRender()
+{
+	return(g_pRender);
+}
+IXParticleSystem* GetParticleSystem()
+{
+	return(g_pParticleSystem);
 }
 
 //##########################################################################
@@ -368,7 +381,7 @@ const char* XMETHODCALLTYPE CLevelLoadTask::getName()
 
 GameData::GameData(HWND hWnd, bool isGame):
 	m_hWnd(hWnd)
-{
+ {
 	IXSoundSystem *pSound = (IXSoundSystem*)(Core_GetIXCore()->getPluginManager()->getInterface(IXSOUNDSYSTEM_GUID));
 	m_pGameLayer = pSound->findLayer("xGame");
 	m_pGuiLayer = pSound->findLayer("xGUI");
@@ -404,12 +417,14 @@ GameData::GameData(HWND hWnd, bool isGame):
 		LibReport(REPORT_MSG_LEVEL_ERROR, "The procedure entry point InitInstance could not be located in the dynamic link library sxgui.dll");
 	}
 
+	g_pRender = (IXRender*)Core_GetIXCore()->getPluginManager()->getInterface(IXRENDER_GUID);
+
 	if(hWnd)
 	{
 		static const int *r_win_width = GET_PCVAR_INT("r_win_width");
 		static const int *r_win_height = GET_PCVAR_INT("r_win_height");
 
-		m_pGUI = pfnGUIInit(SGCore_GetDXDevice(), (IXMaterialSystem*)Core_GetIXCore()->getPluginManager()->getInterface(IXMATERIALSYSTEM_GUID), Core_GetIXCore()->getFileSystem());
+		m_pGUI = pfnGUIInit(g_pRender, (IXMaterialSystem*)Core_GetIXCore()->getPluginManager()->getInterface(IXMATERIALSYSTEM_GUID), Core_GetIXCore()->getFileSystem());
 		m_pGUIStack = m_pGUI->newDesktopStack("gui/", *r_win_width, *r_win_height);
 		m_pHUDcontroller = new CHUDcontroller();
 	}
@@ -427,36 +442,36 @@ GameData::GameData(HWND hWnd, bool isGame):
 		switch(pData->type)
 		{
 		case XEventLevel::TYPE_LOAD:
-			{
-				auto pEventChannel = Core_GetIXCore()->getEventChannel<XEventLevelProgress>(EVENT_LEVEL_PROGRESS_GUID);
-				XEventLevelProgress ev;
-				ev.szLoadingText = "Загрузка объектов игрового мира";
-				ev.idPlugin = -3;
-				ev.type = XEventLevelProgress::TYPE_PROGRESS_BEGIN;
-				ev.fProgress = 0.0f;
-				pEventChannel->broadcastEvent(&ev);
+		{
+			auto pEventChannel = Core_GetIXCore()->getEventChannel<XEventLevelProgress>(EVENT_LEVEL_PROGRESS_GUID);
+			XEventLevelProgress ev;
+			ev.szLoadingText = "Загрузка объектов игрового мира";
+			ev.idPlugin = -3;
+			ev.type = XEventLevelProgress::TYPE_PROGRESS_BEGIN;
+			ev.fProgress = 0.0f;
+			pEventChannel->broadcastEvent(&ev);
 
-				char szPath[256];
-				sprintf(szPath, "levels/%s/%s.ent", pData->szLevelName, pData->szLevelName);
-				LibReport(REPORT_MSG_LEVEL_NOTICE, "loading entities\n");
-				GameData::m_pMgr->import(szPath, true);
+			char szPath[256];
+			sprintf(szPath, "levels/%s/%s.ent", pData->szLevelName, pData->szLevelName);
+			LibReport(REPORT_MSG_LEVEL_NOTICE, "loading entities\n");
+			GameData::m_pMgr->import(szPath, true);
 
-				ev.type = XEventLevelProgress::TYPE_PROGRESS_END;
-				ev.fProgress = 1.0f;
-				pEventChannel->broadcastEvent(&ev);
-			}
-			break;
+			ev.type = XEventLevelProgress::TYPE_PROGRESS_END;
+			ev.fProgress = 1.0f;
+			pEventChannel->broadcastEvent(&ev);
+		}
+		break;
 
 		case XEventLevel::TYPE_UNLOAD:
 			GameData::m_pMgr->unloadObjLevel();
 			break;
 		case XEventLevel::TYPE_SAVE:
-			{
-				char szPath[256];
-				sprintf(szPath, "levels/%s/%s.ent", pData->szLevelName, pData->szLevelName);
-				GameData::m_pMgr->exportList(szPath);
-			}
-			break;
+		{
+			char szPath[256];
+			sprintf(szPath, "levels/%s/%s.ent", pData->szLevelName, pData->szLevelName);
+			GameData::m_pMgr->exportList(szPath);
+		}
+		break;
 
 		case XEventLevel::TYPE_LOAD_END:
 			GameData::m_isLevelLoaded = true;
@@ -471,6 +486,7 @@ GameData::GameData(HWND hWnd, bool isGame):
 	m_pLightSystem = (IXLightSystem*)Core_GetIXCore()->getPluginManager()->getInterface(IXLIGHTSYSTEM_GUID);
 	g_pPhysics = (IXPhysics*)Core_GetIXCore()->getPluginManager()->getInterface(IXPHYSICS_GUID);
 	g_pPhysWorld = g_pPhysics->getWorld();
+	g_pParticleSystem = (IXParticleSystem*)Core_GetIXCore()->getPluginManager()->getInterface(IXPARTICLESYSTEM_GUID);
 
 	if(m_pLightSystem && false)
 	{
@@ -633,12 +649,12 @@ GameData::GameData(HWND hWnd, bool isGame):
 	//Core_0RegisterCVarFloat("r_default_fov", 45.0f, "Default FOV value");
 	Core_0RegisterCVarBool("cl_mode_editor", false, "Editor control mode");
 	Core_0RegisterCVarBool("cl_grab_cursor", false, "Grab cursor on move");
-	
+
 	Core_0RegisterCVarFloat("cl_mousesense", 2.0f, "Mouse sense value");
 	Core_0RegisterCVarBool("cl_invert_y", false, "Invert Y axis");
 
 	Core_0RegisterCVarBool("dev_reset_world_on_run", false, "Reset world on level run");
-		
+
 
 	Core_0RegisterCVarBool("cl_bob", true, "View bobbing");
 	Core_0RegisterCVarFloat("cl_bob_y", 0.1f, "View bobbing base y amplitude");
@@ -804,14 +820,23 @@ GameData::GameData(HWND hWnd, bool isGame):
 		{
 			pNode->removeChild((*(pNode->getChilds()))[1]);
 		}
-		
-		int iModesCount = 0;
-		const DEVMODE * pModes = SGCore_GetModes(&iModesCount);
 
-		for(int i = 0; i < iModesCount; ++i)
+
+		UINT uModesCount = 0;
+		const GXModeDesc *pModes = g_pRender->getModes(&uModesCount);
+		Array<GXModeDesc> aUsed;
+		wchar_t str[64];
+		for(int i = 0; i < uModesCount; ++i)
 		{
-			wchar_t str[64];
-			wsprintfW(str, L"<option value=\"%u|%u\">%ux%u</option>", pModes[i].dmPelsWidth, pModes[i].dmPelsHeight, pModes[i].dmPelsWidth, pModes[i].dmPelsHeight);
+			if(aUsed.indexOf(pModes[i], [](const GXModeDesc &a, const GXModeDesc &b){
+				return(a.uWidth == b.uWidth && a.uHeight == b.uHeight);
+			}) >= 0)
+			{
+				continue;
+			}
+			aUsed.push_back(pModes[i]);
+
+			wsprintfW(str, L"<option value=\"%u|%u\">%ux%u</option>", pModes[i].uWidth, pModes[i].uHeight, pModes[i].uWidth, pModes[i].uHeight);
 
 			gui::dom::IDOMnodeCollection newItems = pLoadLevelDesktop->createFromText(str);
 			for(UINT i = 0, l = newItems.size(); i < l; i++)
@@ -826,7 +851,7 @@ GameData::GameData(HWND hWnd, bool isGame):
 	m_pGUIStack->registerCallback("settings_commit", [](gui::IEvent * ev){
 
 		bool isNewExists = Core_GetIXCore()->getFileSystem()->fileExists("user_settings.cfg");
-		
+
 		CSettingsWriter settingsWriter(Core_GetIXCore()->getFileSystem());
 		settingsWriter.loadFile(isNewExists ? "user_settings.cfg" : "../config_game_user_auto.cfg");
 
@@ -863,7 +888,7 @@ GameData::GameData(HWND hWnd, bool isGame):
 		}
 
 		settingsWriter.saveFile("user_settings.cfg");
-		
+
 		GameData::m_pGUIStack->popDesktop();
 	});
 	m_pGUIStack->registerCallback("controls_commit", [](gui::IEvent * ev){
@@ -872,7 +897,7 @@ GameData::GameData(HWND hWnd, bool isGame):
 
 		CSettingsWriter settingsWriter(Core_GetIXCore()->getFileSystem());
 		settingsWriter.loadFile(isNewExists ? "user_settings.cfg" : "../config_game_user_auto.cfg");
-		
+
 		gui::IDesktop * pSettingsDesktop = GameData::m_pGUIStack->getActiveDesktop();
 		gui::dom::IDOMdocument * doc = pSettingsDesktop->getDocument();
 		auto pItems = doc->getElementsByClass(L"cctable_row");
@@ -1026,7 +1051,7 @@ GameData::GameData(HWND hWnd, bool isGame):
 			GameData::m_pGUIStack->popDesktop();
 		}
 	});
-	
+
 	m_pGUIStack->registerCallback("settings_ctl_key", [](gui::IEvent * ev){
 		if(ev->key != KEY_LBUTTON)
 		{
@@ -1118,6 +1143,20 @@ GameData::GameData(HWND hWnd, bool isGame):
 		wdesc.flags = XWF_BUTTON_CLOSE | XWF_BUTTON_MINIMIZE | XWF_BUTTON_MAXIMIZE | /*XWF_NORESIZE | */XWF_TRANSPARENT;
 		IXUI *pXUI = (IXUI*)Core_GetIXCore()->getPluginManager()->getInterface(IXUI_GUID);
 		IUIWindow *pWindow = pXUI->createWindow(&wdesc);
+		//IUIButton *pButton = pXUI->createButton();
+		//pWindow->insertChild(pButton);
+	});
+
+	Core_0RegisterConcmd("calc", []()
+	{
+		IXUI *pXUI = (IXUI*)Core_GetIXCore()->getPluginManager()->getInterface(IXUI_GUID);
+		UICalcContainer* pContainer = new UICalcContainer(pXUI);
+	});
+
+	Core_0RegisterConcmd("demo", []()
+	{
+		IXUI *pXUI = (IXUI*)Core_GetIXCore()->getPluginManager()->getInterface(IXUI_GUID);
+		UIDemoContainer* pContainer = new UIDemoContainer(pXUI);
 	});
 
 	//gui::IDesktop * pDesk = m_pGUI->createDesktopA("ingame", "ingame.html");
@@ -1132,26 +1171,26 @@ GameData::GameData(HWND hWnd, bool isGame):
 	//g_pRagdoll = new CRagdoll(pl);
 	//pl->setRagdoll(g_pRagdoll);
 
-	g_idTextVS = SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "gui_main.vs");
-	g_idTextPS = SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "gui_main.ps");
-	g_idTextKit = SGCore_ShaderCreateKit(g_idTextVS, g_idTextPS);
+	g_idTextVS = g_pRender->loadShader(SHADER_TYPE_VERTEX, "gui_main.vs");
+	g_idTextPS = g_pRender->loadShader(SHADER_TYPE_PIXEL, "gui_main.ps");
+	g_idTextKit = g_pRender->createShaderKit(g_idTextVS, g_idTextPS);
 
 	GXBlendDesc bsDesc;
 	bsDesc.renderTarget[0].useBlend = true;
 	bsDesc.renderTarget[0].blendSrcColor = bsDesc.renderTarget[0].blendSrcAlpha = GXBLEND_SRC_ALPHA;
 	bsDesc.renderTarget[0].blendDestColor = bsDesc.renderTarget[0].blendDestAlpha = GXBLEND_INV_SRC_ALPHA;
-	g_pTextBlendState = SGCore_GetDXDevice()->createBlendState(&bsDesc);
+	g_pTextBlendState = g_pRender->getDevice()->createBlendState(&bsDesc);
 
 	GXSamplerDesc sampDesc;
 	sampDesc.filter = GXFILTER_MIN_MAG_MIP_LINEAR;
-	g_pTextSamplerState = SGCore_GetDXDevice()->createSamplerState(&sampDesc);
+	g_pTextSamplerState = g_pRender->getDevice()->createSamplerState(&sampDesc);
 
-	g_pTextVSConstantBuffer = SGCore_GetDXDevice()->createConstantBuffer(sizeof(SMMATRIX));
-	g_pTextPSConstantBuffer = SGCore_GetDXDevice()->createConstantBuffer(sizeof(float4));
+	g_pTextVSConstantBuffer = g_pRender->getDevice()->createConstantBuffer(sizeof(SMMATRIX));
+	g_pTextPSConstantBuffer = g_pRender->getDevice()->createConstantBuffer(sizeof(float4));
 
 	GXDepthStencilDesc dsDesc;
 	dsDesc.useDepthTest = dsDesc.useDepthWrite = false;
-	g_pTextDepthState = SGCore_GetDXDevice()->createDepthStencilState(&dsDesc);
+	g_pTextDepthState = g_pRender->getDevice()->createDepthStencilState(&dsDesc);
 
 	//m_pStatsUI = m_pGUI->createDesktopA("stats", "sys/stats.html");
 
@@ -1183,6 +1222,29 @@ GameData::GameData(HWND hWnd, bool isGame):
 	{
 		m_pMgr->setEditorMode(true);
 	}
+#if 0
+	IXParticleSystem *pPS = (IXParticleSystem*)Core_GetIXCore()->getPluginManager()->getInterface(IXPARTICLESYSTEM_GUID);
+	if(pPS)
+	{
+		IXParticleEffect *pEffect;
+		if(pPS->getEffect("test", &pEffect) || pPS->newEffect("test", &pEffect))
+		{
+			if(!pEffect->getEmitterCount())
+			{
+				pEffect->setEmitterCount(1);
+				pEffect->save();
+			}
+
+			IXParticlePlayer *pPlayer;
+			pPS->newEffectPlayer(pEffect, &pPlayer);
+
+			pPlayer->play();
+
+			//mem_release(pPlayer);
+			//mem_release(pEffect);
+		}
+	}
+#endif
 }
 GameData::~GameData()
 {
@@ -1265,13 +1327,13 @@ void GameData::update()
 	DWORD t1 = GetTickCount();
 	printf(COLOR_LRED "TIME: %.3fs\n" COLOR_RESET, (float)(t1 - t0) / 1000.0f);*/
 }
-void GameData::render()
+void GameData::render(IXRenderTarget *pFinalTarget)
 {
 	//g_pTracer->render();
 	//g_pTracer2->render();
 	
 	//m_pStatsUI->render(0.1f);
-	IGXDevice *pDev = SGCore_GetDXDevice();
+	IGXDevice *pDev = g_pRender->getDevice();
 	++g_uFrameCount;
 	
 	static const int *r_stats = GET_PCVAR_INT("r_stats");
@@ -1286,20 +1348,27 @@ void GameData::render()
 	}
 	if(pDev && *r_stats)
 	{
+		UINT uWinWidth, uWinHeight;
+		pFinalTarget->getSize(&uWinWidth, &uWinHeight);
+
 		const GXFrameStats *pFrameStats = pDev->getThreadContext()->getFrameStats();
 		const GXAdapterMemoryStats *pMemoryStats = pDev->getMemoryStats();
 
 		static GXFrameStats s_oldFrameStats = {0};
 		static GXAdapterMemoryStats s_oldMemoryStats = {0};
 		static UINT s_uOldFps = 0;
+		static UINT s_uOldWidth = 0;
 
 		if(s_uOldFps != g_uFPS 
 			|| memcmp(&s_oldFrameStats, pFrameStats, sizeof(s_oldFrameStats)) 
-			|| memcmp(&s_oldMemoryStats, pMemoryStats, sizeof(s_oldMemoryStats)))
+			|| memcmp(&s_oldMemoryStats, pMemoryStats, sizeof(s_oldMemoryStats))
+			|| s_uOldWidth != uWinWidth
+			)
 		{
 			s_uOldFps = g_uFPS;
 			s_oldFrameStats = *pFrameStats;
 			s_oldMemoryStats = *pMemoryStats;
+			s_uOldWidth = uWinWidth;
 
 			const GXAdapterDesc *pAdapterDesc = pDev->getAdapterDesc();
 			
@@ -1347,7 +1416,7 @@ void GameData::render()
 				swprintf_s(wszStats, L"FPS: %u", g_uFPS);
 			}
 
-			RenderText(wszStats);
+			RenderText(wszStats, uWinWidth);
 		}
 		if(g_pTextRenderBuffer)
 		{
@@ -1358,12 +1427,9 @@ void GameData::render()
 			pContext->setDepthStencilState(g_pTextDepthState);
 			pContext->setSamplerState(NULL, 0);
 
-			static const int *r_win_width = GET_PCVAR_INT("r_win_width");
-			static const int *r_win_height = GET_PCVAR_INT("r_win_height");
-
 			SMMATRIX m(
-				2.0f / (float)*r_win_width, 0.0f, 0.0f, 0.0f,
-				0.0f, -2.0f / (float)*r_win_height, 0.0f, 0.0f,
+				2.0f / (float)uWinWidth, 0.0f, 0.0f, 0.0f,
+				0.0f, -2.0f / (float)uWinHeight, 0.0f, 0.0f,
 				0.0f, 0.0f, 0.5f, 0.0f,
 				-1.0f, 1.0f, 0.5f, 1.0f);
 			m = SMMatrixTranslation(-0.5f, -0.5f, 0.0f) * m;
@@ -1372,7 +1438,7 @@ void GameData::render()
 			g_pTextVSConstantBuffer->update(&SMMatrixTranspose(SMMatrixTranslation(float3(1.0f, 1.0f, 0.0f)) * m));
 			g_pTextPSConstantBuffer->update(&float4_t(0, 0, 0, 1.0f));
 
-			SGCore_ShaderBind(g_idTextKit);
+			g_pRender->bindShader(pContext, g_idTextKit);
 			pContext->setRenderBuffer(g_pTextRenderBuffer);
 			pContext->setIndexBuffer(g_pTextIndexBuffer);
 			pContext->setPSTexture((IGXTexture2D*)g_pFont->getAPITexture(0));
@@ -1382,9 +1448,9 @@ void GameData::render()
 			pContext->drawIndexed(g_uVertexCount, g_uIndexCount / 3, 0, 0);
 
 			g_pTextVSConstantBuffer->update(&SMMatrixTranspose(m));
-			g_pTextPSConstantBuffer->update(&float4_t(0.3f, 1.0f, 0.3f, 1.0f));
+			g_pTextPSConstantBuffer->update(&float4_t(0.07f, 1.0f, 0.07f, 1.0f));
 			pContext->drawIndexed(g_uVertexCount, g_uIndexCount / 3, 0, 0);
-			SGCore_ShaderUnBind();
+			g_pRender->unbindShader(pContext);
 		}
 	}
 }

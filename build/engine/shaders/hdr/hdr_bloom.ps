@@ -24,9 +24,9 @@ float4 main(VSO_PP IN):SV_TARGET
 {
 	float fLuminance = g_txLuminance.Sample(g_sPointClamp, IN.vTexUV).x;
 	float4 vColor = g_txScene.Sample(g_sPointClamp, IN.vTexUV);
-	vColor += g_txScene.Sample(g_sPointClamp, IN.vTexUV + float2(g_vNearFarInvWinSize.z, 0.0f));
-	vColor += g_txScene.Sample(g_sPointClamp, IN.vTexUV + g_vNearFarInvWinSize.zw);
-	vColor += g_txScene.Sample(g_sPointClamp, IN.vTexUV + float2(0.0f, g_vNearFarInvWinSize.w));
+	vColor += g_txScene.Sample(g_sPointClamp, IN.vTexUV + float2(g_vNearFar.z, 0.0f));
+	vColor += g_txScene.Sample(g_sPointClamp, IN.vTexUV + g_vNearFar.zw);
+	vColor += g_txScene.Sample(g_sPointClamp, IN.vTexUV + float2(0.0f, g_vNearFar.w));
 	vColor *= 0.25f;
 	
 	// if(CalcLuminance(vColor.xyz) > 1.0f)

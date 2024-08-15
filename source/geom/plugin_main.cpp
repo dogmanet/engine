@@ -597,7 +597,7 @@ public:
 	{
 		return(0);
 	}
-	const XGUID * XMETHODCALLTYPE getInterfaceGUID(UINT id) override
+	const XGUID* XMETHODCALLTYPE getInterfaceGUID(UINT id) override
 	{
 		static XGUID s_guid;
 		switch(id)
@@ -607,9 +607,9 @@ public:
 		}
 		return(&s_guid);
 	}
-	IXUnknown * XMETHODCALLTYPE getInterface(const XGUID &guid) override
+	void XMETHODCALLTYPE getInterface(UINT id, void **ppOut) override
 	{
-		return(NULL);
+		*ppOut = NULL;
 	}
 
 protected:

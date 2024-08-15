@@ -10,6 +10,8 @@
 #include <xcommon/resource/IXResourceTexture.h>
 #include <xcommon/IXTextureFilter.h>
 #include <xcommon/XEvents.h>
+#include <xcommon/IXCore.h>
+#include <xcommon/render/IXRender.h>
 #include <common/ConcurrentQueue.h>
 #include <common/aastring.h>
 
@@ -339,7 +341,7 @@ class IFileSystem;
 class CMaterialSystem final: public IXUnknownImplementation<IXMaterialSystem>
 {
 public:
-	CMaterialSystem();
+	CMaterialSystem(IXCore *pCore);
 	~CMaterialSystem();
 
 	void XMETHODCALLTYPE loadMaterial(const char *szName, IXMaterial **ppMaterial, const char *szDefaultShader = NULL) override;
@@ -421,6 +423,11 @@ public:
 
 	bool XMETHODCALLTYPE testMaterialName(const char *szName) override;
 
+	IGXDevice* getDevice()
+	{
+		return(m_pDevice);
+	}
+
 protected:
 	struct CObjectData
 	{
@@ -449,6 +456,7 @@ protected:
 	AssotiativeArray<AAString, Array<MaterialLoader>> m_mapMaterialLoaders;
 	Array<XFormatName> m_aMaterialExts;
 	Map<String, CMaterial*> m_mapMaterials;
+	SpinLock m_slMaterials;
 
 	IEventChannel<XEventMaterialChanged> *m_pNotifyChannel = NULL;
 
@@ -745,6 +753,9 @@ private:
 	GXCULL_MODE m_cullMode = GXCULL_BACK;
 	// m_apRasterizerStates[GXFILL_MODE][GXCULL_MODE];
 	IGXRasterizerState *m_aapRasterizerStates[2][3];
+
+	IGXDevice *m_pDevice = NULL;
+	IXRender *m_pRender = NULL;
 };
 
 #endif

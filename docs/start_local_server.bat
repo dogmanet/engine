@@ -1,3 +1,3 @@
 call npm install
-npm start
-REM pause
+call npm start
+pause

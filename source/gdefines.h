@@ -190,6 +190,10 @@ public:
 
 #define strdups(str) ((str) ? strdup(str) : NULL)
 
+#define XWARN_(type) __FILE__ "(" MACRO_TEXT( __LINE__ ) ") : warning " ## type ## ": "
+#define TODO(msg) __pragma(message(XWARN_("TODO") msg))
+#define FIXME(msg) __pragma(message(XWARN_("FIXME") msg))
+
 //! Тип функции вывода отладочной информации
 typedef void(*report_func) (int iLevel, const char *szLibName, const char *szMessage);
 

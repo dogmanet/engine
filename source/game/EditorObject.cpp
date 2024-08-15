@@ -1,7 +1,6 @@
 #include "EditorObject.h"
 
 //#include <render/sxrender.h>
-#include <mtrl/sxmtrl.h>
 #include <xcommon/resource/IXResourceManager.h>
 
 #include "Editable.h"
@@ -96,6 +95,10 @@ void CEditorObject::_iniFieldList()
 							else if(!fstrcmp(pKV[0].value, "dds"))
 							{
 								xField.pEditorData = "texture";
+							}
+							else if(!fstrcmp(pKV[0].value, "eff"))
+							{
+								xField.pEditorData = "effect";
 							}
 						}
 						//xField.pEditorData
@@ -309,7 +312,7 @@ void XMETHODCALLTYPE CEditorObject::render(bool is3D, bool bRenderSelection, IXG
 
 	if(bRenderSelection)
 	{
-		IGXDevice *pDevice = SGCore_GetDXDevice();
+		IGXDevice *pDevice = m_pEditable->getDevice();
 		IGXContext *pCtx = pDevice->getThreadContext();
 
 		IGXBlendState *pOldBlendState = pCtx->getBlendState();

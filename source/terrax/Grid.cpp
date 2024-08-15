@@ -1,11 +1,12 @@
 #include "Grid.h"
 
 
-CGrid::CGrid(UINT uSize)
+CGrid::CGrid(IXRender *pRender, UINT uSize)
 {
 	assert(uSize);
 
-	m_pDevice = SGCore_GetDXDevice();
+	m_pRender = pRender;
+	m_pDevice = m_pRender->getDevice();
 
 	float fSize = (float)uSize * 0.5f;
 	UINT uVC = (uSize * 100 + 1) * 4;
@@ -215,9 +216,9 @@ CGrid::CGrid(UINT uSize)
 	mem_release(pVB);
 	mem_release(pVD);
 
-	m_idVS = SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "terrax_grid.vs");
-	m_idPS = SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "terrax_colored.ps");
-	m_idShaderKit = SGCore_ShaderCreateKit(m_idVS, m_idPS);
+	m_idVS = m_pRender->loadShader(SHADER_TYPE_VERTEX, "terrax_grid.vs");
+	m_idPS = m_pRender->loadShader(SHADER_TYPE_PIXEL, "terrax_colored.ps");
+	m_idShaderKit = m_pRender->createShaderKit(m_idVS, m_idPS);
 
 	GXBlendDesc blendDesc;
 	blendDesc.renderTarget[0].useBlend = TRUE;
@@ -255,17 +256,15 @@ CGrid::~CGrid()
 	mem_release(m_pRenderBuffer);
 }
 
-void CGrid::render(GRID_STEP step)
+void CGrid::render(const SMMATRIX &mWorld, IXCamera *pCamera, GRID_STEP step)
 {
 	IGXContext *pCtx = m_pDevice->getThreadContext();
 
 	IGXBlendState *pOldBlendState = pCtx->getBlendState();
 	IGXDepthStencilState *pOldDepthStencilState = pCtx->getDepthStencilState();
-	SGCore_ShaderBind(m_idShaderKit);
+	m_pRender->bindShader(pCtx, m_idShaderKit);
 	pCtx->setRenderBuffer(m_pRenderBuffer);
-	SMMATRIX mViewProj, mWorld;
-	Core_RMatrixGet(G_RI_MATRIX_VIEWPROJ, &mViewProj);
-	Core_RMatrixGet(G_RI_MATRIX_WORLD, &mWorld);
+	SMMATRIX mViewProj = pCamera->getViewMatrix() * pCamera->getProjMatrix();
 	m_pVSConstantBuffer->update(&SMMatrixTranspose(mWorld * mViewProj));
 	pCtx->setPrimitiveTopology(GXPT_LINELIST);
 	pCtx->setVSConstant(m_pVSConstantBuffer);
@@ -376,7 +375,7 @@ void CGrid::render(GRID_STEP step)
 		pCtx->setDepthStencilState(pOldDepthStencilState);
 	}
 
-	SGCore_ShaderUnBind();
+	m_pRender->unbindShader(pCtx);
 
 	mem_release(pOldBlendState);
 	mem_release(pOldDepthStencilState);

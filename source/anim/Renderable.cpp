@@ -82,13 +82,13 @@ void XMETHODCALLTYPE CRenderable::renderTransparentObject(IXRenderableVisibility
 	m_pDynamicModelProvider->renderTransparentObject((CRenderableVisibility*)pVisibility, uIndex, uSplitPlanes);
 }
 
-void XMETHODCALLTYPE CRenderable::startup(IGXDevice *pDevice, IXMaterialSystem *pMaterialSystem)
+void XMETHODCALLTYPE CRenderable::startup(IXRender *pRender, IXMaterialSystem *pMaterialSystem)
 {
-	m_pDevice = pDevice;
+	m_pDevice = pRender->getDevice();
 	m_pMaterialSystem = pMaterialSystem;
 
-	m_pAnimatedModelProvider->setDevice(pDevice);
-	m_pDynamicModelProvider->setDevice(pDevice);
+	m_pAnimatedModelProvider->setDevice(m_pDevice);
+	m_pDynamicModelProvider->setDevice(m_pDevice);
 }
 void XMETHODCALLTYPE CRenderable::shutdown()
 {

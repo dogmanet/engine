@@ -64,7 +64,8 @@ namespace gui
 				DIM_VH,
 				DIM_VW,
 				DIM_VMIN,
-				DIM_VMAX
+				DIM_VMAX,
+				DIM_AUTO
 			};
 
 			enum TYPE_DISPLAY_e

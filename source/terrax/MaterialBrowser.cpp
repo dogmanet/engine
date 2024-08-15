@@ -3,8 +3,9 @@
 
 #include <windowsx.h>
 #include <commctrl.h>
-#include <gcore/sxgcore.h>
+#include <xcommon/render/IXRender.h>
 #include "terrax.h"
+#include <core/sxcore.h>
 
 CMaterialBrowser::CMaterialBrowser(HINSTANCE hInstance, HWND hMainWnd):
 	m_hInstance(hInstance),
@@ -30,7 +31,8 @@ CMaterialBrowser::~CMaterialBrowser()
 	mem_delete(m_pScrollbarEvent);
 
 	mem_release(m_pSurface);
-	mem_release(m_pSwapChain);
+	//mem_release(m_pSwapChain);
+	mem_release(m_pFinalTarget);
 	DestroyWindow(m_hDlgWnd);
 
 	mem_release(m_pFrameIB);
@@ -184,7 +186,7 @@ INT_PTR CALLBACK CMaterialBrowser::dlgProc(HWND hWnd, UINT msg, WPARAM wParam, L
 			{
 				IXMaterial *pMat;
 				m_pMaterialSystem->loadMaterial(m_aMaterials[m_uSelectedItem].sName.c_str(), &pMat);
-				new CMaterialEditor(m_hInstance, m_hMainWnd, pMat);
+				new CMaterialEditor(m_hInstance, m_hMainWnd, Core_GetIXCore(), pMat);
 			}
 			break;
 
@@ -360,6 +362,16 @@ void CMaterialBrowser::browse(IMaterialBrowserCallback *pCallback, bool bTexture
 	SetFocus(m_hDlgWnd);
 }
 
+void CMaterialBrowser::abort()
+{
+	if(m_pCallback)
+	{
+		m_pCallback->onCancel();
+		m_pCallback = NULL;
+	}
+	ShowWindow(m_hDlgWnd, SW_HIDE);
+}
+
 void CMaterialBrowser::registerClass()
 {
 	WNDCLASSEX wcex;
@@ -513,14 +525,20 @@ LRESULT CALLBACK CMaterialBrowser::wndProc(HWND hWnd, UINT msg, WPARAM wParam, L
 	return(0);
 }
 
-void CMaterialBrowser::initGraphics(IGXDevice *pDev)
+void CMaterialBrowser::initGraphics(IXRender *pRender)
 {
-	m_pDev = pDev;
+	m_pRender = pRender;
+	m_pDev = m_pRender->getDevice();
 
 	m_pScrollbarEvent = new CScrollEventListener(m_hDlgWnd);
-	m_pScrollBar = new CScrollBar(m_pDev, m_pScrollbarEvent);
+	m_pScrollBar = new CScrollBar(pRender, m_pScrollbarEvent);
 
 	initViewport();
+
+	IXRenderGraph *pRenderGraph;
+	m_pRender->getGraph("xMaterialBrowser", &pRenderGraph);
+	m_pFinalTarget->attachGraph(pRenderGraph);
+	mem_release(pRenderGraph);
 
 	initHelpers();
 
@@ -538,13 +556,13 @@ void CMaterialBrowser::initGraphics(IGXDevice *pDev)
 }
 void CMaterialBrowser::render()
 {
-	if(IsWindowVisible(m_hBrowserWnd) && m_isDirty)
+	//if(IsWindowVisible(m_hBrowserWnd) && m_isDirty)
 	{
 		IGXContext *pCtx = m_pDev->getThreadContext();
 		IGXSurface *pOldRT = pCtx->getColorTarget();
 		pCtx->setColorTarget(m_pSurface);
-		IGXDepthStencilSurface *pOldDS = pCtx->getDepthStencilSurface();
-		pCtx->unsetDepthStencilSurface();
+		//IGXDepthStencilSurface *pOldDS = pCtx->getDepthStencilSurface();
+		pCtx->setDepthStencilSurface(NULL);
 
 		pCtx->clear(GX_CLEAR_COLOR, float4(0, 0, 0, 0));
 
@@ -576,7 +594,7 @@ void CMaterialBrowser::render()
 						pCtx->setBlendState(NULL);
 					}
 
-					SGCore_ShaderBind(m_idInnerShader);
+					m_pRender->bindShader(pCtx, m_idInnerShader);
 
 					item.pTexture->getAPITexture(&pTexture, item.uCurrentFrame);
 					pCtx->setPSTexture(pTexture);
@@ -586,7 +604,7 @@ void CMaterialBrowser::render()
 					pCtx->setRenderBuffer(m_pInnerRB);
 					pCtx->drawIndexed(m_uInnerVC, m_uInnerPC);
 
-					SGCore_ShaderUnBind();
+					m_pRender->unbindShader(pCtx);
 				}
 			}
 		}
@@ -604,20 +622,20 @@ void CMaterialBrowser::render()
 			pCtx->setPSConstant(m_pTextColorCB);
 			m_pTextOffsetCB->update(&float4_t(0.0f, (float)m_iScrollPos, 0.0f, 0.0f));
 			pCtx->setVSConstant(m_pTextOffsetCB, 6);
-			SGCore_ShaderBind(m_idTextShader);
+			m_pRender->bindShader(pCtx, m_idTextShader);
 			pCtx->drawIndexed(m_uTextVertexCount, m_uTextQuadCount * 2);
-			SGCore_ShaderUnBind();
+			m_pRender->unbindShader(pCtx);
 		}
 
-		pCtx->setDepthStencilSurface(pOldDS);
-		mem_release(pOldDS);
+		//pCtx->setDepthStencilSurface(pOldDS);
+		//mem_release(pOldDS);
 		pCtx->setColorTarget(pOldRT);
+		pCtx->downsampleColorTarget(m_pSurface, pOldRT);
 		mem_release(pOldRT);
 
 
-		IGXSurface *pRT = m_pSwapChain->getColorTarget();
-		pCtx->downsampleColorTarget(m_pSurface, pRT);
-		mem_release(pRT);
+		//IGXSurface *pRT = m_pSwapChain->getColorTarget();
+		//mem_release(pRT);
 
 		//m_isDirty = false;
 		m_bDoSwap = true;
@@ -627,7 +645,7 @@ void CMaterialBrowser::swapBuffers()
 {
 	if(IsWindowVisible(m_hBrowserWnd) && m_bDoSwap)
 	{
-		m_pSwapChain->swapBuffers();
+		//m_pSwapChain->swapBuffers();
 		m_bDoSwap = false;
 	}
 }
@@ -639,12 +657,16 @@ void CMaterialBrowser::initViewport()
 	m_uPanelWidth = rc.right - rc.left;
 	m_uPanelHeight = rc.bottom - rc.top;
 
-	mem_release(m_pSwapChain);
+	//mem_release(m_pSwapChain);
 	mem_release(m_pSurface);
-	m_pSwapChain = m_pDev->createSwapChain(m_uPanelWidth, m_uPanelHeight, m_hBrowserWnd);
-	m_pSurface = m_pDev->createColorTarget(m_uPanelWidth, m_uPanelHeight, GXFMT_A8B8G8R8_SRGB, GXMULTISAMPLE_4_SAMPLES, false);
+	//m_pSwapChain = m_pDev->createSwapChain(m_uPanelWidth, m_uPanelHeight, m_hBrowserWnd);
+	m_pSurface = m_pDev->createColorTarget(m_uPanelWidth, m_uPanelHeight, GXFMT_A8B8G8R8_SRGB, GXMULTISAMPLE_4_SAMPLES);
 	//m_pDepthStencilSurface = pDev->createDepthStencilSurface(m_uPanelWidth, m_uPanelHeight, GXFMT_D24S8, GXMULTISAMPLE_NONE);
-
+	if(!m_pFinalTarget)
+	{
+		m_pRender->newFinalTarget(m_hBrowserWnd, "xMaterialBrowser", &m_pFinalTarget);
+	}
+	m_pFinalTarget->resize(m_uPanelWidth, m_uPanelHeight);
 
 	float fWidth = (float)m_uPanelWidth;
 	float fHeight = (float)m_uPanelHeight;
@@ -845,13 +867,9 @@ void CMaterialBrowser::initHelpers()
 	mem_release(pVB);
 	mem_release(pVD);
 
-
-	m_idFrameShader = SGCore_ShaderCreateKit(SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "terrax_mat_frame.vs"), SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "terrax_colored2.ps"));
+	m_idFrameShader = m_pRender->createShaderKit(m_pRender->loadShader(SHADER_TYPE_VERTEX, "terrax_mat_frame.vs"), m_pRender->loadShader(SHADER_TYPE_PIXEL, "terrax_colored2.ps"));
 
 	m_pInformCB = m_pDev->createConstantBuffer(sizeof(m_frameState));
-
-
-
 
 
 	struct InnerVertex
@@ -900,9 +918,9 @@ void CMaterialBrowser::initHelpers()
 	mem_release(pVD);
 
 
-	m_idInnerShader = SGCore_ShaderCreateKit(SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "terrax_mat_inner.vs"), SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "terrax_mat_inner.ps"));
+	m_idInnerShader = m_pRender->createShaderKit(m_pRender->loadShader(SHADER_TYPE_VERTEX, "terrax_mat_inner.vs"), m_pRender->loadShader(SHADER_TYPE_PIXEL, "terrax_mat_inner.ps"));
 
-	m_idTextShader = SGCore_ShaderCreateKit(SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "gui_text.vs"), SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "gui_main.ps"));
+	m_idTextShader = m_pRender->createShaderKit(m_pRender->loadShader(SHADER_TYPE_VERTEX, "gui_text.vs"), m_pRender->loadShader(SHADER_TYPE_PIXEL, "gui_main.ps"));
 
 	m_pTextColorCB = m_pDev->createConstantBuffer(sizeof(float4_t));
 	fBlueColor.w = 1.0f;
@@ -914,7 +932,7 @@ void CMaterialBrowser::drawFrame(int iXpos, int iYpos, FRAME_SIZE frameSize, UIN
 {
 	IGXContext *pCtx = m_pDev->getThreadContext();
 
-	SGCore_ShaderBind(m_idFrameShader);
+	m_pRender->bindShader(pCtx, m_idFrameShader);
 
 	float vSizeDiff = (float)(frameSize - 128);
 
@@ -937,7 +955,7 @@ void CMaterialBrowser::drawFrame(int iXpos, int iYpos, FRAME_SIZE frameSize, UIN
 	pCtx->setRenderBuffer(m_pFrameRB);
 	pCtx->drawIndexed(m_uFrameVC, m_uFramePC);
 
-	SGCore_ShaderUnBind();
+	m_pRender->unbindShader(pCtx);
 }
 
 void CMaterialBrowser::layout()

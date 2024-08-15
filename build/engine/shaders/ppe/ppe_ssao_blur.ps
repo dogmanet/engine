@@ -10,7 +10,7 @@ SamplerState g_sPointClamp: register(s0);
 
 float4 main(VSO_PP IN):COLOR0
 {
-	float2 vTexelSize = g_vNearFarInvWinSize.zw;
+	float2 vTexelSize = g_vNearFar.zw;
     float vAOSample = 0.0f;
 	[unroll]
     for(int x = -2; x < 2; ++x) 

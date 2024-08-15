@@ -43,12 +43,12 @@ void XMETHODCALLTYPE CRenderable::renderStage(X_RENDER_STAGE stage, IXRenderable
 	}
 }
 
-void XMETHODCALLTYPE CRenderable::startup(IGXDevice *pDevice, IXMaterialSystem *pMaterialSystem)
+void XMETHODCALLTYPE CRenderable::startup(IXRender *pRender, IXMaterialSystem *pMaterialSystem)
 {
-	m_pDevice = pDevice;
+	m_pDevice = pRender->getDevice();
 	m_pMaterialSystem = pMaterialSystem;
 
-	m_pAmbient->setDevice(pDevice);
+	m_pAmbient->setDevice(m_pDevice);
 	m_pAmbient->setMaterialSystem(pMaterialSystem);
 }
 void XMETHODCALLTYPE CRenderable::shutdown()

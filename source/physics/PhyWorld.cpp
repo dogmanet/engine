@@ -134,6 +134,7 @@ public:
 
 		void forLoop(int iStart, int iEnd) const
 		{
+			XPROFILE_FUNCTION();
 		//	Core_PStartSection(PERF_SECTION_PHYS_UPDATE);
 			m_pBody->forLoop(iStart, iEnd);
 		//	Core_PEndSection(PERF_SECTION_PHYS_UPDATE);
@@ -145,6 +146,7 @@ public:
 
 	virtual void parallelFor(int iBegin, int iEnd, int grainSize, const btIParallelForBody& body) BT_OVERRIDE
 	{
+		XPROFILE_FUNCTION();
 		BT_PROFILE("parallelFor_SkyXEngine");
 
 		if(iBegin >= iEnd)
@@ -164,6 +166,7 @@ public:
 	}
 	virtual btScalar parallelSum(int iBegin, int iEnd, int grainSize, const btIParallelSumBody& body) BT_OVERRIDE
 	{
+		XPROFILE_FUNCTION();
 		BT_PROFILE("parallelSum_sequential");
 		return(body.sumLoop(iBegin, iEnd));
 	}
@@ -456,16 +459,31 @@ void XMETHODCALLTYPE CPhyWorld::CRenderable::renderStage(X_RENDER_STAGE stage, I
 {
 	m_pWorld->render();
 }
-void XMETHODCALLTYPE CPhyWorld::CRenderable::startup(IGXDevice *pDevice, IXMaterialSystem *pMaterialSystem)
+void XMETHODCALLTYPE CPhyWorld::CRenderable::startup(IXRender *pRender, IXMaterialSystem *pMaterialSystem)
 {
+	((CDebugDrawer*)m_pWorld->getBtWorld()->getDebugDrawer())->setDevice(pRender);
 }
 
 //##############################################################
 
 CPhyWorld::CDebugDrawer::CDebugDrawer()
 {
-	auto pDevice = SGCore_GetDXDevice();
-	if(!pDevice)
+}
+
+CPhyWorld::CDebugDrawer::~CDebugDrawer()
+{
+	mem_release(m_pVertexBuffer);
+	mem_release(m_pVertexDeclaration);
+	mem_release(m_pRenderBuffer);
+	mem_release(m_pVSConstantBuffer);
+}
+
+void CPhyWorld::CDebugDrawer::setDevice(IXRender *pRender)
+{
+	m_pDevice = pRender->getDevice();
+	m_pRender = pRender;
+
+	if(!m_pDevice)
 	{
 		return;
 	}
@@ -477,22 +495,14 @@ CPhyWorld::CDebugDrawer::CDebugDrawer()
 		GX_DECL_END()
 	};
 
-	m_pVertexDeclaration = pDevice->createVertexDeclaration(vertexDecl);
-	m_pVertexBuffer = pDevice->createVertexBuffer(sizeof(render_point) * m_uDataSize, GXBUFFER_USAGE_STREAM);
-	m_pRenderBuffer = pDevice->createRenderBuffer(1, &m_pVertexBuffer, m_pVertexDeclaration);
-	m_pVSConstantBuffer = pDevice->createConstantBuffer(sizeof(SMMATRIX));
+	m_pVertexDeclaration = m_pDevice->createVertexDeclaration(vertexDecl);
+	m_pVertexBuffer = m_pDevice->createVertexBuffer(sizeof(render_point)* m_uDataSize, GXBUFFER_USAGE_STREAM);
+	m_pRenderBuffer = m_pDevice->createRenderBuffer(1, &m_pVertexBuffer, m_pVertexDeclaration);
+	m_pVSConstantBuffer = m_pDevice->createConstantBuffer(sizeof(SMMATRIX));
 
-	ID idVS = SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "dbg_colorvertex.vs");
-	ID idPS = SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "dbg_colorvertex.ps");
-	m_idShader = SGCore_ShaderCreateKit(idVS, idPS);
-}
-
-CPhyWorld::CDebugDrawer::~CDebugDrawer()
-{
-	mem_release(m_pVertexBuffer);
-	mem_release(m_pVertexDeclaration);
-	mem_release(m_pRenderBuffer);
-	mem_release(m_pVSConstantBuffer);
+	ID idVS = m_pRender->loadShader(SHADER_TYPE_VERTEX, "dbg_colorvertex.vs");
+	ID idPS = m_pRender->loadShader(SHADER_TYPE_PIXEL, "dbg_colorvertex.ps");
+	m_idShader = m_pRender->createShaderKit(idVS, idPS);
 }
 
 void CPhyWorld::CDebugDrawer::drawLine(const btVector3 & from, const btVector3 & to, const btVector3 & color)
@@ -517,7 +527,7 @@ void CPhyWorld::CDebugDrawer::drawContactPoint(const btVector3 & PointOnB, const
 
 void CPhyWorld::CDebugDrawer::reportErrorWarning(const char * warningString)
 {
-	if (m_bExpectObject)
+	if(m_bExpectObject)
 	{
 		m_bExpectObject = false;
 		btCollisionObject *pObj = (btCollisionObject*)warningString;
@@ -531,7 +541,7 @@ void CPhyWorld::CDebugDrawer::reportErrorWarning(const char * warningString)
 		pObj->getCollisionShape()->getAabb(pObj->getWorldTransform(), minAabb, maxAabb);
 		LibReport(REPORT_MSG_LEVEL_WARNING, "AABBmin: %.2f, %.2f, %.2f\n", minAabb.x(), minAabb.y(), minAabb.z());
 		LibReport(REPORT_MSG_LEVEL_WARNING, "AABBmax: %.2f, %.2f, %.2f\n", maxAabb.x(), maxAabb.y(), maxAabb.z());
-		if (pObj->getCollisionShape()->getShapeType() == CAPSULE_SHAPE_PROXYTYPE)
+		if(pObj->getCollisionShape()->getShapeType() == CAPSULE_SHAPE_PROXYTYPE)
 		{
 			btCapsuleShape *pCaps = (btCapsuleShape*)pObj->getCollisionShape();
 			LibReport(REPORT_MSG_LEVEL_WARNING, "Radius: %.2f; HalfHeight: %.2f\n", pCaps->getRadius(), pCaps->getHalfHeight());
@@ -548,12 +558,12 @@ void CPhyWorld::CDebugDrawer::reportErrorWarning(const char * warningString)
 
 		LibReport(REPORT_MSG_LEVEL_WARNING, " 0x%08xf\n", &trans);
 		byte * pByte = (byte*)&trans;
-		for (int i = 0, l = sizeof(trans); i < l; ++i)
+		for(int i = 0, l = sizeof(trans); i < l; ++i)
 		{
 			LibReport(REPORT_MSG_LEVEL_WARNING, " %02x", pByte[i]);
 		}
 
-		if (!pObj->getUserPointer())
+		if(!pObj->getUserPointer())
 		{
 			LibReport(REPORT_MSG_LEVEL_WARNING, "getUserPointer() is NULL.\n");
 			return;
@@ -561,7 +571,7 @@ void CPhyWorld::CDebugDrawer::reportErrorWarning(const char * warningString)
 		Core_0ConsoleExecCmd("ent_dump_info %x", pObj->getUserPointer());
 		return;
 	}
-	if (!strcmp(warningString, "@@@obj"))
+	if(!strcmp(warningString, "@@@obj"))
 	{
 		m_bExpectObject = true;
 		return;
@@ -589,9 +599,9 @@ void CPhyWorld::CDebugDrawer::begin()
 {
 	m_uDataPointer = 0;
 
-	SGCore_ShaderBind(m_idShader);
+	IGXContext *pCtx = m_pDevice->getThreadContext();
 
-	IGXContext *pCtx = SGCore_GetDXDevice()->getThreadContext();
+	m_pRender->bindShader(pCtx, m_idShader);
 
 	pCtx->setRenderBuffer(m_pRenderBuffer);
 	pCtx->setPrimitiveTopology(GXPT_LINELIST);
@@ -605,9 +615,12 @@ void CPhyWorld::CDebugDrawer::begin()
 
 void CPhyWorld::CDebugDrawer::commit()
 {
+	IGXContext *pCtx = m_pDevice->getThreadContext();
+
 	render();
-	SGCore_ShaderUnBind();
-	SGCore_GetDXDevice()->getThreadContext()->setPrimitiveTopology(GXPT_TRIANGLELIST);
+
+	m_pRender->unbindShader(pCtx);
+	pCtx->setPrimitiveTopology(GXPT_TRIANGLELIST);
 }
 
 void CPhyWorld::CDebugDrawer::render()
@@ -623,7 +636,7 @@ void CPhyWorld::CDebugDrawer::render()
 		memcpy(pData, m_pDrawData, sizeof(render_point) * m_uDataPointer);
 		m_pVertexBuffer->unlock();
 
-		SGCore_GetDXDevice()->getThreadContext()->drawPrimitive(0, m_uDataPointer / 2);
+		m_pDevice->getThreadContext()->drawPrimitive(0, m_uDataPointer / 2);
 	}
 
 	m_uDataPointer = 0;

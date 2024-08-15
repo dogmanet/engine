@@ -35,17 +35,20 @@ public:
 		}
 		return(&s_guid);
 	}
-	IXUnknown* XMETHODCALLTYPE getInterface(const XGUID &guid) override
+	void XMETHODCALLTYPE getInterface(UINT id, void **ppOut) override
 	{
-		if(guid == IXMODELLOADER_GUID)
+		switch(id)
 		{
-			return(new CModelLoader(m_pCore->getFileSystem()));
+		case 0:
+			*ppOut = new CModelLoader(m_pCore->getFileSystem());
+			break;
+		case 1:
+			*ppOut = new CModelWriter();
+			break;
+		
+		default:
+			*ppOut = NULL;
 		}
-		else if(guid == IXMODELWRITER_GUID)
-		{
-			return(new CModelWriter());
-		}
-		return(NULL);
 	}
 
 private:

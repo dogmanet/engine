@@ -69,9 +69,13 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 		case WM_MOUSEMOVE:
 		case WM_ENTERSIZEMOVE:
 		case WM_EXITSIZEMOVE:
-			return(pWindow->runCallback(msg, wParam, lParam));
+			add_ref(pWindow);
+			LRESULT res = pWindow->runCallback(msg, wParam, lParam);
+			mem_release(pWindow);
+			return(res);
 		}
 	}
+
 	return(DefWindowProc(hWnd, msg, wParam, lParam));
 }
 
@@ -81,6 +85,7 @@ CWindow::CWindow(HINSTANCE hInst, UINT uId, const XWINDOW_DESC *pWindowDesc, IXW
 	m_pCallback(pCallback)
 {
 	//assert(pCallback);
+	add_ref(pCallback);
 
 	m_windowDesc = *pWindowDesc;
 	m_windowDesc.szTitle = NULL;
@@ -106,12 +111,12 @@ CWindow::CWindow(HINSTANCE hInst, UINT uId, const XWINDOW_DESC *pWindowDesc, IXW
 	wcex.hIcon = NULL;
 	wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
 	wcex.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
-	
+
 	wcex.lpszMenuName = NULL;
 	wcex.lpszClassName = szClassName;
 	wcex.hIconSm = NULL;
 	//wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
-	
+
 	if(!RegisterClassEx(&wcex))
 	{
 		LibReport(REPORT_MSG_LEVEL_FATAL, "Unable to register window class!\n");
@@ -119,7 +124,7 @@ CWindow::CWindow(HINSTANCE hInst, UINT uId, const XWINDOW_DESC *pWindowDesc, IXW
 
 	//#############################################################################
 
-	
+
 	DWORD wndStyle = WS_OVERLAPPED | WS_CAPTION | WS_THICKFRAME;
 
 	if(pWindowDesc->flags & XWF_BUTTON_MINIMIZE)
@@ -164,8 +169,22 @@ CWindow::CWindow(HINSTANCE hInst, UINT uId, const XWINDOW_DESC *pWindowDesc, IXW
 	{
 		iPosY = (GetSystemMetrics(SM_CYSCREEN) - (rc.bottom - rc.top)) / 2;
 	}
-	
-	m_hWnd = CreateWindowExA(0/*WS_EX_APPWINDOW*/, szClassName, pWindowDesc->szTitle, wndStyle, iPosX, iPosY, rc.right - rc.left, rc.bottom - rc.top, pParent ? (HWND)pParent->getOSHandle() : NULL, NULL, wcex.hInstance, NULL);
+
+	HWND hParentWnd = NULL;
+	if(pParent)
+	{
+		FIXME("HACK: Remove that as soon as all windows is turned to xWindow");
+		if(IsWindow((HWND)pParent))
+		{
+			hParentWnd = (HWND)pParent;
+		}
+		else
+		{
+			hParentWnd = (HWND)pParent->getOSHandle();
+		}
+	}
+
+	m_hWnd = CreateWindowExA(0/*WS_EX_APPWINDOW*/, szClassName, pWindowDesc->szTitle, wndStyle, iPosX, iPosY, rc.right - rc.left, rc.bottom - rc.top, hParentWnd, NULL, wcex.hInstance, NULL);
 	if(!m_hWnd)
 	{
 		LibReport(REPORT_MSG_LEVEL_FATAL, "Unable to create window!\n");
@@ -201,9 +220,10 @@ CWindow::CWindow(HINSTANCE hInst, UINT uId, const XWINDOW_DESC *pWindowDesc, IXW
 
 	SetWindowLongPtr(m_hWnd, GWLP_USERDATA, (LONG_PTR)this);
 
-	ShowWindow(m_hWnd, SW_NORMAL);
-
-	
+	if(!(pWindowDesc->flags & XWF_INIT_HIDDEN))
+	{
+		ShowWindow(m_hWnd, SW_NORMAL);
+	}	
 
 	if(pWindowDesc->flags & XWF_NOBORDER)
 	{
@@ -219,9 +239,11 @@ CWindow::~CWindow()
 	char szClassName[64];
 	sprintf_s(szClassName, "XWindowClass_%u", m_uId);
 
-	UnregisterClassA(szClassName, m_hInst);
+	SetWindowLongPtr(m_hWnd, GWLP_USERDATA, NULL);
 	DestroyWindow(m_hWnd);
+	UnregisterClassA(szClassName, m_hInst);
 #endif
+	mem_release(m_pCallback);
 }
 
 XWINDOW_OS_HANDLE XMETHODCALLTYPE CWindow::getOSHandle()
@@ -360,6 +382,22 @@ const XWINDOW_DESC* XMETHODCALLTYPE CWindow::getDesc()
 
 INT_PTR CWindow::runCallback(UINT msg, WPARAM wParam, LPARAM lParam)
 {
+	if(msg == WM_EXITSIZEMOVE || msg == WM_SIZE)
+	{
+		RECT rc;
+		if(GetClientRect(m_hWnd, &rc))
+		{
+			m_windowDesc.iSizeX = rc.right - rc.left;
+			m_windowDesc.iSizeY = rc.bottom - rc.top;
+		}
+
+		if(GetWindowRect(m_hWnd, &rc))
+		{
+			m_windowDesc.iPosX = rc.left;
+			m_windowDesc.iPosY = rc.top;
+		}
+	}
+
 	if(m_pCallback)
 	{
 		return(m_pCallback->onMessage(msg, wParam, lParam, this));

@@ -23,7 +23,7 @@ See the license in LICENSE
 #include <gdefines.h>
 
 #include <common/Math.h>
-#include <mtrl/sxmtrl.h>
+#include <xcommon/XEvents.h>
 
 #include <common/queue.h>
 #include "sxphysics.h"
@@ -82,9 +82,15 @@ public:
 		IGXRenderBuffer *m_pRenderBuffer = NULL;
 		IGXConstantBuffer *m_pVSConstantBuffer = NULL;
 		ID m_idShader = -1;
+
+		IGXDevice *m_pDevice = NULL;
+		IXRender *m_pRender = NULL;
+
 	public:
 		CDebugDrawer();
 		~CDebugDrawer();
+
+		void setDevice(IXRender *pRender);
 
 		void drawLine(const btVector3& from, const btVector3& to, const btVector3& color);
 
@@ -142,7 +148,7 @@ public:
 		}
 
 
-		void XMETHODCALLTYPE startup(IGXDevice *pDevice, IXMaterialSystem *pMaterialSystem) override;
+		void XMETHODCALLTYPE startup(IXRender *pRender, IXMaterialSystem *pMaterialSystem) override;
 		void XMETHODCALLTYPE shutdown() override
 		{
 		}

@@ -1,7 +1,7 @@
 #include "EditorObject.h"
 
 //#include <render/sxrender.h>
-#include <mtrl/sxmtrl.h>
+#include <xcommon/IPluginManager.h>
 #include <xcommon/resource/IXResourceManager.h>
 
 #include "Editable.h"

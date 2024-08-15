@@ -30,7 +30,7 @@ namespace gui
 	public:
 		SX_ALIGNED_OP_MEM();
 
-		CDesktopStack(CGUI *pGUI, IGXDevice *pDev, const char *szResPath, UINT uWidth, UINT uHeight);
+		CDesktopStack(CGUI *pGUI, IXRender *pRender, const char *szResPath, UINT uWidth, UINT uHeight);
 		~CDesktopStack();
 
 		BOOL putMessage(UINT msg, WPARAM wParam, LPARAM lParam) override;
@@ -121,6 +121,7 @@ namespace gui
 		IXTexture *m_pDefaultWhite;
 
 		CGUI *m_pGUI;
+		IXRender *m_pRender;
 		IGXDevice *m_pDevice;
 		WCHAR *m_szResourceDir = NULL;
 
@@ -178,10 +179,11 @@ namespace gui
 	public:
 		SX_ALIGNED_OP_MEM();
 
-		CGUI(IGXDevice *pDev, IXMaterialSystem *pMaterialSystem, IFileSystem *pFileSystem);
+		CGUI(IXRender *pRender, IXMaterialSystem *pMaterialSystem, IFileSystem *pFileSystem);
 		~CGUI();
 
 		IGXDevice* getDevice();
+		IXRender* getRender();
 
 		struct shader_s
 		{
@@ -256,6 +258,7 @@ namespace gui
 		}
 
 	protected:
+		IXRender *m_pRender;
 		IGXDevice *m_pDevice;
 
 		shaders_s m_shaders;
@@ -273,6 +276,6 @@ namespace gui
 	CGUI* GetGUI();
 };
 
-EXTERN_C __declspec(dllexport) gui::IGUI* InitInstance(IGXDevice *pDev, IXMaterialSystem *pMaterialSystem, IFileSystem *pFileSystem);
+EXTERN_C __declspec(dllexport) gui::IGUI* InitInstance(IXRender *pRender, IXMaterialSystem *pMaterialSystem, IFileSystem *pFileSystem);
 
 #endif

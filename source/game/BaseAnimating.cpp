@@ -5,7 +5,6 @@ See the license in LICENSE
 ***********************************************************/
 
 #include "BaseAnimating.h"
-#include "gcore/sxgcore.h"
 
 #include <xcommon/resource/IXResourceManager.h>
 #include <xcommon/resource/IXResourceModel.h>

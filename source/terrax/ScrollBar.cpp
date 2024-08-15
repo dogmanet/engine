@@ -1,10 +1,10 @@
 #include "ScrollBar.h"
 
-#include <gcore/sxgcore.h>
 #include "terrax.h"
 
-CScrollBar::CScrollBar(IGXDevice *pDev, IScrollEventListener *pEventListener):
-	m_pDev(pDev),
+CScrollBar::CScrollBar(IXRender *pRender, IScrollEventListener *pEventListener):
+	m_pRender(pRender),
+	m_pDev(pRender->getDevice()),
 	m_pEventListener(pEventListener)
 {
 	initHelpers();
@@ -26,7 +26,7 @@ void CScrollBar::render()
 	pCtx->setRasterizerState(NULL);
 	pCtx->setBlendState(g_xRenderStates.pBlendAlpha);
 
-	SGCore_ShaderBind(m_idFrameShader);
+	m_pRender->bindShader(pCtx, m_idFrameShader);
 	/*
 	float vSizeDiff = (float)(frameSize - 128);
 
@@ -53,7 +53,7 @@ void CScrollBar::render()
 	pCtx->setRenderBuffer(m_pFrameRB);
 	pCtx->drawIndexed(m_uFrameVC, m_uFramePC);
 
-	SGCore_ShaderUnBind();
+	m_pRender->unbindShader(pCtx);
 }
 
 void CScrollBar::initHelpers()
@@ -218,7 +218,7 @@ void CScrollBar::initHelpers()
 	mem_release(pVD);
 
 
-	m_idFrameShader = SGCore_ShaderCreateKit(SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "terrax_scrollbar.vs"), SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "terrax_colored2.ps"));
+	m_idFrameShader = m_pRender->createShaderKit(m_pRender->loadShader(SHADER_TYPE_VERTEX, "terrax_scrollbar.vs"), m_pRender->loadShader(SHADER_TYPE_PIXEL, "terrax_colored2.ps"));
 
 	m_pInformCB = m_pDev->createConstantBuffer(sizeof(m_frameState));
 }

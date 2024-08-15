@@ -581,7 +581,6 @@ void CDynamicModelShared::render(UINT uSkin, UINT uLod, XMODEL_FEATURE bmFeature
 		{
 			if(m_pMaterialSystem->bindMaterial(m_pppMaterials[uSkin][i]))
 			{
-
 				switch(m_topology)
 				{
 				case XPT_TRIANGLELIST:

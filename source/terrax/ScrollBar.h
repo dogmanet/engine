@@ -1,7 +1,8 @@
 #ifndef __SCROLL_BAR_H
 #define __SCROLL_BAR_H
 
-#include <graphix/graphix.h>
+//#include <graphix/graphix.h>
+#include <xcommon/render/IXRender.h>
 //#include "terrax.h"
 
 class IScrollEventListener
@@ -17,7 +18,7 @@ public:
 class CScrollBar final
 {
 public:
-	CScrollBar(IGXDevice *pDev, IScrollEventListener *pEventListener);
+	CScrollBar(IXRender *pRender, IScrollEventListener *pEventListener);
 	~CScrollBar();
 
 	void render();
@@ -46,6 +47,7 @@ public:
 
 	void update(float fDT);
 private:
+	IXRender *m_pRender = NULL;
 	IGXDevice *m_pDev = NULL;
 
 	IGXIndexBuffer *m_pFrameIB = NULL;

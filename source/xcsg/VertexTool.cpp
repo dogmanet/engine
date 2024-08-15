@@ -12,8 +12,6 @@
 
 #include <xcommon/IPluginManager.h>
 
-#include <gcore/sxgcore.h>
-
 #include "VertexTool.h"
 
 #include "EditorObject.h"

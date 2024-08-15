@@ -12,8 +12,6 @@
 
 #include <xcommon/IPluginManager.h>
 
-#include <gcore/sxgcore.h>
-
 extern HINSTANCE g_hInstance;
 
 //##########################################################################
@@ -28,7 +26,6 @@ CFaceEditTool::CFaceEditTool(CEditable *pEditable, IXEditor *pEditor):
 	pUtils->newGizmoRenderer(&m_pRenderer);
 
 	m_pFaceEdit = new CFaceEdit(pEditable, pEditor, g_hInstance, (HWND)pEditor->getMainWindow());
-	m_pFaceEdit->initGraphics(SGCore_GetDXDevice());
 }
 CFaceEditTool::~CFaceEditTool()
 {

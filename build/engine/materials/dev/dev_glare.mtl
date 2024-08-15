@@ -1,0 +1,20 @@
+
+[material]
+tex.txBase = dev_glare|from_srgb
+shader = Transparent
+prop.tp_multiplier = 1.000000 0.000000 0.000000 1.000000
+prop.pbr_thickness = 1.000000 0.000000 0.000000 1.000000
+prop.pbr_roughness = 0.950000 0.000000 0.000000 1.000000
+prop.pbr_metallic = 0.000000 0.000000 0.000000 1.000000
+prop.pbr_f0 = 0.040000 0.000000 1.000000 0.000000
+prop.pbr_ao = 1.000000 0.000000 0.000000 1.000000
+prop.hit_chance = 1.000000 0.000000 0.000000 1.000000
+prop.durability = 1000.000000 0.000000 0.000000 1.000000
+prop.density = 1000.000000 0.000000 0.000000 1.000000
+physmaterial = 0
+flag.twosided = 0
+flag.transparent = 1
+flag.refractive = 0
+flag.emissive = 0
+flag.editorial = 0
+flag.blurred = 0

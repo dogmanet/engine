@@ -28,7 +28,7 @@ namespace gui
 				else
 				{
 					removePseudoclass(css::ICSSrule::PSEUDOCLASS_ACTIVE);
-					m_bToggleState = true;
+					m_bToggleState = false;
 				}
 			}
 			BaseClass::setAttribute(name, value);

@@ -5,6 +5,9 @@
 #include "IRenderFrame.h"
 #include "IDOMdocument.h"
 
+#define SCROLL_SPEED 3.20f
+#define SCROLL_SPEED_MAX 16.00f
+
 namespace gui
 {
 	class CDesktop;
@@ -47,12 +50,12 @@ namespace gui
 				mem_delete(m_pCSS);
 			}
 
-			IDOMnode* createNode(const wchar_t *tag);
+			IDOMnode* createNode(const wchar_t *tag) override;
 			IDOMnode* createNode(UINT nid);
 
 			void setRootNode(IDOMnode *pNode);
 
-			IDOMnode* getElementById(const StringW &id);
+			IDOMnode* getElementById(const StringW &id) override;
 			IDOMnode* getElementById(UINT iid);
 
 			void indexBuild();
@@ -66,12 +69,12 @@ namespace gui
 
 			static void buildIndexFunc(IDOMdocument *doc, IDOMnode *node);
 
-			const IDOMnodeCollection* getElementsByClass(const StringW &id);
+			const IDOMnodeCollection* getElementsByClass(const StringW &id) override;
 			const IDOMnodeCollection* getElementsByClass(UINT cid);
 
-			const IDOMnodeCollection* getElementsByPseudoClass(UINT cid);
+			const IDOMnodeCollection* getElementsByPseudoClass(UINT cid) override;
 
-			const IDOMnodeCollection* getElementsByTag(const StringW &id);
+			const IDOMnodeCollection* getElementsByTag(const StringW &id) override;
 			const IDOMnodeCollection* getElementsByTag(UINT tid);
 
 			IDOMnodeCollection querySelectorAll(const css::ICSSRuleSet * rules);
@@ -114,13 +117,13 @@ namespace gui
 			void update(float fTimeDelta);
 			void render(float fTimeDelta);
 
-			IDOMnode* getElementByXY(int x, int y, bool sendEnterLeave = false);
+			IDOMnode* getElementByXY(int x, int y, bool sendEnterLeave = false) override;
 
 			//	IDesktop * GetDesktop();
-			void setDesktop(IDesktop *pdp);
+			void setDesktop(IDesktop *pdp) override;
 
-			void requestFocus(IDOMnode *pn);
-			IDOMnode* getFocus();
+			void requestFocus(IDOMnode *pn) override;
+			IDOMnode* getFocus() override;
 
 			void addReflowItem(render::IRenderFrame *rf, bool forceParent=false);
 			void reflow();
@@ -133,10 +136,18 @@ namespace gui
 			IDOMnode* getRootNode();
 
 			void forgotNode(IDOMnode *pNode);
+			void forgotRenderFrame(render::IRenderFrame *pRF);
 			bool isDirty();
 			void markDirty();
 
-			const IDOMnodeCollection& createFromText(const StringW &html);
+			const IDOMnodeCollection& createFromText(const StringW &html) override;
+
+			void forceDirty(bool set) override;
+
+			void setCapture(IDOMnode *pNode) override;
+			void releaseCapture() override;
+
+			CDOMnode* getCapture();
 
 			void cleanup();
 
@@ -170,6 +181,10 @@ namespace gui
 			bool m_isDirty = true;
 
 			IDOMnodeCollection m_cTmpNodes;
+
+			UINT m_uForceDirty = 0;
+
+			CDOMnode *m_pCapturedNode = NULL;
 		};
 	};
 };

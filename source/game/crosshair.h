@@ -26,7 +26,7 @@ public:
 		SCALED
 	};
 
-	CCrosshair();
+	CCrosshair(IXRender *pRender);
 	~CCrosshair();
 
 	void update();
@@ -54,22 +54,22 @@ protected:
 		float2_t tex;
 	} Vertex;
 
-	bool m_bDirty;
-	bool m_bBuildBuff;
-	float m_fSize;
+	bool m_bDirty = true;
+	bool m_bBuildBuff = false;
+	float m_fSize = 0.0f;
 	IXTexture *m_pTexture = NULL;
-	bool m_bHidden;
-	float m_fMaxSize;
-	STYLE m_style;
-	float m_fFixedRadius;
-	float m_fAngle;
-	int m_iNumSegs;
+	bool m_bHidden = true;
+	float m_fMaxSize = 0.7f; // 70% of the screen height
+	STYLE m_style = SPLIT_MOVE;
+	float m_fFixedRadius = 0.0f;
+	float m_fAngle = 0.0f;
+	int m_iNumSegs = 4;
 
-	byte * m_pMemoryBlob;
+	byte *m_pMemoryBlob = NULL;
 
-	byte m_u8ActiveBuffer;
-	Vertex * m_pVertices[2];
-	USHORT * m_pIndices[2];
+	byte m_u8ActiveBuffer = 0;
+	Vertex *m_pVertices[2];
+	USHORT *m_pIndices[2];
 	int m_iVertexCount[2];
 	int m_iIndexCount[2];
 
@@ -78,7 +78,7 @@ protected:
 	IGXVertexDeclaration *m_pVertexDeclaration;
 	IGXRenderBuffer *m_pRenderBuffer;
 
-	IGXDevice *m_pDev;
+	IXRender *m_pRender;
 
 	float2_t m_f2TexOffs;
 	float2_t m_f2TexSize;

@@ -468,6 +468,7 @@ const char * GetEmptyString();
 #define EDITOR_MODEL EDITOR_FILEFIELD FILE_OPTION("Select model", "dse") EDITOR_FILE_END()
 #define EDITOR_SOUND EDITOR_FILEFIELD FILE_OPTION("Select sound", "ogg") EDITOR_FILE_END()
 #define EDITOR_TEXTURE EDITOR_FILEFIELD FILE_OPTION("Select texture", "dds") EDITOR_FILE_END()
+#define EDITOR_EFFECT EDITOR_FILEFIELD FILE_OPTION("Select effect", "eff") EDITOR_FILE_END()
 
 #define DEFINE_FIELD_STRING(field, flags, keyname, edname, editor)              , {propdata_t::ToFieldType<const char* DataClass::*>(&DataClass::field),          PDF_STRING,  flags, keyname, edname, editor
 #define DEFINE_FIELD_VECTOR(field, flags, keyname, edname, editor)              , {propdata_t::ToFieldType<float3_t DataClass::*>(&DataClass::field),             PDF_VECTOR,  flags, keyname, edname, editor

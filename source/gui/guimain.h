@@ -11,6 +11,7 @@
 #include <common/Math.h>
 #include <gdefines.h>
 #include <xcommon/IFileSystem.h>
+#include <xcommon/render/IXRender.h>
 #include <mtrl/IXMaterialSystem.h>
 
 #include "IFont.h"
@@ -87,7 +88,7 @@ namespace gui
 		virtual IDesktopStack* newDesktopStack(const char *szResPath, UINT uWidth, UINT uHeight) = 0;
 	};
 
-	typedef IGUI*(*PFNINITINSTANCE)(IGXDevice*, IXMaterialSystem*, IFileSystem*);
+	typedef IGUI*(*PFNINITINSTANCE)(IXRender*, IXMaterialSystem*, IFileSystem*);
 };
 
 #ifdef SX_STATIC_BUILD
