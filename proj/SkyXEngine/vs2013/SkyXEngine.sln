@@ -312,6 +312,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "xSpecs", "..\..\xSpecs\vs2013\xSpecs.vcxproj", "{AE74C93F-2FD3-462D-8E98-B3F3198B9104}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "xUI", "..\..\xUI\vs2013\xUI.vcxproj", "{A1C76785-6ED9-4246-89C0-3AB0D603894F}"
+	ProjectSection(ProjectDependencies) = postProject
+		{718C186E-9155-41DF-B8AB-74ED03E204CD} = {718C186E-9155-41DF-B8AB-74ED03E204CD}
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "oggloader", "oggloader", "{602837DA-C6C8-4D51-97A1-770224A52693}"
 EndProject
