@@ -390,9 +390,17 @@ static void ReadTwoGradients(IXConfig *pConfig, const char *szSection, const cha
 
 bool CEffectLoader::loadFromFile(const char *szFile, CParticleEffect *pEffect)
 {
+	char szPath[MAX_PATH];
+	if(!m_pCore->getFileSystem()->resolvePath(szFile, szPath, sizeof(szPath)))
+	{
+		LogError("Unable to resolve path [%s]\n", szFile);
+		return(false);
+	}
+
 	IXConfig *pConfig = m_pCore->newConfig();
 	bool isLoaded = false;
-	if(pConfig->open(szFile))
+
+	if(pConfig->open(szPath))
 	{
 		UINT uEmitterCount;
 		if(pConfig->tryGetUint("effect", "emitters", &uEmitterCount) && uEmitterCount < 1000)
@@ -644,11 +652,18 @@ bool CEffectLoader::loadFromFile(const char *szFile, CParticleEffect *pEffect)
 
 bool CEffectLoader::saveToFile(const char *szFile, CParticleEffect *pEffect)
 {
+	char szPath[MAX_PATH];
+	if(!m_pCore->getFileSystem()->resolvePath(szFile, szPath, sizeof(szPath)))
+	{
+		LogError("Unable to resolve path [%s]\n", szFile);
+		return(false);
+	}
+
 	IXConfig *pConfig = m_pCore->newConfig();
 
 	bool isSaved = false;
 
-	pConfig->open(szFile);
+	pConfig->open(szPath);
 	/*
 	[effect]
 	emitters = <int>
