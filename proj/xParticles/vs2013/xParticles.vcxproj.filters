@@ -67,6 +67,39 @@
     <ClCompile Include="..\..\..\source\xParticles\EditorExtension.cpp">
       <Filter>Source Files\editor</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\source\xParticles\EffectEditorWindow.cpp">
+      <Filter>Source Files\editor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\xParticles\ParticleEffectEmitterVelocityLifetimeData.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\xParticles\ParticleEffectEmitterForceLifetimeData.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\xParticles\ParticleEffectEmitterLimitVelocityLifetimeData.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\xParticles\ParticleEffectEmitterColorSpeedData.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\xParticles\ParticleEffectEmitterSizeSpeedData.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\xParticles\ParticleEffectEmitterRotationSpeedData.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\xParticles\ParticleEffectEmitterRotationLifetimeData.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\xParticles\ParticleEffectEmitterLifetimeEmitterSpeedData.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\xParticles\RenderableVisibility.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\xParticles\ParticleEffectEmitterRenderData.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\source\xcommon\particles\IXParticleSystem.h">
@@ -122,6 +155,39 @@
     </ClInclude>
     <ClInclude Include="..\..\..\source\xParticles\EditorExtension.h">
       <Filter>Header Files\editor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\xParticles\EffectEditorWindow.h">
+      <Filter>Header Files\editor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\xParticles\ParticleEffectEmitterForceLifetimeData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\xParticles\ParticleEffectEmitterSizeLifetimeData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\xParticles\ParticleEffectEmitterSizeSpeedData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\xParticles\ParticleEffectEmitterRotationLifetimeData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\xParticles\ParticleEffectEmitterRotationSpeedData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\xParticles\ParticleEffectEmitterLifetimeEmitterSpeedData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\xParticles\ParticleEffectEmitterColorSpeedData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\xParticles\ParticleEffectEmitterColorLifetimeData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\xParticles\RenderableVisibility.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\xParticles\ParticleEffectEmitterRenderData.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

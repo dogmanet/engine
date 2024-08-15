@@ -11,7 +11,7 @@ public:
 
 	gui::dom::IDOMnode* createNode(gui::dom::IDOMdocument *pDomDocument) override;
 
-	void setLabel(const char *szTitle) override;
+	void XMETHODCALLTYPE setLabel(const char *szTitle) override;
 
 	void XMETHODCALLTYPE setValue(const char *szValue) override;
 	const char* XMETHODCALLTYPE getValue() override;

@@ -257,6 +257,8 @@ class IXRender: public IXUnknown
 public:
 	//! 
 	virtual bool XMETHODCALLTYPE newFinalTarget(SXWINDOW hWnd, const char *szName, IXRenderTarget **ppOut) = 0;
+
+	virtual bool XMETHODCALLTYPE newTextureTarget(IXRenderTarget **ppOut, char *szTextureName = NULL, size_t sizeTextureNameBuffer = 0) = 0;
 	
 	virtual bool XMETHODCALLTYPE getFinalTarget(const char *szName, IXRenderTarget **ppOut) = 0;
 

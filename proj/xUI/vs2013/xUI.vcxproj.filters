@@ -13,6 +13,12 @@
       <UniqueIdentifier>{62B14312-6A1F-4547-BA5A-9895B05D6692}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Header Files\pipeline">
+      <UniqueIdentifier>{2b709c95-fb49-46f4-af1e-5e758d5002a1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\pipeline">
+      <UniqueIdentifier>{cc60cc59-7639-4747-b651-08b2c58e1b55}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\source\xUI\IXUI.h">
@@ -93,6 +99,51 @@
     <ClInclude Include="..\..\..\source\xUI\IUIComboBox.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\source\xUI\IUIViewport.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\xUI\UIViewport.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\xUI\IUIMinMaxCurve.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\xUI\UIMinMaxCurve.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\xUI\CurvePreviewGraphNodeData.h">
+      <Filter>Header Files\pipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\xUI\CurvePreviewGraphNode.h">
+      <Filter>Header Files\pipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\xUI\UIColor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\xUI\IUIColor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\xUI\IUIMultiTrackbar.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\xUI\UIMultiTrackbar.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\xUI\UI2ColorGradient.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\xUI\IUI2ColorGradient.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\xUI\GradientPreviewGraphNodeData.h">
+      <Filter>Header Files\pipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\xUI\IUIMaterialBox.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\xUI\UIMaterialBox.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\source\xUI\XUI.cpp">
@@ -129,6 +180,34 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\source\xUI\UIComboBox.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\xUI\UIViewport.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\xUI\UIMinMaxCurve.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\xUI\CurvePreviewGraphNodeData.cpp">
+      <Filter>Source Files\pipeline</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\xUI\CurvePreviewGraphNode.cpp">
+      <Filter>Source Files\pipeline</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\xUI\plugin_main.cpp" />
+    <ClCompile Include="..\..\..\source\xUI\UIColor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\xUI\UIMultiTrackbar.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\xUI\UI2ColorGradient.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\xUI\GradientPreviewGraphNodeData.cpp">
+      <Filter>Source Files\pipeline</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\xUI\UIMaterialBox.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

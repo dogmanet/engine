@@ -26,6 +26,7 @@ public:
 	virtual const char* XMETHODCALLTYPE getRecentMaterial(UINT idx) = 0;
 
 	virtual void XMETHODCALLTYPE browse(IXEditorMaterialBrowserCallback *pCallback) = 0;
+	virtual void XMETHODCALLTYPE abort() = 0;
 };
 
 

@@ -11,9 +11,11 @@ public:
 
 	gui::dom::IDOMnode* createNode(gui::dom::IDOMdocument *pDomDocument) override;
 
-	void setLabel(const char *szTitle) override;
+	void XMETHODCALLTYPE setLabel(const char *szTitle) override;
 
-	void dispatchEvent(gui::IEvent *ev) override;
+	void XMETHODCALLTYPE dispatchEvent(gui::IEvent *ev) override;
+
+	void XMETHODCALLTYPE setCollapsed(bool yesNo) override;
 
 protected:
 	void cleanupNodes() override;

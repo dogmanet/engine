@@ -44,10 +44,10 @@ void CUITextBox::cleanupNodes()
 
 void XMETHODCALLTYPE CUITextBox::setValue(const char *szValue) 
 {
-	m_pInputNode->setText(StringW(CMB2WC(szValue)));
+	m_pInputNode->setText(StringW(CMB2WC(szValue)), TRUE);
 }
 const char* XMETHODCALLTYPE CUITextBox::getValue()
 {
-	m_sValue = m_pInputNode->getText();
+	m_sValue = CWC2MB(m_pInputNode->getText().c_str());
 	return(m_sValue.c_str());
 }

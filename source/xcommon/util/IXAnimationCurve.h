@@ -38,36 +38,30 @@ struct XKeyframe
 class IXAnimationCurve
 {
 public:
-	//! Evaluate the curve at time.
 	virtual float XMETHODCALLTYPE evaluate(float fTime) const = 0;
 
-	//! Add a new key to the curve.
 	virtual UINT XMETHODCALLTYPE addKey(float fTime, float fValue) = 0;
 
-	//!	Removes the keyframe at index and inserts key.
 	virtual int XMETHODCALLTYPE moveKey(UINT uIdx, const XKeyframe &key) = 0;
 
-	//! Set frame in array by index
 	virtual void XMETHODCALLTYPE setKey(UINT uIndex, const XKeyframe &key) = 0;
 
 	virtual void XMETHODCALLTYPE setKeyCount(UINT uKeys) = 0;
 
-	//! Return frame
 	virtual const XKeyframe* XMETHODCALLTYPE getKeyAt(UINT uIdx) const = 0;
 
-	//! Return the frame count
 	virtual UINT XMETHODCALLTYPE getKeyframeCount() const = 0;
 
-	//! Smooth the in and out tangents of the keyframe at index.
 	virtual void XMETHODCALLTYPE smoothTangents(UINT uIdx, float fWeight) = 0;
 
-	//! Removes a key.
 	virtual void XMETHODCALLTYPE removeKey(UINT uIdx) = 0;
 
 	virtual XCURVE_WRAP_MODE XMETHODCALLTYPE getPreWrapMode() const = 0;
 	virtual void XMETHODCALLTYPE setPreWrapMode(XCURVE_WRAP_MODE mode) = 0;
 	virtual XCURVE_WRAP_MODE XMETHODCALLTYPE getPostWrapMode() const = 0;
 	virtual void XMETHODCALLTYPE setPostWrapMode(XCURVE_WRAP_MODE mode) = 0;
+
+	virtual void XMETHODCALLTYPE setFrom(const IXAnimationCurve *pOther) = 0;
 };
 
 #endif

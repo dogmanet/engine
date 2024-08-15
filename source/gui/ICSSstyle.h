@@ -60,7 +60,8 @@ namespace gui
 				DIM_EM,
 				DIM_MM,
 				DIM_PC,
-				DIM_PT
+				DIM_PT,
+				DIM_AUTO
 			};
 
 			enum TYPE_DISPLAY_e

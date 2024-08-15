@@ -8,9 +8,19 @@
 #include "UIPicture.h"
 #include "UIPanel.h"
 #include "UISpoiler.h"
+#include "UIViewport.h"
+#include "UIGrid.h"
+#include "UIMinMaxCurve.h"
+#include "UIColor.h"
+#include "UIMultiTrackbar.h"
+#include "UI2ColorGradient.h"
+#include "UIMaterialBox.h"
 
-CXUI::CXUI(IGXDevice *pDev, IXWindowSystem *pWindowSystem, gui::IGUI *pGUI):
-	m_pDev(pDev),
+//#include <core/sxcore.h>
+
+CXUI::CXUI(IXCore *pCore, IXRender *pRender, IXWindowSystem *pWindowSystem, gui::IGUI *pGUI):
+	m_pCore(pCore),
+	m_pRender(pRender),
 	m_pWindowSystem(pWindowSystem),
 	m_pGUI(pGUI)
 {
@@ -58,6 +68,41 @@ IUISpoiler* XMETHODCALLTYPE CXUI::createSpoiler()
 	return(new CUISpoiler(++m_elemendID));
 }
 
+IUIViewport* XMETHODCALLTYPE CXUI::createViewport()
+{
+	return(new CUIViewport(m_pRender, ++m_elemendID));
+}
+
+IUIGrid* XMETHODCALLTYPE CXUI::createGrid()
+{
+	return(new CUIGrid(++m_elemendID));
+}
+
+IUIMinMaxCurve* XMETHODCALLTYPE CXUI::createMinMaxCurve()
+{
+	return(new CUIMinMaxCurve(m_pCore, m_pRender, ++m_elemendID));
+}
+
+IUIColor* XMETHODCALLTYPE CXUI::createColor()
+{
+	return(new CUIColor(++m_elemendID));
+}
+
+IUIMultiTrackbar* XMETHODCALLTYPE CXUI::createMultiTrackbar()
+{
+	return(new CUIMultiTrackbar(++m_elemendID));
+}
+
+IUI2ColorGradient* XMETHODCALLTYPE CXUI::create2ColorGradient()
+{
+	return(new CUI2ColorGradient(m_pCore, m_pRender, ++m_elemendID));
+}
+
+IUIMaterialBox* XMETHODCALLTYPE CXUI::createMaterialBox()
+{
+	return(new CUIMaterialBox(m_pCore, m_pRender, ++m_elemendID));
+}
+
 void CXUI::onDestroyWindow(CUIWindow *pWindow)
 {
 	for(UINT i = 0, l = m_pWindows.size(); i < l; ++i)
@@ -80,12 +125,12 @@ gui::IGUI* CXUI::getGUI()
 }
 IGXDevice* CXUI::getGXDevice()
 {
-	return(m_pDev);
+	return(m_pRender->getDevice());
 }
 
 void XMETHODCALLTYPE CXUI::render()
 {
-	IGXContext *pCtx = m_pDev->getThreadContext();
+	IGXContext *pCtx = m_pRender->getDevice()->getThreadContext();
 
 	IGXSurface *pOldSurface = pCtx->getColorTarget();
 	IGXDepthStencilSurface *pOldDS = pCtx->getDepthStencilSurface();
@@ -117,8 +162,13 @@ void XMETHODCALLTYPE CXUI::present()
 }
 
 //##########################################################################
-
-EXTERN_C __declspec(dllexport) IXUI* InitInstance(IGXDevice *pDev, IXWindowSystem *pWindowSystem, gui::IGUI *pGUI)
+#if 0
+EXTERN_C __declspec(dllexport) IXUI* InitInstance(IXRender *pRender, IXWindowSystem *pWindowSystem, gui::IGUI *pGUI)
 {
-	return(new CXUI(pDev, pWindowSystem, pGUI));
+	Core_SetOutPtr();
+
+	return(new CXUI(pRender, pWindowSystem, pGUI));
 }
+
+DECLARE_PROFILER_INTERNAL();
+#endif

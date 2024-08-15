@@ -4,12 +4,13 @@
 #include "IXUI.h"
 #include <graphix/graphix.h>
 #include <gui/guimain.h>
+#include <xcommon/IXCore.h>
 
 class CUIWindow;
 class CXUI: public IXUnknownImplementation<IXUI>
 {
 public:
-	CXUI(IGXDevice *pDev, IXWindowSystem *pWindowSystem, gui::IGUI *pGUI);
+	CXUI(IXCore *pCore, IXRender *pRender, IXWindowSystem *pWindowSystem, gui::IGUI *pGUI);
 
 	IUIWindow* XMETHODCALLTYPE createWindow(const XWINDOW_DESC *pWindowDesc, IUIWindow *pParent = NULL) override;
 
@@ -27,6 +28,20 @@ public:
 
 	IUISpoiler* XMETHODCALLTYPE createSpoiler() override;
 
+	IUIViewport* XMETHODCALLTYPE createViewport() override;
+
+	IUIGrid* XMETHODCALLTYPE createGrid() override;
+
+	IUIMinMaxCurve* XMETHODCALLTYPE createMinMaxCurve() override;
+
+	IUIColor* XMETHODCALLTYPE createColor() override;
+
+	IUIMultiTrackbar* XMETHODCALLTYPE createMultiTrackbar() override;
+
+	IUI2ColorGradient* XMETHODCALLTYPE create2ColorGradient() override;
+
+	IUIMaterialBox* XMETHODCALLTYPE createMaterialBox() override;
+
 	void onDestroyWindow(CUIWindow *pWindow);
 
 	IXWindowSystem* getWindowSystem();
@@ -37,9 +52,11 @@ public:
 	void XMETHODCALLTYPE present() override;
 
 private:
+	IXCore *m_pCore = NULL;
+
 	Array<CUIWindow*> m_pWindows;
 
-	IGXDevice *m_pDev = NULL;
+	IXRender *m_pRender = NULL;
 	IXWindowSystem *m_pWindowSystem = NULL;
 	gui::IGUI *m_pGUI = NULL;
 

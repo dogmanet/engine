@@ -9,6 +9,13 @@
 #include "IUIPicture.h"
 #include "IUIPanel.h"
 #include "IUISpoiler.h"
+#include "IUIViewport.h"
+#include "IUIGrid.h"
+#include "IUIMinMaxCurve.h"
+#include "IUIColor.h"
+#include "IUIMultiTrackbar.h"
+#include "IUI2ColorGradient.h"
+#include "IUIMaterialBox.h"
 #include <gui/guimain.h>
 
 // {D3FE7B60-BDE7-4A3F-95D8-2D6A102A42E2}
@@ -33,10 +40,24 @@ public:
 
 	virtual IUISpoiler* XMETHODCALLTYPE createSpoiler() = 0;
 
+	virtual IUIViewport* XMETHODCALLTYPE createViewport() = 0;
+
+	virtual IUIGrid* XMETHODCALLTYPE createGrid() = 0;
+
+	virtual IUIColor* XMETHODCALLTYPE createColor() = 0;
+
+	virtual IUIMultiTrackbar* XMETHODCALLTYPE createMultiTrackbar() = 0;
+
+	virtual IUIMinMaxCurve* XMETHODCALLTYPE createMinMaxCurve() = 0;
+
+	virtual IUI2ColorGradient* XMETHODCALLTYPE create2ColorGradient() = 0;
+
+	virtual IUIMaterialBox* XMETHODCALLTYPE createMaterialBox() = 0;
+
 	virtual void XMETHODCALLTYPE render() = 0;
 	virtual void XMETHODCALLTYPE present() = 0;
 };
 
-typedef IXUI*(*PFNXUIINIT)(IGXDevice*, IXWindowSystem*, gui::IGUI*);
+// typedef IXUI*(*PFNXUIINIT)(IXRender*, IXWindowSystem*, gui::IGUI*);
 
 #endif

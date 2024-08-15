@@ -207,6 +207,8 @@
     <ClCompile Include="..\..\..\source\terrax\2DGraphNodeData.cpp" />
     <ClCompile Include="..\..\..\source\terrax\3DOverlayGraphNode.cpp" />
     <ClCompile Include="..\..\..\source\terrax\3DOverlayGraphNodeData.cpp" />
+    <ClCompile Include="..\..\..\source\terrax\ColorGradientEditorDialog.cpp" />
+    <ClCompile Include="..\..\..\source\terrax\ColorPicker.cpp" />
     <ClCompile Include="..\..\..\source\terrax\CommandBuildModel.cpp" />
     <ClCompile Include="..\..\..\source\terrax\CommandCreate.cpp" />
     <ClCompile Include="..\..\..\source\terrax\CommandDelete.cpp" />
@@ -229,6 +231,8 @@
     <ClCompile Include="..\..\..\source\terrax\GizmoRadius.cpp" />
     <ClCompile Include="..\..\..\source\terrax\GizmoRotate.cpp" />
     <ClCompile Include="..\..\..\source\terrax\GizmoScale.cpp" />
+    <ClCompile Include="..\..\..\source\terrax\GradientPreviewGraphNode.cpp" />
+    <ClCompile Include="..\..\..\source\terrax\GradientPreviewGraphNodeData.cpp" />
     <ClCompile Include="..\..\..\source\terrax\Grid.cpp" />
     <ClCompile Include="..\..\..\source\terrax\LevelOpenDialog.cpp" />
     <ClCompile Include="..\..\..\source\terrax\mainWindow.cpp" />
@@ -259,6 +263,8 @@
     <ClInclude Include="..\..\..\source\terrax\2DGraphNodeData.h" />
     <ClInclude Include="..\..\..\source\terrax\3DOverlayGraphNode.h" />
     <ClInclude Include="..\..\..\source\terrax\3DOverlayGraphNodeData.h" />
+    <ClInclude Include="..\..\..\source\terrax\ColorGradientEditorDialog.h" />
+    <ClInclude Include="..\..\..\source\terrax\ColorPicker.h" />
     <ClInclude Include="..\..\..\source\terrax\CommandBuildModel.h" />
     <ClInclude Include="..\..\..\source\terrax\CommandCreate.h" />
     <ClInclude Include="..\..\..\source\terrax\CommandDelete.h" />
@@ -281,6 +287,8 @@
     <ClInclude Include="..\..\..\source\terrax\GizmoRadius.h" />
     <ClInclude Include="..\..\..\source\terrax\GizmoRotate.h" />
     <ClInclude Include="..\..\..\source\terrax\GizmoScale.h" />
+    <ClInclude Include="..\..\..\source\terrax\GradientPreviewGraphNode.h" />
+    <ClInclude Include="..\..\..\source\terrax\GradientPreviewGraphNodeData.h" />
     <ClInclude Include="..\..\..\source\terrax\LevelOpenDialog.h" />
     <ClInclude Include="..\..\..\source\terrax\MaterialBrowser.h" />
     <ClInclude Include="..\..\..\source\terrax\MaterialBrowserGraphNode.h" />
@@ -297,6 +305,8 @@
     <ClInclude Include="..\..\..\source\terrax\Grid.h" />
     <ClInclude Include="..\..\..\source\terrax\resource.h" />
     <ClInclude Include="..\..\..\source\terrax\terrax.h" />
+    <ClInclude Include="..\..\..\source\xcommon\editor\IXColorPicker.h" />
+    <ClInclude Include="..\..\..\source\xcommon\editor\IXCurveEditor.h" />
     <ClInclude Include="..\..\..\source\xcommon\editor\IXEditable.h" />
     <ClInclude Include="..\..\..\source\xcommon\editor\IXEditor.h" />
     <ClInclude Include="..\..\..\source\xcommon\editor\IXEditorExtension.h" />

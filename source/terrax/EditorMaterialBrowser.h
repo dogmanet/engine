@@ -42,6 +42,7 @@ public:
 	const char* XMETHODCALLTYPE getRecentMaterial(UINT idx) override;
 
 	void XMETHODCALLTYPE browse(IXEditorMaterialBrowserCallback *pCallback) override;
+	void XMETHODCALLTYPE abort() override;
 
 private:
 	CMaterialBrowserCallback m_callback;

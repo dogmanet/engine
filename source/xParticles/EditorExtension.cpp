@@ -7,7 +7,7 @@ CEditorExtension::CEditorExtension(CEditable *pEditable, IXEditor *pEditor, IXCo
 	m_pEditable(pEditable)
 {
 	//pEditable->getRender
-	m_pEffectBrowserWindow = new CEffectBrowserWindow(g_hInstance, (HWND)pEditor->getMainWindow(), pCore->getFileSystem(), pParticleSystem);
+	m_pEffectBrowserWindow = new CEffectBrowserWindow(g_hInstance, (HWND)pEditor->getMainWindow(), pCore, pParticleSystem);
 }
 CEditorExtension::~CEditorExtension()
 {

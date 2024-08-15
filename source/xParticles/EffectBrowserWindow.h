@@ -12,6 +12,7 @@
 #include <xcommon/editor/IXEditorExtension.h>
 #include <xcommon/render/IXRender.h>
 #include <xcommon/particles/IXParticleSystem.h>
+#include <xcommon/IXCore.h>
 
 class CEffectBrowserWindow final: public IXUnknownImplementation<IXEditorResourceBrowser>
 {
@@ -26,7 +27,7 @@ private:
 	WNDPROC m_pTreeViewPrevWndProc = NULL;
 
 public:
-	CEffectBrowserWindow(HINSTANCE hInstance, HWND hMainWnd, IFileSystem *pFS, IXParticleSystem *pParticleSystem);
+	CEffectBrowserWindow(HINSTANCE hInstance, HWND hMainWnd, IXCore *pCore, IXParticleSystem *pParticleSystem);
 	~CEffectBrowserWindow();
 
 	//const char *getLevelName();
@@ -89,6 +90,7 @@ private:
 	HWND m_hMainWnd;
 	HWND m_hDlgWnd = NULL;
 	HMENU m_hContextMenu = NULL;
+	IXCore *m_pCore = NULL;
 
 	IXRenderTarget *m_pFinalTarget = NULL;
 	IXCamera *m_pCamera = NULL;
@@ -107,6 +109,8 @@ private:
 
 	IXParticleSystem *m_pParticleSystem = NULL;
 	IXParticlePlayer *m_pPlayer = NULL;
+
+	IXRender *m_pRender = NULL;
 };
 
 #endif

@@ -22,7 +22,7 @@ See the license in LICENSE
 
 GX_ENABLE_HIGH_PERFORMANCE_DUAL_GPU();
 
-class CWindowCallback: public IXWindowCallback
+class CWindowCallback: public IXUnknownImplementation<IXWindowCallback>
 {
 public:
 	CWindowCallback(IXEngine *pEngine):

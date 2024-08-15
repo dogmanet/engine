@@ -23,10 +23,15 @@ void CInfoParticlePlayer::setEffect(const char *szEffectFile)
 	IXParticleSystem *pPS = GetParticleSystem();
 
 	mem_release(m_pPlayer);
+
+	if(!szEffectFile[0])
+	{
+		return;
+	}
+
 	IXParticleEffect *pEffect;
 	if(pPS->getEffect(szEffectFile, &pEffect))
 	{
-		IXParticlePlayer *pPlayer;
 		pPS->newEffectPlayer(pEffect, &m_pPlayer);
 
 		m_pPlayer->setPos(getPos());

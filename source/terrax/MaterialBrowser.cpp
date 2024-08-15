@@ -362,6 +362,16 @@ void CMaterialBrowser::browse(IMaterialBrowserCallback *pCallback, bool bTexture
 	SetFocus(m_hDlgWnd);
 }
 
+void CMaterialBrowser::abort()
+{
+	if(m_pCallback)
+	{
+		m_pCallback->onCancel();
+		m_pCallback = NULL;
+	}
+	ShowWindow(m_hDlgWnd, SW_HIDE);
+}
+
 void CMaterialBrowser::registerClass()
 {
 	WNDCLASSEX wcex;

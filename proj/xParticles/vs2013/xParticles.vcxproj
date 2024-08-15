@@ -24,14 +24,25 @@
     <ClCompile Include="..\..\..\source\xParticles\Editable.cpp" />
     <ClCompile Include="..\..\..\source\xParticles\EditorExtension.cpp" />
     <ClCompile Include="..\..\..\source\xParticles\EffectBrowserWindow.cpp" />
+    <ClCompile Include="..\..\..\source\xParticles\EffectEditorWindow.cpp" />
     <ClCompile Include="..\..\..\source\xParticles\EffectLoader.cpp" />
     <ClCompile Include="..\..\..\source\xParticles\ParticleEffect.cpp" />
     <ClCompile Include="..\..\..\source\xParticles\ParticleEffectEmitter.cpp" />
+    <ClCompile Include="..\..\..\source\xParticles\ParticleEffectEmitterColorSpeedData.cpp" />
+    <ClCompile Include="..\..\..\source\xParticles\ParticleEffectEmitterForceLifetimeData.cpp" />
+    <ClCompile Include="..\..\..\source\xParticles\ParticleEffectEmitterLifetimeEmitterSpeedData.cpp" />
+    <ClCompile Include="..\..\..\source\xParticles\ParticleEffectEmitterLimitVelocityLifetimeData.cpp" />
+    <ClCompile Include="..\..\..\source\xParticles\ParticleEffectEmitterRenderData.cpp" />
+    <ClCompile Include="..\..\..\source\xParticles\ParticleEffectEmitterRotationLifetimeData.cpp" />
+    <ClCompile Include="..\..\..\source\xParticles\ParticleEffectEmitterRotationSpeedData.cpp" />
     <ClCompile Include="..\..\..\source\xParticles\ParticleEffectEmitterShapeData.cpp" />
+    <ClCompile Include="..\..\..\source\xParticles\ParticleEffectEmitterSizeSpeedData.cpp" />
+    <ClCompile Include="..\..\..\source\xParticles\ParticleEffectEmitterVelocityLifetimeData.cpp" />
     <ClCompile Include="..\..\..\source\xParticles\ParticlePlayer.cpp" />
     <ClCompile Include="..\..\..\source\xParticles\ParticleSystem.cpp" />
     <ClCompile Include="..\..\..\source\xParticles\plugin_main.cpp" />
     <ClCompile Include="..\..\..\source\xParticles\Renderable.cpp" />
+    <ClCompile Include="..\..\..\source\xParticles\RenderableVisibility.cpp" />
     <ClCompile Include="..\..\..\source\xParticles\Updatable.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -39,18 +50,29 @@
     <ClInclude Include="..\..\..\source\xParticles\Editable.h" />
     <ClInclude Include="..\..\..\source\xParticles\EditorExtension.h" />
     <ClInclude Include="..\..\..\source\xParticles\EffectBrowserWindow.h" />
+    <ClInclude Include="..\..\..\source\xParticles\EffectEditorWindow.h" />
     <ClInclude Include="..\..\..\source\xParticles\EffectLoader.h" />
     <ClInclude Include="..\..\..\source\xParticles\ParticleBurst.h" />
     <ClInclude Include="..\..\..\source\xParticles\ParticleEffect.h" />
     <ClInclude Include="..\..\..\source\xParticles\ParticleEffectEmitter.h" />
+    <ClInclude Include="..\..\..\source\xParticles\ParticleEffectEmitterColorLifetimeData.h" />
+    <ClInclude Include="..\..\..\source\xParticles\ParticleEffectEmitterColorSpeedData.h" />
     <ClInclude Include="..\..\..\source\xParticles\ParticleEffectEmitterEmissionData.h" />
+    <ClInclude Include="..\..\..\source\xParticles\ParticleEffectEmitterForceLifetimeData.h" />
     <ClInclude Include="..\..\..\source\xParticles\ParticleEffectEmitterGenericData.h" />
+    <ClInclude Include="..\..\..\source\xParticles\ParticleEffectEmitterLifetimeEmitterSpeedData.h" />
     <ClInclude Include="..\..\..\source\xParticles\ParticleEffectEmitterLimitVelocityLifetimeData.h" />
+    <ClInclude Include="..\..\..\source\xParticles\ParticleEffectEmitterRenderData.h" />
+    <ClInclude Include="..\..\..\source\xParticles\ParticleEffectEmitterRotationLifetimeData.h" />
+    <ClInclude Include="..\..\..\source\xParticles\ParticleEffectEmitterRotationSpeedData.h" />
     <ClInclude Include="..\..\..\source\xParticles\ParticleEffectEmitterShapeData.h" />
+    <ClInclude Include="..\..\..\source\xParticles\ParticleEffectEmitterSizeLifetimeData.h" />
+    <ClInclude Include="..\..\..\source\xParticles\ParticleEffectEmitterSizeSpeedData.h" />
     <ClInclude Include="..\..\..\source\xParticles\ParticleEffectEmitterVelocityLifetimeData.h" />
     <ClInclude Include="..\..\..\source\xParticles\ParticlePlayer.h" />
     <ClInclude Include="..\..\..\source\xParticles\ParticleSystem.h" />
     <ClInclude Include="..\..\..\source\xParticles\Renderable.h" />
+    <ClInclude Include="..\..\..\source\xParticles\RenderableVisibility.h" />
     <ClInclude Include="..\..\..\source\xParticles\Updatable.h" />
     <ClInclude Include="..\..\..\source\xParticles\resource.h" />
   </ItemGroup>

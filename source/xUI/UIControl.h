@@ -35,6 +35,7 @@ public:
 
 	void XMETHODCALLTYPE setPosition(float fSizeX, float fSizeY) override
 	{
+		//m_pNode->getStyleSelf()->display->setExt(gui::css::ICSSproperty::DISPLAY_BLOCK);
 		m_pNode->getStyleSelf()->position->setExt(gui::css::ICSSproperty::POSITION_ABSOLUTE);
 		m_pNode->getStyleSelf()->left->setDim(gui::css::ICSSproperty::DIM_PX);
 		m_pNode->getStyleSelf()->top->setDim(gui::css::ICSSproperty::DIM_PX);
@@ -226,7 +227,7 @@ public:
 		}
 	}
 
-	void dispatchEvent(gui::IEvent *ev) override
+	void XMETHODCALLTYPE dispatchEvent(gui::IEvent *ev) override
 	{}
 
 	virtual gui::dom::IDOMnode* createNode(gui::dom::IDOMdocument *pDomDocument)
@@ -255,11 +256,11 @@ public:
 	{
 		if(isVisible)
 		{
-			m_pNode->getStyleSelf()->display->set(gui::css::ICSSproperty::DISPLAY_NONE);
+			m_pNode->getStyleSelf()->display->unset();
 		}
 		else
 		{
-			m_pNode->getStyleSelf()->display->unset();
+			m_pNode->getStyleSelf()->display->set(gui::css::ICSSproperty::DISPLAY_NONE);
 		}
 		m_pNode->updateStyles();
 	}
@@ -267,6 +268,8 @@ public:
 protected:
 	//IUICommand *m_pClick = NULL;
 	//IUICommand *m_pKeyUp = NULL;
+
+	String m_sValue;
 
 	gui::dom::IDOMnode *m_pNode = NULL;
 	gui::dom::IDOMnode *m_pInputNode = NULL;

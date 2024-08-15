@@ -1,5 +1,6 @@
 #include "EffectBrowserWindow.h"
 #include "resource.h"
+#include "EffectEditorWindow.h"
 
 #include <windowsx.h>
 #include <shellapi.h>
@@ -70,10 +71,11 @@ BOOL EnumLevels(CLevelInfo *pInfo)
 }
 #endif
 
-CEffectBrowserWindow::CEffectBrowserWindow(HINSTANCE hInstance, HWND hMainWnd, IFileSystem *pFS, IXParticleSystem *pParticleSystem):
+CEffectBrowserWindow::CEffectBrowserWindow(HINSTANCE hInstance, HWND hMainWnd, IXCore *pCore, IXParticleSystem *pParticleSystem):
 	m_hInstance(hInstance),
 	m_hMainWnd(hMainWnd),
-	m_pFS(pFS),
+	m_pCore(pCore),
+	m_pFS(pCore->getFileSystem()),
 	m_pParticleSystem(pParticleSystem)
 {
 	registerClass();
@@ -96,6 +98,8 @@ CEffectBrowserWindow::~CEffectBrowserWindow()
 
 void CEffectBrowserWindow::setRender(IXRender *pRender)
 {
+	m_pRender = pRender;
+
 	if(!pRender->newFinalTarget(m_hPreviewWnd, "xParticlesPreview", &m_pFinalTarget))
 	{
 		LogError("Could not create render target 'xParticlesPreview'\n");
@@ -255,6 +259,8 @@ INT_PTR CALLBACK CEffectBrowserWindow::dlgProc(HWND hWnd, UINT msg, WPARAM wPara
 						{
 							IXParticlePlayer *pPlayer;
 							m_pParticleSystem->newEffectPlayer(pEffect, &m_pPlayer);
+
+							m_pPlayer->setLayer(1);
 
 							m_pPlayer->play();
 
@@ -503,7 +509,22 @@ INT_PTR CALLBACK CEffectBrowserWindow::dlgProc(HWND hWnd, UINT msg, WPARAM wPara
 			break;
 
 		case ID_EFFECT_EDIT:
-			TODO("open edit dialog");
+			//TODO("open edit dialog");
+			{
+				HTREEITEM hItem = TreeView_GetSelection(m_hTreeWnd);
+				UINT uIndex;
+				Record *pRec = getRecordByHandle(hItem, &uIndex);
+				if(hItem && pRec && !pRec->isDir && uIndex)
+				{
+					char szFile[MAX_PATH];
+					szFile[0] = 0;
+					makePath(szFile, pRec);
+					strcat(szFile, ".eff");
+
+					CEffectEditorWindow *pWindow = new CEffectEditorWindow(szFile, m_pRender, m_hMainWnd, m_pCore, m_pParticleSystem);
+					mem_release(pWindow);
+				}
+			}
 			break;
 
 		case IDOK:

@@ -1,6 +1,6 @@
 #include "UIComboBox.h"
 
-CUIComboBox::CUIComboBox(ULONG uID) :
+CUIComboBox::CUIComboBox(ULONG uID):
 	BaseClass(uID, "select")
 {
 
@@ -29,7 +29,7 @@ gui::dom::IDOMnode* CUIComboBox::createNode(gui::dom::IDOMdocument *pDomDocument
 	return(m_pNode);
 }
 
-void CUIComboBox::setLabel(const char *szTitle)
+void XMETHODCALLTYPE CUIComboBox::setLabel(const char *szTitle)
 {
 	m_pLabel->setText(StringW(CMB2WC(szTitle)), true);
 }

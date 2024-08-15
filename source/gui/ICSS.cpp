@@ -2044,10 +2044,12 @@ namespace gui
 				UINT partcount = 1;
 				bool issp = true;
 				UINT parts[4] = {0};
+				StringW _val = val;
 				for(UINT i = 0; i < l; i++)
 				{
 					if(val[i] == L' ')
 					{
+						_val[i] = 0;
 						if(!issp)
 						{
 							issp = true;
@@ -2066,26 +2068,26 @@ namespace gui
 				switch(partcount)
 				{
 				case 1:
-					parseValue(&p_margin_bottom, val);
+					parseValue(&p_margin_bottom, _val);
 					p_margin_top = p_margin_left = p_margin_right = p_margin_bottom;
 					break;
 				case 2:
-					parseValue(&p_margin_top, val);
-					parseValue(&p_margin_right, StringW(&(val.c_str()[parts[1]])));
+					parseValue(&p_margin_top, _val);
+					parseValue(&p_margin_right, StringW(&(_val.c_str()[parts[1]])));
 					p_margin_bottom = p_margin_top;
 					p_margin_left = p_margin_right;
 					break;
 				case 3:
-					parseValue(&p_margin_top, val);
-					parseValue(&p_margin_right, StringW(&(val.c_str()[parts[1]])));
-					parseValue(&p_margin_bottom, StringW(&(val.c_str()[parts[2]])));
+					parseValue(&p_margin_top, _val);
+					parseValue(&p_margin_right, StringW(&(_val.c_str()[parts[1]])));
+					parseValue(&p_margin_bottom, StringW(&(_val.c_str()[parts[2]])));
 					p_margin_left = p_margin_right;
 					break;
 				default: // 4 or more
-					parseValue(&p_margin_top, val);
-					parseValue(&p_margin_right, StringW(&(val.c_str()[parts[1]])));
-					parseValue(&p_margin_bottom, StringW(&(val.c_str()[parts[2]])));
-					parseValue(&p_margin_left, StringW(&(val.c_str()[parts[3]])));
+					parseValue(&p_margin_top, _val);
+					parseValue(&p_margin_right, StringW(&(_val.c_str()[parts[1]])));
+					parseValue(&p_margin_bottom, StringW(&(_val.c_str()[parts[2]])));
+					parseValue(&p_margin_left, StringW(&(_val.c_str()[parts[3]])));
 				}
 			}
 			else if(key == L"padding-left")
@@ -2114,10 +2116,12 @@ namespace gui
 				UINT partcount = 1;
 				bool issp = true;
 				UINT parts[4] = {0};
+				StringW _val = val;
 				for(UINT i = 0; i < l; i++)
 				{
 					if(val[i] == L' ')
 					{
+						_val[i] = 0;
 						if(!issp)
 						{
 							issp = true;
@@ -2136,26 +2140,26 @@ namespace gui
 				switch(partcount)
 				{
 				case 1:
-					parseValue(&p_padding_bottom, val);
+					parseValue(&p_padding_bottom, _val);
 					p_padding_top = p_padding_left = p_padding_right = p_padding_bottom;
 					break;
 				case 2:
-					parseValue(&p_padding_top, val);
-					parseValue(&p_padding_right, StringW(&(val.c_str()[parts[1]])));
+					parseValue(&p_padding_top, _val);
+					parseValue(&p_padding_right, StringW(&(_val.c_str()[parts[1]])));
 					p_padding_bottom = p_padding_top;
 					p_padding_left = p_padding_right;
 					break;
 				case 3:
-					parseValue(&p_padding_top, val);
-					parseValue(&p_padding_right, StringW(&(val.c_str()[parts[1]])));
-					parseValue(&p_padding_bottom, StringW(&(val.c_str()[parts[2]])));
+					parseValue(&p_padding_top, _val);
+					parseValue(&p_padding_right, StringW(&(_val.c_str()[parts[1]])));
+					parseValue(&p_padding_bottom, StringW(&(_val.c_str()[parts[2]])));
 					p_padding_left = p_padding_right;
 					break;
 				default: // 4 or more
-					parseValue(&p_padding_top, val);
-					parseValue(&p_padding_right, StringW(&(val.c_str()[parts[1]])));
-					parseValue(&p_padding_bottom, StringW(&(val.c_str()[parts[2]])));
-					parseValue(&p_padding_left, StringW(&(val.c_str()[parts[3]])));
+					parseValue(&p_padding_top, _val);
+					parseValue(&p_padding_right, StringW(&(_val.c_str()[parts[1]])));
+					parseValue(&p_padding_bottom, StringW(&(_val.c_str()[parts[2]])));
+					parseValue(&p_padding_left, StringW(&(_val.c_str()[parts[3]])));
 				}
 			}
 			else if(key == L"top")
@@ -3386,6 +3390,75 @@ namespace gui
 						continue;
 					}
 				}
+				else if(TMP_IS_KW(L"skew"))
+				{
+					float2_t vSkew;
+					if(
+						parseBeginArgs(&szProp)
+						&& parseAngleArgs(&szProp, &vSkew.x)
+						)
+					{
+						if(parseNextArgs(&szProp))
+						{
+							parseAngleArgs(&szProp, &vSkew.y);
+						}
+						
+						
+						mRes *= SMMATRIX(
+							1.0f, tanf(vSkew.y), 0.0f, 0.0f,
+							tanf(vSkew.x), 1.0f, 0.0f, 0.0f,
+							0.0f, 0.0f, 1.0f, 0.0f,
+							0.0f, 0.0f, 0.0f, 1.0f
+						);
+
+						if(parseEndArgs(&szProp))
+						{
+							continue;
+						}
+					}
+				}
+				else if(TMP_IS_KW(L"skewX"))
+				{
+					float fSkew;
+					if(
+						parseBeginArgs(&szProp)
+						&& parseAngleArgs(&szProp, &fSkew)
+						)
+					{
+						mRes *= SMMATRIX(
+							1.0f, 0.0f, 0.0f, 0.0f,
+							tanf(fSkew), 1.0f, 0.0f, 0.0f,
+							0.0f, 0.0f, 1.0f, 0.0f,
+							0.0f, 0.0f, 0.0f, 1.0f
+						);
+
+						if(parseEndArgs(&szProp))
+						{
+							continue;
+						}
+					}
+				}
+				else if(TMP_IS_KW(L"skewY"))
+				{
+					float fSkew;
+					if(
+						parseBeginArgs(&szProp)
+						&& parseAngleArgs(&szProp, &fSkew)
+						)
+					{
+						mRes *= SMMATRIX(
+							1.0f, tanf(fSkew), 0.0f, 0.0f,
+							0.0f, 1.0f, 0.0f, 0.0f,
+							0.0f, 0.0f, 1.0f, 0.0f,
+							0.0f, 0.0f, 0.0f, 1.0f
+						);
+
+						if(parseEndArgs(&szProp))
+						{
+							continue;
+						}
+					}
+				}
 				printf(COLOR_YELLOW "Unable to parse css transform string: '%s'\n" COLOR_RESET, String(val).c_str());
 				return;
 #undef TMP_IS_KW
@@ -3581,6 +3654,11 @@ namespace gui
 
 		void CCSSstyle::parseValue(ICSSproperty * clr, const StringW & val)
 		{
+			if(val == L"auto")
+			{
+				clr->setDim(ICSSproperty::DIM_AUTO);
+				return;
+			}
 			float p;
 			WCHAR a = 0, b;
 			StringW _val = val;

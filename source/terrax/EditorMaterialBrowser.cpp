@@ -32,3 +32,8 @@ void XMETHODCALLTYPE CEditorMaterialBrowser::browse(IXEditorMaterialBrowserCallb
 	m_callback.init(pCallback);
 	g_pMaterialBrowser->browse(&m_callback);
 }
+
+void XMETHODCALLTYPE CEditorMaterialBrowser::abort()
+{
+	g_pMaterialBrowser->abort();
+}

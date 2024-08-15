@@ -268,7 +268,7 @@ void CRenderGraph::buildExecutionOrder(UINT uStartFrom, Array<UINT> &aPath)
 	aPath.erase(aPath.size() - 1);
 }
 
-void CRenderGraph::render(float fDeltaTime, CFinalTarget *pFinalTarget, CRenderGraphData *pGraphData)
+void CRenderGraph::render(float fDeltaTime, IXRenderTarget *pFinalTarget, CRenderGraphData *pGraphData)
 {
 	IGXContext *pCtx = m_pRender->getDevice()->getThreadContext();
 
@@ -296,7 +296,7 @@ void CRenderGraph::render(float fDeltaTime, CFinalTarget *pFinalTarget, CRenderG
 	}
 }
 
-void CRenderGraph::updateVisibility(CFinalTarget *pFinalTarget, CRenderGraphData *pGraphData)
+void CRenderGraph::updateVisibility(IXRenderTarget *pFinalTarget, CRenderGraphData *pGraphData)
 {
 	fora(i, m_aExecutionOrder)
 	{
@@ -318,7 +318,7 @@ static void PadWithNull(Array<T> &a, UINT uSize)
 	}
 }
 
-void CRenderGraph::newGraphData(CFinalTarget *pFinalTarget, CRenderGraphData **ppOut)
+void CRenderGraph::newGraphData(IXRenderTarget *pFinalTarget, CRenderGraphData **ppOut)
 {
 	assert(!m_hasError);
 	if(m_hasError)
@@ -549,20 +549,24 @@ IXRenderGraphNode* XMETHODCALLTYPE CNodeInstance::getNode()
 
 bool XMETHODCALLTYPE CNodeInstance::getNodeData(IXRenderTarget *pFinalTarget, IXRenderGraphNodeData **ppOut)
 {
-	CFinalTarget *pFT = (CFinalTarget*)pFinalTarget;
+	CBaseTarget *pFT = (CBaseTarget*)pFinalTarget;
 	if(pFT->getGraph() == m_pGraph)
 	{
-		IXRenderGraphNodeData *pNodeData = pFT->getGraphData()->m_aNodeData[m_uNodeId].pNodeData;
-		add_ref(pNodeData);
-		*ppOut = pNodeData;
-		return(true);
+		CRenderGraphData *pGraphData = pFT->getGraphData();
+		if(pGraphData)
+		{
+			IXRenderGraphNodeData *pNodeData = pGraphData->m_aNodeData[m_uNodeId].pNodeData;
+			add_ref(pNodeData);
+			*ppOut = pNodeData;
+			return(true);
+		}
 	}
 	return(false);
 }
 
 void XMETHODCALLTYPE CNodeInstance::setTexture(IXRenderTarget *pFinalTarget, UINT uIdx, IXTexture *pTexture)
 {
-	CFinalTarget *pFT = (CFinalTarget*)pFinalTarget;
+	CBaseTarget *pFT = (CBaseTarget*)pFinalTarget;
 	if(pFT->getGraph() == m_pGraph)
 	{
 		m_pNode->setTexture(pFT->getGraphData()->m_aNodeData[m_uNodeId].pNodeData, uIdx, pTexture);
@@ -570,7 +574,7 @@ void XMETHODCALLTYPE CNodeInstance::setTexture(IXRenderTarget *pFinalTarget, UIN
 }
 void XMETHODCALLTYPE CNodeInstance::setProp(IXRenderTarget *pFinalTarget, UINT uIdx, const float4_t &vProp)
 {
-	CFinalTarget *pFT = (CFinalTarget*)pFinalTarget;
+	CBaseTarget *pFT = (CBaseTarget*)pFinalTarget;
 	if(pFT->getGraph() == m_pGraph)
 	{
 		m_pNode->setProp(pFT->getGraphData()->m_aNodeData[m_uNodeId].pNodeData, uIdx, vProp);
@@ -578,7 +582,7 @@ void XMETHODCALLTYPE CNodeInstance::setProp(IXRenderTarget *pFinalTarget, UINT u
 }
 void XMETHODCALLTYPE CNodeInstance::setFlag(IXRenderTarget *pFinalTarget, UINT uIdx, bool bVal)
 {
-	CFinalTarget *pFT = (CFinalTarget*)pFinalTarget;
+	CBaseTarget *pFT = (CBaseTarget*)pFinalTarget;
 	if(pFT->getGraph() == m_pGraph)
 	{
 		m_pNode->setFlag(pFT->getGraphData()->m_aNodeData[m_uNodeId].pNodeData, uIdx, bVal);

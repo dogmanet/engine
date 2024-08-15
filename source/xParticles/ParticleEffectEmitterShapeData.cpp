@@ -72,7 +72,7 @@ void CParticleEffectEmitterShapeData::evaluate(float fTime, float3 *pvPos, float
 				break;
 
 			default:
-				assert(!"Unknown box emit from");
+				assert(!"Unknown cone emit from");
 			}
 		}
 		break;
@@ -156,7 +156,8 @@ void CParticleEffectEmitterShapeData::evaluate(float fTime, float3 *pvPos, float
 			float fThetha = evalArc(SM_2PI * m_fArc, fTime, uCountInGen, uIdInGen);
 
 			*pvPos = float3(cosf(fThetha), 0.0f, sinf(fThetha)) * randf(m_fRadius * (1.0f - m_fRadiusThickness), m_fRadius);
-			*pvDir = SMVector3Normalize(*pvPos);
+			//*pvDir = SMVector3Normalize(*pvPos);
+			*pvDir = float3(0.0f, 1.0f, 0.0f);
 		}
 		break;
 
@@ -165,6 +166,7 @@ void CParticleEffectEmitterShapeData::evaluate(float fTime, float3 *pvPos, float
 			float fZ = evalArc(m_fRadius, fTime, uCountInGen, uIdInGen);
 						
 			*pvPos = float3(0.0f, 0.0f, fZ);
+			*pvDir = float3(0.0f, 1.0f, 0.0f);
 		}
 		break;
 

@@ -28,7 +28,7 @@ namespace gui
 
 		virtual IXTexture* getTexture() = 0;
 
-		virtual void dispatchEvent(IEvent ev) = 0;
+		virtual void dispatchEvent(IEvent &ev) = 0;
 
 		virtual dom::IDOMdocument* getDocument() = 0;
 

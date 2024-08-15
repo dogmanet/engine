@@ -285,7 +285,7 @@ bool XMETHODCALLTYPE CEngine::initGraphics(XWINDOW_OS_HANDLE hWindow, IXEngineCa
 	SGame_0Create((HWND)hWindow, true);
 	LibReport(REPORT_MSG_LEVEL_NOTICE, "LIB game initialized\n");
 
-
+#if 0
 	//m_pXUI = 
 	HMODULE hDLL = LoadLibrary("xUI"
 #ifdef _DEBUG
@@ -312,11 +312,12 @@ bool XMETHODCALLTYPE CEngine::initGraphics(XWINDOW_OS_HANDLE hWindow, IXEngineCa
 		else
 		{
 			IXWindowSystem *pWindowSystem = (IXWindowSystem*)m_pCore->getPluginManager()->getInterface(IXWINDOWSYSTEM_GUID);
-			m_pXUI = pfnXGUIInit(m_pRender->getDevice(), pWindowSystem, SGame_GetGUI());
+			m_pXUI = pfnXGUIInit(m_pRender, pWindowSystem, SGame_GetGUI());
 			m_pCore->getPluginManager()->registerInterface(IXUI_GUID, m_pXUI);
 		}
 	}
-
+#endif
+	m_pXUI = (IXUI*)m_pCore->getPluginManager()->getInterface(IXUI_GUID);
 	// init updatable
 	m_pCore->initUpdatable();
 

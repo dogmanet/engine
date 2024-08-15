@@ -80,11 +80,11 @@ public:
 
 	bool isValid();
 
-	void render(float fDeltaTime, CFinalTarget *pFinalTarget, CRenderGraphData *pGraphData);
+	void render(float fDeltaTime, IXRenderTarget *pFinalTarget, CRenderGraphData *pGraphData);
 
-	void updateVisibility(CFinalTarget *pFinalTarget, CRenderGraphData *pGraphData);
+	void updateVisibility(IXRenderTarget *pFinalTarget, CRenderGraphData *pGraphData);
 
-	void newGraphData(CFinalTarget *pFinalTarget, CRenderGraphData **ppOut);
+	void newGraphData(IXRenderTarget *pFinalTarget, CRenderGraphData **ppOut);
 
 private:
 	struct Input

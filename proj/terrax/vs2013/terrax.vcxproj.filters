@@ -192,6 +192,18 @@
     <ClCompile Include="..\..\..\source\terrax\CurveEditorGraphNode.cpp">
       <Filter>Source Files\pipeline</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\source\terrax\ColorGradientEditorDialog.cpp">
+      <Filter>Source Files\windows</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\terrax\GradientPreviewGraphNode.cpp">
+      <Filter>Source Files\pipeline</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\terrax\GradientPreviewGraphNodeData.cpp">
+      <Filter>Source Files\pipeline</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\terrax\ColorPicker.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\..\..\source\terrax\terrax.rc">
@@ -360,6 +372,24 @@
     </ClInclude>
     <ClInclude Include="..\..\..\source\terrax\CurveEditorGraphNodeData.h">
       <Filter>Header Files\pipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\xcommon\editor\IXCurveEditor.h">
+      <Filter>Header Files\xcommon\editor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\terrax\ColorGradientEditorDialog.h">
+      <Filter>Header Files\windows</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\terrax\GradientPreviewGraphNodeData.h">
+      <Filter>Header Files\pipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\terrax\GradientPreviewGraphNode.h">
+      <Filter>Header Files\pipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\terrax\ColorPicker.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\xcommon\editor\IXColorPicker.h">
+      <Filter>Header Files\xcommon\editor</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

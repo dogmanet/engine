@@ -247,7 +247,7 @@ namespace gui
 		return(getDocument()->createFromText(html));
 	}
 
-	void CDesktop::dispatchEvent(IEvent ev)
+	void CDesktop::dispatchEvent(IEvent &ev)
 	{
 		//__try
 		{
@@ -262,7 +262,11 @@ namespace gui
 			RECT rc;
 			if(IsMouseEvent)
 			{
-				pTarget = (dom::CDOMnode*)m_pDoc->getElementByXY(ev.clientX, ev.clientY, true);
+				pTarget = m_pDoc->getCapture();
+				if(!pTarget)
+				{
+					pTarget = (dom::CDOMnode*)m_pDoc->getElementByXY(ev.clientX, ev.clientY, true);
+				}
 				if(!pTarget)
 				{
 					return;

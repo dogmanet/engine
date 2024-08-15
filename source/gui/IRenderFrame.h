@@ -134,13 +134,13 @@ namespace gui
 				RECT getClientRect();
 				RECT getVisibleRect();
 
-				int getScrollLeft();
+				virtual int getScrollLeft();
 				int getScrollLeftMax();
-				void setScrollLeft(int x);
+				virtual void setScrollLeft(int x);
 
-				int getScrollTop();
+				virtual int getScrollTop();
 				int getScrollTopMax();
-				void setScrollTop(int x, bool _check_bounds = false);
+				virtual void setScrollTop(int x, bool _check_bounds = false);
 
 				void setScrollSpeedX(int x);
 				void setScrollSpeedY(int x);
@@ -220,7 +220,7 @@ namespace gui
 				int m_iTCBackground;
 
 				void updateBorder();
-				void updateBackground();
+				virtual void updateBackground();
 
 				void renderBackground(UINT lvl);
 
@@ -255,8 +255,8 @@ namespace gui
 
 				bool isWidthSet = true;
 
-				int m_iScrollTop = 0;
-				int m_iScrollLeft = 0;
+				//int m_iScrollTop = 0;
+				//int m_iScrollLeft = 0;
 				int m_iScrollTopMax = 0;
 				int m_iScrollLeftMax = 0;
 				int m_iScrollSpeedX = 0;
@@ -441,7 +441,7 @@ namespace gui
 				{
 					//LogInfo("IRenderSelectBlock(%p)\n", this);
 				}
-				~IRenderSelectBlock() 
+				~IRenderSelectBlock()
 				{
 					//LogInfo("~IRenderSelectBlock(%p)\n", this);
 					if(m_pOptionsFrame)
@@ -453,6 +453,22 @@ namespace gui
 				UINT layout(bool changed = true);
 
 				void onCreated();
+
+				int getScrollLeft() override
+				{
+					return(0);
+				}
+				void setScrollLeft(int x) override
+				{}
+
+				int getScrollTop() override
+				{
+					return(0);
+				}
+				void setScrollTop(int x, bool _check_bounds = false) override
+				{
+
+				}
 
 			protected:
 				IRenderFrame *m_pOptionsFrame = NULL;
@@ -473,6 +489,12 @@ namespace gui
 
 				UINT layout(bool changed = true);
 				void render(UINT lvl);
+
+				void updateBackground() override
+				{
+					return;
+				}
+
 
 			protected:
 				IRenderFrame *m_pSelectFrame;

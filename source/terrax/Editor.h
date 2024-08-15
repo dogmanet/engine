@@ -12,6 +12,8 @@
 #include "GizmoScale.h"
 #include "EditorMaterialBrowser.h"
 #include "CurveEditorDialog.h"
+#include "ColorGradientEditorDialog.h"
+#include "ColorPicker.h"
 
 #define GIZMO_TYPES() \
 	GTO(Handle)\
@@ -97,6 +99,10 @@ private:
 	CCurveEditorDialog m_curveEditor;
 
 	Map<AAString, IXEditorResourceBrowser*> m_mapResourceBrowsers;
+
+	CColorGradientEditorDialog m_gradientEditor;
+
+	CColorPicker m_colorPicker;
 };
 
 #endif

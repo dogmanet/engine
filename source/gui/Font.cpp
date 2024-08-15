@@ -246,7 +246,7 @@ namespace gui
 			{
 				char tmp[128];
 				sprintf_s(tmp, "-:%dx%d", d.w, d.h);
-				MessageBoxA(NULL, tmp, "", MB_OK);
+				//MessageBoxA(NULL, tmp, "", MB_OK);
 			}
 
 			d.xa = g->advance.x;
@@ -335,7 +335,8 @@ namespace gui
 			list.push_back(d);
 		}
 		
-#define CHECK_0() if(list[0].w > 64 || list[0].h > 64){char tmp[128];sprintf_s(tmp, "#:%dx%d", list[0].w, list[0].h);MessageBoxA(NULL, tmp, GEN_MSG_LOCATION, MB_OK);}
+#define CHECK_0() 
+		//if(list[0].w > 64 || list[0].h > 64){char tmp[128];sprintf_s(tmp, "#:%dx%d", list[0].w, list[0].h);MessageBoxA(NULL, tmp, GEN_MSG_LOCATION, MB_OK);}
 
 		CHECK_0();
 		//
@@ -443,7 +444,7 @@ namespace gui
 			{
 				char tmp[128];
 				sprintf_s(tmp, "%d:%dx%d", i, list[i].w, list[i].h);
-				MessageBoxA(NULL, tmp, "", MB_OK);
+				//MessageBoxA(NULL, tmp, "", MB_OK);
 			}
 			imageCopy(image, list[i].data, width, height, list[i].w, list[i].h, list[i].x, list[i].y, 4);
 			if(m_bEmulateBold)

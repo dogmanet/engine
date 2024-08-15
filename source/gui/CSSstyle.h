@@ -328,6 +328,8 @@ namespace gui
 				case css::ICSSproperty::DIM_MM:
 					return((int)_round((float)falue * 3.7795f));
 					break;
+				case css::ICSSproperty::DIM_AUTO:
+					assert(!"Cannot handle auto values this way!");
 				default:
 					return(base);
 				}

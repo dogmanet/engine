@@ -4,7 +4,9 @@
 #include <core/sxcore.h>
 
 CEditor::CEditor(IXCore *pCore):
-	m_curveEditor(hInst, (HWND)getMainWindow())
+	m_curveEditor(hInst, (HWND)getMainWindow()),
+	m_gradientEditor((HWND)getMainWindow(), pCore),
+	m_colorPicker((HWND)getMainWindow(), pCore)
 {
 	IXRenderUtils *pUtils = (IXRenderUtils*)pCore->getPluginManager()->getInterface(IXRENDERUTILS_GUID);
 	pUtils->newGizmoRenderer(&m_pGizmoRenderer2D);
@@ -29,7 +31,11 @@ CEditor::CEditor(IXCore *pCore):
 	IXRender *pRender = (IXRender*)pCore->getPluginManager()->getInterface(IXRENDER_GUID);
 
 	m_curveEditor.initGraphics(pRender);
-	m_curveEditor.browse();
+	//m_curveEditor.browse();
+
+	pCore->getPluginManager()->registerInterface(IXCURVEEDITOR_GUID, &m_curveEditor);
+	pCore->getPluginManager()->registerInterface(IXCOLORGRADIENTEDITOR_GUID, &m_gradientEditor);
+	pCore->getPluginManager()->registerInterface(IXCOLORPICKER_GUID, &m_colorPicker);
 }
 
 CEditor::~CEditor()
@@ -41,7 +47,7 @@ CEditor::~CEditor()
 	for(Map<AAString, IXEditorResourceBrowser*>::Iterator i = m_mapResourceBrowsers.begin(); i; ++i)
 	{
 		mem_release(*(i.second));
-}
+	}
 }
 
 void XMETHODCALLTYPE CEditor::getCameraForView(X_WINDOW_POS winPos, IXCamera **ppCamera)

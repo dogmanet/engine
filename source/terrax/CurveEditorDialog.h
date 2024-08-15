@@ -11,10 +11,11 @@
 // #include <mtrl/IXMaterialSystem.h>
 // #include <xcommon/gui/IXFontManager.h>
 #include <xcommon/render/IXRender.h>
+#include <xcommon/editor/IXCurveEditor.h>
 
 #include "CurveEditorGraphNodeData.h"
 
-class CCurveEditorDialog final
+class CCurveEditorDialog final: public IXUnknownImplementation<IXCurveEditor>
 {
 private:
 	INT_PTR CALLBACK dlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -24,11 +25,10 @@ public:
 	CCurveEditorDialog(HINSTANCE hInstance, HWND hMainWnd);
 	~CCurveEditorDialog();
 
-	void browse();
-
 	void initGraphics(IXRender *pRender);
-	void render();
-	void swapBuffers();
+
+	void XMETHODCALLTYPE edit(IXMinMaxCurve *pCurve, IXCurveEditorCallback *pCallback) override;
+	void XMETHODCALLTYPE abort() override;
 
 private:
 	HINSTANCE m_hInstance;
@@ -73,28 +73,10 @@ private:
 	UINT m_uPanelWidth = 0;
 	UINT m_uPanelHeight = 0;
 
-#if 0
-	IXMaterialSystem *m_pMaterialSystem = NULL;
-	IXFont *m_pFont = NULL;
-	IXFontManager *m_pFontManager = NULL;
-
-	Array<XCharRect> m_aCharRects;
-	Array<XFontGPUVertex> m_aTextVB;
-	UINT m_uTextRBSize = 0;
-	UINT m_uTextVertexCount = 0;
-	UINT m_uTextQuadCount = 0;
-	IGXRenderBuffer *m_pTextRB = NULL;
-	IGXVertexBuffer *m_pTextVB = NULL;
-	IGXIndexBuffer *m_pTextIB = NULL;
-	IGXVertexDeclaration *m_pTextVD = NULL;
-	ID m_idTextShader = -1;
-	IGXConstantBuffer *m_pTextColorCB = NULL;
-	IGXConstantBuffer *m_pTextOffsetCB = NULL;
-#endif
-
 	IXCamera *m_pCamera = NULL;
 	
-	CMinMaxCurve m_curve;
+	CMinMaxCurve m_curveBackup;
+	IXMinMaxCurve *m_pCurve = NULL;
 
 	CCurveEditorGraphNodeData *m_pNodeData = NULL;
 
@@ -107,6 +89,8 @@ private:
 	bool m_isDraggingTangent = false;
 	bool m_isDraggingInTangent = false;
 
+	IXCurveEditorCallback *m_pCallback = NULL;
+
 private:
 	void registerClass();
 
@@ -116,6 +100,9 @@ private:
 	void initViewport();
 
 	bool hitTest(float fX, float fY, IXAnimationCurve *pCurve, int *piHitKeyframe);
+
+	void callAccept();
+	void callAbort();
 };
 
 #endif

@@ -7,6 +7,14 @@ particles.vs
 #include <struct.h>
 #include <const.h>
 
+#ifdef WITH_TRANSFORM
+cbuffer CDataParticleObject: register(b1)
+{
+	float4 g_qW;
+	float3 g_vW;
+};
+#endif
+
 //##########################################################################
 
 float3 RotateVec(float4 q, float3 p)
@@ -55,13 +63,25 @@ VSO_SceneCommon main(VSI_Particle IN)
 	
 	float2 vOffset = IN.vSize.xy * (IN.vTexUV - 0.5f);
 
-	float3 vPos = IN.vPosition.xyz + vRight * vOffset.x + vUp * vOffset.y;
+	float3 vTotalOffset = vRight * vOffset.x + vUp * vOffset.y;
+
+	float3 vPos = 
+#ifdef WITH_TRANSFORM
+		g_vW + RotateVec(g_qW, IN.vPosition.xyz)
+#else
+		IN.vPosition.xyz
+#endif
+		+ vTotalOffset;
 
 	OUT.vPosition = mul(float4(vPos, 1.0f), g_mVP);
+	
 	OUT.vNormal = -vForward;
+	//OUT.vNormal = normalize(vTotalOffset);
+	
 	OUT.vTangent = -vUp;
 	OUT.vBinormal = vRight;
-	OUT.vTexUV = IN.vTexUV;
+	OUT.vTexUV = float2(IN.vTexUV.x, 1.0f - IN.vTexUV.y);
+	OUT.vColor = IN.vColor;
 
 	OUT.vPos = OUT.vPosition;
 

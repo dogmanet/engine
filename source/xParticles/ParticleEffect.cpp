@@ -34,6 +34,16 @@ IXParticleEffectEmitter* XMETHODCALLTYPE CParticleEffect::getEmitterAt(UINT uIdx
 {
 	return(getEmitterAtInternal(uIdx));
 }
+void XMETHODCALLTYPE CParticleEffect::removeEmitterAt(UINT uIdx)
+{
+	assert(m_apEmitters.size() > uIdx);
+
+	if(m_apEmitters.size() > uIdx)
+	{
+		mem_release(m_apEmitters[uIdx]);
+		m_apEmitters.erase(uIdx);
+	}
+}
 
 CParticleEffectEmitter* CParticleEffect::getEmitterAtInternal(UINT uIdx)
 {

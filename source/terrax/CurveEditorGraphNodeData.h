@@ -27,6 +27,8 @@ public:
 
 	void calcNewTangent(int iX, int iY, bool isIn);
 
+	void updateRange(float fMin, float fMax);
+
 private:
 	UINT m_uWidth = 0;
 	UINT m_uHeight = 0;
@@ -49,9 +51,12 @@ private:
 	bool m_isDirty = false;
 	IXMinMaxCurve *m_pCurve = NULL;
 
+	float2_t m_vRange = float2_t(0.0f, 1.0f);
+
 private:
 	void updateLine(int iCurve, IXAnimationCurve *pCurve);
 	void drawArea(IXMinMaxCurve *pCurve);
+	void drawDecoration();
 };
 
 #endif

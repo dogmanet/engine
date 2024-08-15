@@ -150,6 +150,7 @@ namespace gui
 			if(!noSelf)
 			{
 				CDOMnode::applyCSSrules(&m_css_self, this);
+				m_css_self.resetChanges();
 			}
 			UINT c = m_vChilds.size();
 			for(UINT i = 0; i < c; i++)

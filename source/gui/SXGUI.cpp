@@ -1,4 +1,4 @@
-﻿#include "GUIbase.h"
+#include "GUIbase.h"
 #include "IHTMLparser.h"
 #include "IDOMdocument.h"
 
@@ -68,14 +68,19 @@ namespace gui
 		blendDesc.renderTarget[0].useBlend = true;
 		blendDesc.renderTarget[0].blendSrcAlpha = blendDesc.renderTarget[0].blendSrcColor = GXBLEND_SRC_ALPHA;
 		blendDesc.renderTarget[0].blendDestAlpha = blendDesc.renderTarget[0].blendDestColor = GXBLEND_INV_SRC_ALPHA;
+
+		blendDesc.renderTarget[0].blendSrcAlpha = GXBLEND_ONE;
+		blendDesc.renderTarget[0].blendDestAlpha = GXBLEND_INV_SRC_ALPHA;
+
 		m_blendStates.m_pDefault = m_pDevice->createBlendState(&blendDesc);
 
 		blendDesc.renderTarget[0].u8RenderTargetWriteMask = 0;
 		m_blendStates.m_pNoColorWrite = m_pDevice->createBlendState(&blendDesc);
 
 		blendDesc.renderTarget[0].u8RenderTargetWriteMask = GXCOLOR_WRITE_ENABLE_ALL;
-		blendDesc.renderTarget[0].blendSrcAlpha = GXBLEND_ONE;
-		blendDesc.renderTarget[0].blendOpAlpha = GXBLEND_OP_MAX;
+	//	blendDesc.renderTarget[0].blendSrcAlpha = GXBLEND_ONE;
+	//	blendDesc.renderTarget[0].blendDestAlpha = GXBLEND_INV_SRC_ALPHA;
+	//	blendDesc.renderTarget[0].blendOpAlpha = GXBLEND_OP_MAX;
 		m_blendStates.m_pDesktop = m_pDevice->createBlendState(&blendDesc);
 
 		GXRasterizerDesc rasterizerDesc;
@@ -184,6 +189,18 @@ namespace gui
 		mem_release(m_pQuadVerticesXYZ);
 
 		mem_release(m_pGUI);
+
+		mem_release(m_pActiveDesktop);
+
+		Array<IDesktop*> aDesktops(m_mDesktops.Size());
+		for(AssotiativeArray<StringW, IDesktop*>::Iterator i = m_mDesktops.begin(); i; ++i)
+		{
+			aDesktops.push_back(*(i.second));
+		}
+		fora(i, aDesktops)
+		{
+			mem_release(aDesktops[i]);
+		}
 	}
 
 	IGXRenderBuffer* CDesktopStack::getQuadRenderBufferXYZ(float3_t *pVertices)
@@ -300,10 +317,11 @@ namespace gui
 				ev.clientX = ev.clientY = 0;
 				ev.key = wParam;
 				m_pActiveDesktop->dispatchEvent(ev);
-			}
-			if(wParam == KEY_ESCAPE)
-			{
-				popDesktop();
+
+				if(wParam == KEY_ESCAPE && !ev.preventDefault)
+				{
+					popDesktop();
+				}
 			}
 			break;
 
@@ -550,6 +568,12 @@ namespace gui
 	
 	IDesktop* CDesktopStack::createDesktopA(const char *name, const char *file)
 	{
+		IDesktop *pOldDesk = getDesktopA(name);
+		if(pOldDesk)
+		{
+			mem_release(pOldDesk);
+		}
+
 		IDesktop *d = new CDesktop(this, StringW(CMB2WC(name)));
 		d->setWidth(m_iScreenWidth);
 		d->setHeight(m_iScreenHeight);
@@ -561,6 +585,12 @@ namespace gui
 
 	IDesktop* CDesktopStack::createDesktopW(const wchar_t *name, const wchar_t *file)
 	{
+		IDesktop *pOldDesk = getDesktopW(name);
+		if(pOldDesk)
+		{
+			mem_release(pOldDesk);
+		}
+
 		IDesktop * d = new CDesktop(this, StringW(name));
 		d->setWidth(m_iScreenWidth);
 		d->setHeight(m_iScreenHeight);
@@ -573,7 +603,11 @@ namespace gui
 
 	void CDesktopStack::setActiveDesktop(IDesktop *d, BOOL clearStack)
 	{
+		IDesktop *pDp = m_pActiveDesktop;
 		m_pActiveDesktop = d;
+		add_ref(d);
+		mem_release(pDp);
+
 		CKeyMap::releaseKeys();
 		if(d)
 		{
@@ -581,6 +615,10 @@ namespace gui
 		}
 		if(clearStack)
 		{
+			fora(i, m_mDesktopStack)
+			{
+				mem_release(m_mDesktopStack[i]);
+			}
 			m_mDesktopStack.clear();
 		}
 	}
@@ -736,7 +774,8 @@ namespace gui
 		{
 			if(dp == *(i.second))
 			{
-				*(i.second) = NULL;
+				m_mDesktops.erase(*(i.first));
+				break;
 			}
 		}
 		if(getActiveDesktop() == dp)
@@ -810,6 +849,7 @@ namespace gui
 	{
 		if(m_pActiveDesktop)
 		{
+			add_ref(m_pActiveDesktop);
 			m_mDesktopStack.push_back(m_pActiveDesktop);
 			m_pActiveDesktop->getDocument()->getElementsByTag(L"body")[0][0]->addPseudoclass(css::ICSSrule::PSEUDOCLASS_DISABLED);
 		}
@@ -825,6 +865,7 @@ namespace gui
 		IDesktop * ret = m_pActiveDesktop;
 		setActiveDesktop(m_mDesktopStack[s - 1], FALSE);
 		m_pActiveDesktop->getDocument()->getElementsByTag(L"body")[0][0]->removePseudoclass(css::ICSSrule::PSEUDOCLASS_DISABLED);
+		mem_release(m_mDesktopStack[s - 1]);
 		m_mDesktopStack.erase(s - 1);
 		return(ret);
 	}

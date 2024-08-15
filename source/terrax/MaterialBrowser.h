@@ -51,6 +51,7 @@ public:
 	~CMaterialBrowser();
 
 	void browse(IMaterialBrowserCallback *pCallback, bool bTextureOnly = false);
+	void abort();
 
 	void initGraphics(IXRender *pRender);
 	void render();

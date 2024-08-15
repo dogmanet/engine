@@ -192,6 +192,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\source\common\string.h" />
+    <ClInclude Include="..\..\..\source\render\BaseTarget.h" />
     <ClInclude Include="..\..\..\source\render\Camera.h" />
     <ClInclude Include="..\..\..\source\render\FXAAGraphNode.h" />
     <ClInclude Include="..\..\..\source\render\FXAAGraphNodeData.h" />
@@ -213,6 +214,7 @@
     <ClInclude Include="..\..\..\source\render\GBufferGraphNodeData.h" />
     <ClInclude Include="..\..\..\source\render\ShaderManager.h" />
     <ClInclude Include="..\..\..\source\render\ShaderPreprocessor.h" />
+    <ClInclude Include="..\..\..\source\render\TextureTarget.h" />
     <ClInclude Include="..\..\..\source\render\TransparentGraphNode.h" />
     <ClInclude Include="..\..\..\source\render\TransparentGraphNodeData.h" />
     <ClInclude Include="..\..\..\source\render\Updatable.h" />
@@ -221,8 +223,10 @@
     <ClInclude Include="..\..\..\source\xcommon\render\IXRenderUtils.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\source\common\guid.cpp" />
     <ClCompile Include="..\..\..\source\common\string.cpp" />
     <ClCompile Include="..\..\..\source\common\string_utils.cpp" />
+    <ClCompile Include="..\..\..\source\render\BaseTarget.cpp" />
     <ClCompile Include="..\..\..\source\render\Camera.cpp" />
     <ClCompile Include="..\..\..\source\render\FXAAGraphNode.cpp" />
     <ClCompile Include="..\..\..\source\render\FXAAGraphNodeData.cpp" />
@@ -247,6 +251,7 @@
     <ClCompile Include="..\..\..\source\render\GBufferGraphNodeData.cpp" />
     <ClCompile Include="..\..\..\source\render\ShaderManager.cpp" />
     <ClCompile Include="..\..\..\source\render\ShaderPreprocessor.cpp" />
+    <ClCompile Include="..\..\..\source\render\TextureTarget.cpp" />
     <ClCompile Include="..\..\..\source\render\TransparentGraphNode.cpp" />
     <ClCompile Include="..\..\..\source\render\TransparentGraphNodeData.cpp" />
     <ClCompile Include="..\..\..\source\render\Updatable.cpp" />

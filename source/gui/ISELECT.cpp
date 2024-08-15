@@ -53,7 +53,7 @@ namespace gui
 			case GUI_EVENT_TYPE_MOUSEWHEELUP:
 				if(pRF->m_iScrollTopMax != 0)
 				{
-					if(pRF->m_iScrollTop != 0)
+					if(pRF->getScrollTop() != 0)
 					{
 						ev.stopPropagation();
 						m_pDocument->markDirty();
@@ -77,7 +77,7 @@ namespace gui
 			case GUI_EVENT_TYPE_MOUSEWHEELDOWN:
 				if(pRF->m_iScrollTopMax != 0)
 				{
-					if(pRF->m_iScrollTopMax != pRF->m_iScrollTop)
+					if(pRF->m_iScrollTopMax != pRF->getScrollTop())
 					{
 						ev.stopPropagation();
 						m_pDocument->markDirty();

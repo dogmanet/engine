@@ -3,6 +3,7 @@
 
 #include <xcommon/particles/IXParticleSystem.h>
 #include <common/MinMaxCurve.h>
+#include <common/2ColorGradients.h>
 
 
 class CParticleEffectEmitterGenericData final: public IXParticleEffectEmitterGenericData
@@ -24,7 +25,7 @@ public:
 	XMETHOD_GETSET_IMPL(RingBufferMode, XPARTICLE_RING_BUFFER_MODE, mode, m_ringBufferMode);
 	XMETHOD_2CONST_IMPL(IXMinMaxCurve*, getRingBufferLoopRangeCurve, &m_curveRingBufferLoopRange);
 	XMETHOD_GETSET_IMPL(SimulationSpace, XPARTICLE_SIMULATION_SPACE, simulationSpace, m_simulationSpace);
-	XMETHOD_GETSET_REF_IMPL(StartColor, float4_t, vColor, m_vStartColor);
+	XMETHOD_2CONST_IMPL(IX2ColorGradients*, getStartColorGradient, &m_gradStartColor);
 	XMETHOD_2CONST_IMPL(IXMinMaxCurve*, getStartRotationCurve, &m_curveStartRotationX);
 	XMETHOD_GETSET_IMPL(StartRotationSeparate, bool, yesNo, m_bStartRotationSeparate);
 	XMETHOD_2CONST_IMPL(IXMinMaxCurve*, getStartRotationXCurve, &m_curveStartRotationX);
@@ -37,7 +38,7 @@ public:
 
 private:
 	float m_fDuration = 1.0f;
-	bool m_isLooping = false;
+	bool m_isLooping = true;
 	bool m_bPrewarm = false;
 	float m_fStartDelay = 0.0f;
 	float m_fFlipRotation = 0.0f;
@@ -48,7 +49,7 @@ private:
 	XPARTICLE_SIMULATION_SPACE m_simulationSpace = XPSS_LOCAL;
 	bool m_bStartRotationSeparate = false;
 	bool m_bStartSizeSeparate = false;
-	float4_t m_vStartColor;
+	C2ColorGradients m_gradStartColor = float4_t(1.0f, 1.0f, 1.0f, 1.0f);
 
 	CMinMaxCurve m_curveStartLifetime;
 	CMinMaxCurve m_curveStartSpeed;

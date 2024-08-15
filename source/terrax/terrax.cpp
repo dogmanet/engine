@@ -41,6 +41,7 @@ See the license in LICENSE
 #include "TextureWindow.h"
 #include "MaterialBrowserGraphNode.h"
 #include "CurveEditorGraphNode.h"
+#include "GradientPreviewGraphNode.h"
 
 #include <xcommon/editor/IXEditorImporter.h>
 
@@ -620,6 +621,7 @@ int main(int argc, char **argv)
 	pEngine->getCore()->getPluginManager()->registerInterface(IXRENDERGRAPHNODE_GUID, new CTextureViewGraphNode(pEngine->getCore()));
 	pEngine->getCore()->getPluginManager()->registerInterface(IXRENDERGRAPHNODE_GUID, new CMaterialBrowserGraphNode(pEngine->getCore()));
 	pEngine->getCore()->getPluginManager()->registerInterface(IXRENDERGRAPHNODE_GUID, new CCurveEditorGraphNode(pEngine->getCore()));
+	pEngine->getCore()->getPluginManager()->registerInterface(IXRENDERGRAPHNODE_GUID, new CGradientPreviewGraphNode(pEngine->getCore()));
 	pEngine->initGraphics((XWINDOW_OS_HANDLE)g_hTopLeftWnd, &engineCb);
 	engineCb.setCore(pEngine->getCore());
 	pEngine->getCore()->getConsole()->registerCVar("terrax_detach_3d", false, "", FCVAR_NOTIFY);

@@ -860,6 +860,16 @@ namespace gui
 					--i; --l;
 				}
 			}
+
+			if(m_pCapturedNode == pNode)
+			{
+				m_pCapturedNode = NULL;
+			}
+
+			if(getFocus() == pNode)
+			{
+				requestFocus(getElementsByTag(L"body")[0][0]);
+			}
 		}
 
 		void CDOMdocument::forgotRenderFrame(render::IRenderFrame *pRF)
@@ -873,7 +883,7 @@ namespace gui
 
 		bool CDOMdocument::isDirty()
 		{
-			return(m_isDirty);
+			return(m_isDirty || m_uForceDirty != 0);
 		}
 
 		void CDOMdocument::markDirty()
@@ -898,6 +908,45 @@ namespace gui
 			}
 			while(next < html.length());
 			return(m_cTmpNodes);
+		}
+
+		void CDOMdocument::forceDirty(bool set)
+		{
+			if(set)
+			{
+				++m_uForceDirty;
+			}
+			else
+			{
+				assert(m_uForceDirty);
+				if(m_uForceDirty)
+				{
+					--m_uForceDirty;
+				}
+			}
+		}
+
+		void CDOMdocument::setCapture(IDOMnode *pNode)
+		{
+			if(pNode != NULL)
+			{
+				m_pCapturedNode = (CDOMnode*)pNode;
+				TODO("set window system capture");
+			}
+			else
+			{
+				releaseCapture();
+			}
+		}
+		void CDOMdocument::releaseCapture()
+		{
+			m_pCapturedNode = NULL;
+			TODO("release window system capture");
+		}
+
+		CDOMnode* CDOMdocument::getCapture()
+		{
+			return(m_pCapturedNode);
 		}
 
 //##########################################################################
@@ -955,6 +1004,7 @@ namespace gui
 				GEVT_DPTC(GUI_EVENT_TYPE_FOCUS, L"focus");
 				GEVT_DPTC(GUI_EVENT_TYPE_BLUR, L"blur");
 				GEVT_DPTC(GUI_EVENT_TYPE_CHANGE, L"change");
+				GEVT_DPTC(GUI_EVENT_TYPE_LAYOUT, L"layout");
 			}
 			if(cmd.length())
 			{
@@ -970,7 +1020,7 @@ namespace gui
 			if(ev.propagate && m_pParent)
 			{
 				ev.currentTarget = m_pParent;
-				m_pParent->dispatchClientEvent(ev, NULL);
+				m_pParent->dispatchClientEvent(ev, preventDefault);
 			}
 		}
 
@@ -990,9 +1040,13 @@ namespace gui
 			}
 		}
 
-		void CDOMnode::updateStyles()
+		void CDOMnode::updateStyles(bool forceUpdate)
 		{
 			m_pDocument->updateStyleSubtree(this);
+			if(forceUpdate)
+			{
+				m_pDocument->updateStyles(0.0f);
+			}
 		}
 
 		void CDOMnode::dispatchEvent(IEvent & ev)
@@ -1095,7 +1149,7 @@ namespace gui
 			case GUI_EVENT_TYPE_MOUSEWHEELUP:
 				if(m_pRenderFrame->m_iScrollTopMax != 0)
 				{
-					if(m_pRenderFrame->m_iScrollTop != 0)
+					if(m_pRenderFrame->getScrollTop() != 0)
 					{
 						ev.stopPropagation();
 						m_pDocument->markDirty();
@@ -1119,7 +1173,7 @@ namespace gui
 			case GUI_EVENT_TYPE_MOUSEWHEELDOWN:
 				if(m_pRenderFrame->m_iScrollTopMax != 0)
 				{
-					if(m_pRenderFrame->m_iScrollTopMax != m_pRenderFrame->m_iScrollTop)
+					if(m_pRenderFrame->m_iScrollTopMax != m_pRenderFrame->getScrollTop())
 					{
 						ev.stopPropagation();
 						m_pDocument->markDirty();
@@ -1413,10 +1467,13 @@ namespace gui
 
 		void CDOMnode::updateLayout(bool bForce)
 		{
-			getDocument()->addReflowItem(getRenderFrame());
-			if(bForce)
+			if(getRenderFrame())
 			{
-				getRenderFrame()->m_bHasFixedSize = false;
+				getDocument()->addReflowItem(getRenderFrame());
+				if(bForce)
+				{
+					getRenderFrame()->m_bHasFixedSize = false;
+				}
 			}
 		}
 		
@@ -1614,6 +1671,11 @@ namespace gui
 				//m_pDocument->IndexSetId(m_iDOMid, this);
 			}
 
+			else if(name == L"onlayout")
+			{
+				m_bWantLayoutEvents = value.length() != 0;
+			}
+
 			m_mAttributes[name] = value;
 		}
 
@@ -1692,7 +1754,7 @@ namespace gui
 				getDocument()->updateStyleSubtree(pEl);
 				getDocument()->updateStyles(0);
 
-				if(!pEl->getRenderFrame())
+				if(getRenderFrame() && !pEl->getRenderFrame())
 				{
 					render::IRenderFrame * pNewRF;
 					if(pEl->isTextNode())
@@ -1759,6 +1821,35 @@ namespace gui
 		{
 
 		}*/
+		bool CDOMnode::wantLayoutEvents()
+		{
+			return(m_bWantLayoutEvents);
+		}
+		void CDOMnode::triggerLayoutEvent()
+		{
+			IEvent ev;
+			ev.type = GUI_EVENT_TYPE_LAYOUT;
+			ev.target = this;
+			dispatchEvent(ev);
+		}
+
+		UINT CDOMnode::getInnerWidth()
+		{
+			if(m_pRenderFrame)
+			{
+				return(m_pRenderFrame->getInnerWidth());
+			}
+			return(0);
+		}
+		UINT CDOMnode::getInnerHeight()
+		{
+			if(m_pRenderFrame)
+			{
+				return(m_pRenderFrame->getInnerHeight());
+			}
+			return(0);
+		}
+
 
 		void CDOMnode::removeChild(IDOMnode * _pEl, bool regen)
 		{

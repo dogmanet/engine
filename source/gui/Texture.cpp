@@ -4,7 +4,7 @@ namespace gui
 {
 	void CTextureManager::getTexture(const StringW &szTexture, IXTexture **ppOut)
 	{
-		String path(getResourceDir() + L"textures/" + szTexture);
+		String path(szTexture[0] == '!' ? szTexture.substr(1) : getResourceDir() + L"textures/" + szTexture);
 
 		GetGUI()->getMaterialSystem()->loadTexture(path.c_str(), ppOut);
 	}

@@ -15,7 +15,6 @@ class IXMinMaxCurve
 {
 public:
 	XMETHOD_GETSET(Mode, XMINMAX_CURVE_MODE, mode);
-	XMETHOD_GETSET(Multiplier, float, fValue);
 	XMETHOD_GETSET(Min, float, fValue);
 	XMETHOD_GETSET(Max, float, fValue);
 
@@ -24,6 +23,8 @@ public:
 
 	//! Evaluate the curve at time.
 	virtual float XMETHODCALLTYPE evaluate(float fTime, float fLerpFacton = 1.0f) const = 0;
+
+	virtual void XMETHODCALLTYPE setFrom(const IXMinMaxCurve *pOther) = 0;
 };
 
 #endif

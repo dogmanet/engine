@@ -20,7 +20,7 @@ static char* WriteCurve(char* szCur, IXAnimationCurve *pCurve)
 	return(szCur);
 }
 
-void ReadCurve(IXJSONObject *pObj, IXAnimationCurve *pCurve)
+static void ReadCurve(IXJSONObject *pObj, IXAnimationCurve *pCurve)
 {
 	if(!pObj)
 	{
@@ -90,24 +90,24 @@ static void SaveMinMaxCurve(IXConfig *pConfig, const char *szSection, const char
 		break;
 
 	case XMCM_CURVE:
-		szVal = szCur = (char*)alloca(sizeof(char) * (256 * (pCurve->getMaxCurve()->getKeyframeCount() + 1) + 64));
+		szVal = szCur = (char*)alloca(sizeof(char) * (256 * (pCurve->getMaxCurve()->getKeyframeCount() + 1) + 192));
 		// 256 * (frames + 1) + 64
-		// {"max":{"keys":[[fTime,fValue,fInTangent,fOutTangent],...],"pre":mode,"post":mode},"m":fMultiplier}
+		// {"max":{"keys":[[fTime,fValue,fInTangent,fOutTangent],...],"pre":mode,"post":mode},"m":fMax,"n":fMax}
 		szCur += sprintf(szCur, "{\"max\":");
 		szCur = WriteCurve(szCur, pCurve->getMaxCurve());
-		szCur += sprintf(szCur, ",\"m\":%g}", pCurve->getMultiplier());
+		szCur += sprintf(szCur, ",\"m\":%g,\"n\":%g}", pCurve->getMax(), pCurve->getMin());
 		pConfig->set(szSection, szKey, szVal);
 		break;
 
 	case XMCM_TWO_CURVES:
-		szVal = szCur = (char*)alloca(sizeof(char) * (256 * (pCurve->getMinCurve()->getKeyframeCount() + pCurve->getMaxCurve()->getKeyframeCount() + 1) + 128));
+		szVal = szCur = (char*)alloca(sizeof(char) * (256 * (pCurve->getMinCurve()->getKeyframeCount() + pCurve->getMaxCurve()->getKeyframeCount() + 1) + 192));
 		// 256 * (frames + 1) + 128
-		// {"min":{...},"max":{"keys":[[fTime,fValue,fInTangent,fOutTangent],...],"pre":mode,"post":mode},"m":fMultiplier}
+		// {"min":{...},"max":{"keys":[[fTime,fValue,fInTangent,fOutTangent],...],"pre":mode,"post":mode},"m":fMax,"n":fMax}
 		szCur += sprintf(szCur, "{\"min\":");
 		szCur = WriteCurve(szCur, pCurve->getMinCurve());
 		szCur += sprintf(szCur, ",\"max\":");
 		szCur = WriteCurve(szCur, pCurve->getMaxCurve());
-		szCur += sprintf(szCur, ",\"m\":%g}", pCurve->getMultiplier());
+		szCur += sprintf(szCur, ",\"m\":%g,\"n\":%g}", pCurve->getMax(), pCurve->getMin());
 		pConfig->set(szSection, szKey, szVal);
 		break;
 	}
@@ -143,7 +143,16 @@ static void ReadMinMaxCurve(IXConfig *pConfig, const char *szSection, const char
 			{
 				if(pObj->at(i)->getFloat(&fVal))
 				{
-					pCurve->setMultiplier(fVal);
+					pCurve->setMax(fVal);
+				}
+				continue;
+			}
+
+			if(!strcmp(szKey, "n"))
+			{
+				if(pObj->at(i)->getFloat(&fVal))
+				{
+					pCurve->setMin(fVal);
 				}
 				continue;
 			}
@@ -173,6 +182,212 @@ static void ReadMinMaxCurve(IXConfig *pConfig, const char *szSection, const char
 	}
 }
 
+static char* WriteGradient(char* szCur, IXColorGradient *pGradient)
+{
+	// {"c":[[fTime,vColor],...],"a":[[fTime,fAlpha],...]}
+	szCur += sprintf(szCur, "{\"c\":[");
+	const XColorKey *pColor;
+	for(UINT i = 0, l = pGradient->getColorKeyCount(); i < l; ++i)
+	{
+		pColor = pGradient->getColorKeyAt(i);
+		szCur += sprintf(szCur, "%s[%g,%g,%g,%g]", 
+			i == 0 ? "" : ",", pColor->fTime, 
+			pColor->vColor.x, pColor->vColor.y, pColor->vColor.z
+		);
+	}
+	szCur += sprintf(szCur, "],\"a\":[");
+
+	const XAlphaKey *pAlpha;
+	for(UINT i = 0, l = pGradient->getAlphaKeyCount(); i < l; ++i)
+	{
+		pAlpha = pGradient->getAlphaKeyAt(i);
+		szCur += sprintf(szCur, "%s[%g,%g]",
+			i == 0 ? "" : ",", pAlpha->fTime,
+			pAlpha->fAlpha
+		);
+	}
+
+	szCur += sprintf(szCur, "]}");
+
+	return(szCur);
+}
+
+static void ReadGradient(IXJSONObject *pObj, IXColorGradient *pGradient)
+{
+	if(!pObj)
+	{
+		return;
+	}
+
+	for(UINT i = 0, l = pObj->size(); i < l; ++i)
+	{
+		const char *szKey = pObj->getKey(i);
+		if(!strcmp(szKey, "c"))
+		{
+			IXJSONArray *pArr = pObj->at(i)->asArray();
+			if(pArr)
+			{
+				pGradient->setColorKeyCount(pArr->size());
+				XColorKey keyFrame;
+				for(UINT j = 0, jl = pArr->size(); j < jl; ++j)
+				{
+					IXJSONArray *pKeyArr = pArr->at(j)->asArray();
+					if(pKeyArr)
+					{
+						keyFrame = {};
+						pKeyArr->at(0) && pKeyArr->at(0)->getFloat(&keyFrame.fTime);
+						pKeyArr->at(1) && pKeyArr->at(1)->getFloat(&keyFrame.vColor.x);
+						pKeyArr->at(2) && pKeyArr->at(2)->getFloat(&keyFrame.vColor.y);
+						pKeyArr->at(3) && pKeyArr->at(3)->getFloat(&keyFrame.vColor.z);
+						pGradient->setColorKey(j, keyFrame);
+					}
+				}
+			}
+		}
+		else if(!strcmp(szKey, "a"))
+		{
+			IXJSONArray *pArr = pObj->at(i)->asArray();
+			if(pArr)
+			{
+				pGradient->setAlphaKeyCount(pArr->size());
+				XAlphaKey keyFrame;
+				for(UINT j = 0, jl = pArr->size(); j < jl; ++j)
+				{
+					IXJSONArray *pKeyArr = pArr->at(j)->asArray();
+					if(pKeyArr)
+					{
+						keyFrame = {};
+						pKeyArr->at(0) && pKeyArr->at(0)->getFloat(&keyFrame.fTime);
+						pKeyArr->at(1) && pKeyArr->at(1)->getFloat(&keyFrame.fAlpha);
+						pGradient->setAlphaKey(j, keyFrame);
+					}
+				}
+			}
+		}
+	}
+}
+
+static void SaveTwoGradients(IXConfig *pConfig, const char *szSection, const char *szKey, IX2ColorGradients *pGradient)
+{
+	char *szVal, *szCur;
+	size_t sizeMax;
+	switch(pGradient->getMode())
+	{
+	case X2CGM_COLOR:
+		pConfig->setVector4(szSection, szKey, pGradient->getColor());
+		break;
+	case X2CGM_TWO_COLORS:
+		sizeMax = sizeof(char) * 256;
+		szVal = szCur = (char*)alloca(sizeMax);
+		{
+			float4_t vC0 = pGradient->getColor0();
+			float4_t vC1 = pGradient->getColor1();
+			szCur += sprintf(szCur, "[[%g,%g,%g,%g],[%g,%g,%g,%g]]",
+				vC0.x, vC0.y, vC0.z, vC0.w,
+				vC1.x, vC1.y, vC1.z, vC1.w
+			);
+		}
+		pConfig->set(szSection, szKey, szVal);
+		assert(szCur - szVal < sizeMax);
+		break;
+
+	case X2CGM_GRADIENT:
+		sizeMax = sizeof(char) * (128 * pGradient->getGradient0()->getColorKeyCount() + 32 * pGradient->getGradient0()->getAlphaKeyCount() + 128);
+		szVal = szCur = (char*)alloca(sizeMax);
+		// {"0":{"c":[[fTime,vColor],...],"a":[[fTime,fAlpha],...]}}
+		szCur += sprintf(szCur, "{\"0\":");
+		szCur = WriteGradient(szCur, pGradient->getGradient0());
+		szCur += sprintf(szCur, "}");
+		pConfig->set(szSection, szKey, szVal);
+		assert(szCur - szVal < sizeMax);
+		break;
+
+	case X2CGM_TWO_GRADIENTS:
+		sizeMax = sizeof(char) * (128 * pGradient->getGradient0()->getColorKeyCount() * 2 + 32 * pGradient->getGradient0()->getAlphaKeyCount() * 2 + 128);
+		szVal = szCur = (char*)alloca(sizeMax);
+		// {"0":{...},"1":{...}}
+		szCur += sprintf(szCur, "{\"0\":");
+		szCur = WriteGradient(szCur, pGradient->getGradient0());
+		szCur += sprintf(szCur, ",\"1\":");
+		szCur = WriteGradient(szCur, pGradient->getGradient1());
+		szCur += sprintf(szCur, "}");
+		pConfig->set(szSection, szKey, szVal);
+		assert(szCur - szVal < sizeMax);
+		break;
+	}
+}
+
+static void ReadTwoGradients(IXConfig *pConfig, const char *szSection, const char *szKey, IX2ColorGradients *pGradient)
+{
+	float4_t vec;
+	float fVal;
+	IXJSONObject *pObj;
+	IXJSONArray *pArr, *pArr2;
+	if(pConfig->tryGetVector4(szSection, szKey, &vec))
+	{
+		pGradient->setMode(X2CGM_COLOR);
+		pGradient->setColor(vec);
+		return;
+	}
+
+	if(pConfig->tryGetJsonArray(szSection, szKey, &pArr))
+	{
+		pGradient->setMode((pArr->size() > 1) ? X2CGM_TWO_COLORS : X2CGM_COLOR);
+		for(UINT i = 0, l = pArr->size(); i < l && i < 2; ++i)
+		{
+			if(pArr->at(i) && (pArr2 = pArr->at(i)->asArray()))
+			{
+				pArr2->at(0) && pArr2->at(0)->getFloat(&vec.x);
+				pArr2->at(1) && pArr2->at(1)->getFloat(&vec.y);
+				pArr2->at(2) && pArr2->at(2)->getFloat(&vec.z);
+				pArr2->at(3) && pArr2->at(3)->getFloat(&vec.w);
+
+				if(i == 0)
+				{
+					pGradient->setColor0(vec);
+				}
+				else
+				{
+					pGradient->setColor1(vec);
+				}
+			}
+		}
+		return;
+	}
+
+	if(pConfig->tryGetJsonObject(szSection, szKey, &pObj))
+	{
+		UINT uGrads = 0;
+		for(UINT i = 0, l = pObj->size(); i < l && i < 2; ++i)
+		{
+			const char *szKey = pObj->getKey(i);
+
+			if(!strcmp(szKey, "0"))
+			{
+				ReadGradient(pObj->at(i)->asObject(), pGradient->getGradient0());
+				++uGrads;
+			}
+			else if(!strcmp(szKey, "1"))
+			{
+				ReadGradient(pObj->at(i)->asObject(), pGradient->getGradient1());
+				++uGrads;
+			}
+		}
+
+		if(uGrads == 1)
+		{
+			pGradient->setMode(X2CGM_GRADIENT);
+		}
+		else if(uGrads == 2)
+		{
+			pGradient->setMode(X2CGM_TWO_GRADIENTS);
+		}
+
+		mem_release(pObj);
+	}
+}
+
+
 bool CEffectLoader::loadFromFile(const char *szFile, CParticleEffect *pEffect)
 {
 	IXConfig *pConfig = m_pCore->newConfig();
@@ -188,6 +403,7 @@ bool CEffectLoader::loadFromFile(const char *szFile, CParticleEffect *pEffect)
 			int iVal;
 			UINT uVal;
 			bool bVal;
+			float2_t v2Val;
 			float3_t v3Val;
 			float4_t vVal;
 
@@ -196,6 +412,7 @@ bool CEffectLoader::loadFromFile(const char *szFile, CParticleEffect *pEffect)
 #define READ_INT(mod, what, data, type) READ_VAL(mod, what, data, Int, iVal, (type))
 #define READ_UINT(mod, what, data) READ_VAL(mod, what, data, Uint, uVal, _VOID)
 #define READ_BOOL(mod, what, data) READ_VAL(mod, what, data, Bool, bVal, _VOID)
+#define READ_V2(mod, what, data) READ_VAL(mod, what, data, Vector2, v2Val, _VOID)
 #define READ_V3(mod, what, data) READ_VAL(mod, what, data, Vector3, v3Val, _VOID)
 #define READ_V4(mod, what, data) READ_VAL(mod, what, data, Vector4, vVal, _VOID)
 
@@ -204,6 +421,12 @@ bool CEffectLoader::loadFromFile(const char *szFile, CParticleEffect *pEffect)
 				sprintf(szSection, "emitter_%u", i);
 
 				IXParticleEffectEmitter *pEmitter = pEffect->getEmitterAt(i);
+
+				const char *szName = pConfig->getKey(szSection, "name");
+				if(szName)
+				{
+					pEmitter->setName(szName);
+				}
 
 				auto *pGenericData = pEmitter->getGenericData();
 				READ_FLOAT("generic", Duration, pGenericData);
@@ -220,7 +443,7 @@ bool CEffectLoader::loadFromFile(const char *szFile, CParticleEffect *pEffect)
 				READ_INT("generic", RingBufferMode, pGenericData, XPARTICLE_RING_BUFFER_MODE);
 				ReadMinMaxCurve(pConfig, szSection, "generic.RingBufferLoopRangeCurve", pGenericData->getRingBufferLoopRangeCurve());
 				READ_INT("generic", SimulationSpace, pGenericData, XPARTICLE_SIMULATION_SPACE);
-				READ_V4("generic", StartColor, pGenericData);
+				ReadTwoGradients(pConfig, szSection, "generic.StartColor", pGenericData->getStartColorGradient());
 				ReadMinMaxCurve(pConfig, szSection, "generic.StartRotationCurve", pGenericData->getStartRotationCurve());
 				READ_BOOL("generic", StartRotationSeparate, pGenericData);
 				ReadMinMaxCurve(pConfig, szSection, "generic.StartRotationXCurve", pGenericData->getStartRotationXCurve());
@@ -259,7 +482,18 @@ bool CEffectLoader::loadFromFile(const char *szFile, CParticleEffect *pEffect)
 					ReadMinMaxCurve(pConfig, szSection, szKey, pBurst->getCountCurve());
 				}
 
+				auto *pRenderData = pEmitter->getRenderData();
+				const char *szRenderMaterial = pConfig->getKey(szSection, "render.Material");
+				if(szRenderMaterial)
+				{
+					pRenderData->setMaterial(szRenderMaterial);
+				}
+
 				auto *pShapeData = pEmitter->getShapeData();
+				if(pConfig->tryGetBool(szSection, "shape.Enabled", &bVal))
+				{
+					pShapeData->enable(bVal);
+				}
 				READ_INT("shape", Shape, pShapeData, XPARTICLE_SHAPE);
 				READ_FLOAT("shape", Radius, pShapeData);
 				READ_FLOAT("shape", RadiusThickness, pShapeData);
@@ -302,16 +536,96 @@ bool CEffectLoader::loadFromFile(const char *szFile, CParticleEffect *pEffect)
 					pLimitVelocityLifetimeData->enable(bVal);
 				}
 				READ_BOOL("limitVelocityLifetime", SeparateAxes, pLimitVelocityLifetimeData);
-				ReadMinMaxCurve(pConfig, szSection, "limitVelocityLifetime.SpeedCurve", pLimitVelocityLifetimeData->getSpeedCurve());
+				ReadMinMaxCurve(pConfig, szSection, "limitVelocityLifetime.LimitCurveX", pLimitVelocityLifetimeData->getLimitXCurve());
+				ReadMinMaxCurve(pConfig, szSection, "limitVelocityLifetime.LimitCurveY", pLimitVelocityLifetimeData->getLimitYCurve());
+				ReadMinMaxCurve(pConfig, szSection, "limitVelocityLifetime.LimitCurveZ", pLimitVelocityLifetimeData->getLimitZCurve());
 				ReadMinMaxCurve(pConfig, szSection, "limitVelocityLifetime.DampenCurve", pLimitVelocityLifetimeData->getDampenCurve());
 				ReadMinMaxCurve(pConfig, szSection, "limitVelocityLifetime.DragCurve", pLimitVelocityLifetimeData->getDragCurve());
 				READ_BOOL("limitVelocityLifetime", MultiplyBySize, pLimitVelocityLifetimeData);
 				READ_BOOL("limitVelocityLifetime", MultiplyByVelocity, pLimitVelocityLifetimeData);
 
+				IXParticleEffectEmitterForceLifetimeData *pForceLifetimeData = pEmitter->getForceLifetimeData();
+				if(pConfig->tryGetBool(szSection, "forceLifetimeData.Enabled", &bVal))
+				{
+					pForceLifetimeData->enable(bVal);
+				}
+				ReadMinMaxCurve(pConfig, szSection, "forceLifetimeData.ForceXCurve", pForceLifetimeData->getForceXCurve());
+				ReadMinMaxCurve(pConfig, szSection, "forceLifetimeData.ForceYCurve", pForceLifetimeData->getForceYCurve());
+				ReadMinMaxCurve(pConfig, szSection, "forceLifetimeData.ForceZCurve", pForceLifetimeData->getForceZCurve());
+				READ_INT("forceLifetimeData", SimulationSpace, pForceLifetimeData, XPARTICLE_SIMULATION_SPACE);
+				READ_BOOL("forceLifetimeData", Randomize, pForceLifetimeData);
+
+				IXParticleEffectEmitterSizeLifetimeData *pSizeLifetimeData = pEmitter->getSizeLifetimeData();
+				if(pConfig->tryGetBool(szSection, "sizeLifetimeData.Enabled", &bVal))
+				{
+					pSizeLifetimeData->enable(bVal);
+				}
+				READ_BOOL("sizeLifetimeData", SeparateAxes, pSizeLifetimeData);
+				ReadMinMaxCurve(pConfig, szSection, "sizeLifetimeData.SizeXCurve", pSizeLifetimeData->getSizeXCurve());
+				ReadMinMaxCurve(pConfig, szSection, "sizeLifetimeData.SizeYCurve", pSizeLifetimeData->getSizeYCurve());
+				ReadMinMaxCurve(pConfig, szSection, "sizeLifetimeData.SizeZCurve", pSizeLifetimeData->getSizeZCurve());
+
+				IXParticleEffectEmitterSizeSpeedData *pSizeSpeedData = pEmitter->getSizeSpeedData();
+				if(pConfig->tryGetBool(szSection, "sizeSpeedData.Enabled", &bVal))
+				{
+					pSizeSpeedData->enable(bVal);
+				}
+				READ_BOOL("sizeSpeedData", SeparateAxes, pSizeSpeedData);
+				ReadMinMaxCurve(pConfig, szSection, "sizeSpeedData.SizeXCurve", pSizeSpeedData->getSizeXCurve());
+				ReadMinMaxCurve(pConfig, szSection, "sizeSpeedData.SizeYCurve", pSizeSpeedData->getSizeYCurve());
+				ReadMinMaxCurve(pConfig, szSection, "sizeSpeedData.SizeZCurve", pSizeSpeedData->getSizeZCurve());
+				READ_V2("sizeSpeedData", SpeedRange, pSizeSpeedData);
+
+				IXParticleEffectEmitterRotationLifetimeData *pRotationLifetimeData = pEmitter->getRotationLifetimeData();
+				if(pConfig->tryGetBool(szSection, "rotationLifetimeData.Enabled", &bVal))
+				{
+					pRotationLifetimeData->enable(bVal);
+				}
+				READ_BOOL("rotationLifetimeData", SeparateAxes, pRotationLifetimeData);
+				ReadMinMaxCurve(pConfig, szSection, "rotationLifetimeData.AngularVelocityXCurve", pRotationLifetimeData->getAngularVelocityXCurve());
+				ReadMinMaxCurve(pConfig, szSection, "rotationLifetimeData.AngularVelocityYCurve", pRotationLifetimeData->getAngularVelocityYCurve());
+				ReadMinMaxCurve(pConfig, szSection, "rotationLifetimeData.AngularVelocityZCurve", pRotationLifetimeData->getAngularVelocityZCurve());
+
+				IXParticleEffectEmitterRotationSpeedData *pRotationSpeedData = pEmitter->getRotationSpeedData();
+				if(pConfig->tryGetBool(szSection, "rotationSpeedData.Enabled", &bVal))
+				{
+					pRotationSpeedData->enable(bVal);
+				}
+				READ_BOOL("rotationSpeedData", SeparateAxes, pRotationSpeedData);
+				ReadMinMaxCurve(pConfig, szSection, "rotationSpeedData.AngularVelocityXCurve", pRotationSpeedData->getAngularVelocityXCurve());
+				ReadMinMaxCurve(pConfig, szSection, "rotationSpeedData.AngularVelocityYCurve", pRotationSpeedData->getAngularVelocityYCurve());
+				ReadMinMaxCurve(pConfig, szSection, "rotationSpeedData.AngularVelocityZCurve", pRotationSpeedData->getAngularVelocityZCurve());
+				READ_V2("rotationSpeedData", SpeedRange, pRotationSpeedData);
+
+				IXParticleEffectEmitterLifetimeEmitterSpeedData *pLifetimeEmitterSpeedData = pEmitter->getLifetimeEmitterSpeedData();
+				if(pConfig->tryGetBool(szSection, "lifetimeEmitterSpeedData.Enabled", &bVal))
+				{
+					pLifetimeEmitterSpeedData->enable(bVal);
+				}
+				ReadMinMaxCurve(pConfig, szSection, "lifetimeEmitterSpeedData.MultiplierCurve", pLifetimeEmitterSpeedData->getMultiplierCurve());
+				READ_V2("lifetimeEmitterSpeedData", SpeedRange, pLifetimeEmitterSpeedData);
+
+				IXParticleEffectEmitterColorLifetimeData *pColorLifetimeData = pEmitter->getColorLifetimeData();
+				if(pConfig->tryGetBool(szSection, "colorLifetimeData.Enabled", &bVal))
+				{
+					pColorLifetimeData->enable(bVal);
+				}
+				ReadTwoGradients(pConfig, szSection, "colorLifetimeData.Color", pColorLifetimeData->getColor());
+
+				IXParticleEffectEmitterColorSpeedData *pColorSpeedData = pEmitter->getColorSpeedData();
+				if(pConfig->tryGetBool(szSection, "colorSpeedData.Enabled", &bVal))
+				{
+					pColorSpeedData->enable(bVal);
+				}
+				ReadTwoGradients(pConfig, szSection, "colorSpeedData.Color", pColorSpeedData->getColor());
+				READ_V2("colorSpeedData", SpeedRange, pColorSpeedData);
+
 				isLoaded = true;
 			}
 
 #undef READ_V4
+#undef READ_V3
+#undef READ_V2
 #undef READ_BOOL
 #undef READ_UINT
 #undef READ_INT
@@ -320,7 +634,7 @@ bool CEffectLoader::loadFromFile(const char *szFile, CParticleEffect *pEffect)
 		}
 		else
 		{
-			LibReport(REPORT_MSG_LEVEL_ERROR, "Invalid effect/emitters value in %s", szFile);
+			LogError("Invalid effect/emitters value in %s\n", szFile);
 		}
 	}
 
@@ -351,6 +665,8 @@ bool CEffectLoader::saveToFile(const char *szFile, CParticleEffect *pEffect)
 
 		IXParticleEffectEmitter *pEmitter = pEffect->getEmitterAt(i);
 
+		pConfig->set(szSection, "name", pEmitter->getName());
+
 		auto *pGenericData = pEmitter->getGenericData();
 		pConfig->setFloat(szSection, "generic.Duration", pGenericData->getDuration());
 		pConfig->setBool(szSection, "generic.Looping", pGenericData->getLooping());
@@ -366,7 +682,7 @@ bool CEffectLoader::saveToFile(const char *szFile, CParticleEffect *pEffect)
 		pConfig->setInt(szSection, "generic.RingBufferMode", pGenericData->getRingBufferMode());
 		SaveMinMaxCurve(pConfig, szSection, "generic.RingBufferLoopRangeCurve", pGenericData->getRingBufferLoopRangeCurve());
 		pConfig->setInt(szSection, "generic.SimulationSpace", pGenericData->getSimulationSpace());
-		pConfig->setVector4(szSection, "generic.StartColor", pGenericData->getStartColor());
+		SaveTwoGradients(pConfig, szSection, "generic.StartColor", pGenericData->getStartColorGradient());
 		SaveMinMaxCurve(pConfig, szSection, "generic.StartRotationCurve", pGenericData->getStartRotationCurve());
 		pConfig->setBool(szSection, "generic.StartRotationSeparate", pGenericData->getStartRotationSeparate());
 		SaveMinMaxCurve(pConfig, szSection, "generic.StartRotationXCurve", pGenericData->getStartRotationXCurve());
@@ -396,7 +712,11 @@ bool CEffectLoader::saveToFile(const char *szFile, CParticleEffect *pEffect)
 			SaveMinMaxCurve(pConfig, szSection, szKey, pBurst->getCountCurve());
 		}
 
+		auto *pRenderData = pEmitter->getRenderData();
+		pConfig->set(szSection, "render.Material", pRenderData->getMaterial());
+
 		auto *pShapeData = pEmitter->getShapeData();
+		pConfig->setBool(szSection, "shape.Enabled", pShapeData->isEnabled());
 		pConfig->setInt(szSection, "shape.Shape", pShapeData->getShape());
 		pConfig->setFloat(szSection, "shape.Radius", pShapeData->getRadius());
 		pConfig->setFloat(szSection, "shape.RadiusThickness", pShapeData->getRadiusThickness());
@@ -433,11 +753,65 @@ bool CEffectLoader::saveToFile(const char *szFile, CParticleEffect *pEffect)
 		auto *pLimitVelocityLifetimeData = pEmitter->getLimitVelocityLifetimeData();
 		pConfig->setBool(szSection, "limitVelocityLifetime.Enabled", pLimitVelocityLifetimeData->isEnabled());
 		pConfig->setBool(szSection, "limitVelocityLifetime.SeparateAxes", pLimitVelocityLifetimeData->getSeparateAxes());
-		SaveMinMaxCurve(pConfig, szSection, "limitVelocityLifetime.SpeedCurve", pLimitVelocityLifetimeData->getSpeedCurve());
+		SaveMinMaxCurve(pConfig, szSection, "limitVelocityLifetime.LimitCurveX", pLimitVelocityLifetimeData->getLimitXCurve());
+		SaveMinMaxCurve(pConfig, szSection, "limitVelocityLifetime.LimitCurveY", pLimitVelocityLifetimeData->getLimitYCurve());
+		SaveMinMaxCurve(pConfig, szSection, "limitVelocityLifetime.LimitCurveZ", pLimitVelocityLifetimeData->getLimitZCurve());
 		SaveMinMaxCurve(pConfig, szSection, "limitVelocityLifetime.DampenCurve", pLimitVelocityLifetimeData->getDampenCurve());
 		SaveMinMaxCurve(pConfig, szSection, "limitVelocityLifetime.DragCurve", pLimitVelocityLifetimeData->getDragCurve());
 		pConfig->setBool(szSection, "limitVelocityLifetime.MultiplyBySize", pLimitVelocityLifetimeData->getMultiplyBySize());
 		pConfig->setBool(szSection, "limitVelocityLifetime.MultiplyByVelocity", pLimitVelocityLifetimeData->getMultiplyByVelocity());
+
+		IXParticleEffectEmitterForceLifetimeData *pForceLifetimeData = pEmitter->getForceLifetimeData();
+		pConfig->setBool(szSection, "forceLifetimeData.Enabled", pForceLifetimeData->isEnabled());
+		SaveMinMaxCurve(pConfig, szSection, "forceLifetimeData.ForceXCurve", pForceLifetimeData->getForceXCurve());
+		SaveMinMaxCurve(pConfig, szSection, "forceLifetimeData.ForceYCurve", pForceLifetimeData->getForceYCurve());
+		SaveMinMaxCurve(pConfig, szSection, "forceLifetimeData.ForceZCurve", pForceLifetimeData->getForceZCurve());
+		pConfig->setInt(szSection, "forceLifetimeData.SimulationSpace", pForceLifetimeData->getSimulationSpace());
+		pConfig->setBool(szSection, "forceLifetimeData.Randomize", pForceLifetimeData->getRandomize());
+
+		IXParticleEffectEmitterSizeLifetimeData *pSizeLifetimeData = pEmitter->getSizeLifetimeData();
+		pConfig->setBool(szSection, "sizeLifetimeData.Enabled", pSizeLifetimeData->isEnabled());
+		pConfig->setBool(szSection, "sizeLifetimeData.SeparateAxes", pSizeLifetimeData->getSeparateAxes());
+		SaveMinMaxCurve(pConfig, szSection, "sizeLifetimeData.SizeXCurve", pSizeLifetimeData->getSizeXCurve());
+		SaveMinMaxCurve(pConfig, szSection, "sizeLifetimeData.SizeYCurve", pSizeLifetimeData->getSizeYCurve());
+		SaveMinMaxCurve(pConfig, szSection, "sizeLifetimeData.SizeZCurve", pSizeLifetimeData->getSizeZCurve());
+
+		IXParticleEffectEmitterSizeSpeedData *pSizeSpeedData = pEmitter->getSizeSpeedData();
+		pConfig->setBool(szSection, "sizeSpeedData.Enabled", pSizeSpeedData->isEnabled());
+		pConfig->setBool(szSection, "sizeSpeedData.SeparateAxes", pSizeSpeedData->getSeparateAxes());
+		SaveMinMaxCurve(pConfig, szSection, "sizeSpeedData.SizeXCurve", pSizeSpeedData->getSizeXCurve());
+		SaveMinMaxCurve(pConfig, szSection, "sizeSpeedData.SizeYCurve", pSizeSpeedData->getSizeYCurve());
+		SaveMinMaxCurve(pConfig, szSection, "sizeSpeedData.SizeZCurve", pSizeSpeedData->getSizeZCurve());
+		pConfig->setVector2(szSection, "sizeSpeedData.SpeedRange", pSizeSpeedData->getSpeedRange());
+
+		IXParticleEffectEmitterRotationLifetimeData *pRotationLifetimeData = pEmitter->getRotationLifetimeData();
+		pConfig->setBool(szSection, "rotationLifetimeData.Enabled", pRotationLifetimeData->isEnabled());
+		pConfig->setBool(szSection, "rotationLifetimeData.SeparateAxes", pRotationLifetimeData->getSeparateAxes());
+		SaveMinMaxCurve(pConfig, szSection, "rotationLifetimeData.AngularVelocityXCurve", pRotationLifetimeData->getAngularVelocityXCurve());
+		SaveMinMaxCurve(pConfig, szSection, "rotationLifetimeData.AngularVelocityYCurve", pRotationLifetimeData->getAngularVelocityYCurve());
+		SaveMinMaxCurve(pConfig, szSection, "rotationLifetimeData.AngularVelocityZCurve", pRotationLifetimeData->getAngularVelocityZCurve());
+
+		IXParticleEffectEmitterRotationSpeedData *pRotationSpeedData = pEmitter->getRotationSpeedData();
+		pConfig->setBool(szSection, "rotationSpeedData.Enabled", pRotationSpeedData->isEnabled());
+		pConfig->setBool(szSection, "rotationSpeedData.SeparateAxes", pRotationSpeedData->getSeparateAxes());
+		SaveMinMaxCurve(pConfig, szSection, "rotationSpeedData.AngularVelocityXCurve", pRotationSpeedData->getAngularVelocityXCurve());
+		SaveMinMaxCurve(pConfig, szSection, "rotationSpeedData.AngularVelocityYCurve", pRotationSpeedData->getAngularVelocityYCurve());
+		SaveMinMaxCurve(pConfig, szSection, "rotationSpeedData.AngularVelocityZCurve", pRotationSpeedData->getAngularVelocityZCurve());
+		pConfig->setVector2(szSection, "rotationSpeedData.SpeedRange", pRotationSpeedData->getSpeedRange());
+
+		IXParticleEffectEmitterLifetimeEmitterSpeedData *pLifetimeEmitterSpeedData = pEmitter->getLifetimeEmitterSpeedData();
+		pConfig->setBool(szSection, "lifetimeEmitterSpeedData.Enabled", pLifetimeEmitterSpeedData->isEnabled());
+		SaveMinMaxCurve(pConfig, szSection, "lifetimeEmitterSpeedData.MultiplierCurve", pLifetimeEmitterSpeedData->getMultiplierCurve());
+		pConfig->setVector2(szSection, "lifetimeEmitterSpeedData.SpeedRange", pLifetimeEmitterSpeedData->getSpeedRange());
+
+		IXParticleEffectEmitterColorLifetimeData *pColorLifetimeData = pEmitter->getColorLifetimeData();
+		pConfig->setBool(szSection, "colorLifetimeData.Enabled", pColorLifetimeData->isEnabled());
+		SaveTwoGradients(pConfig, szSection, "colorLifetimeData.Color", pColorLifetimeData->getColor());
+
+		IXParticleEffectEmitterColorSpeedData *pColorSpeedData = pEmitter->getColorSpeedData();
+		pConfig->setBool(szSection, "colorSpeedData.Enabled", pColorSpeedData->isEnabled());
+		SaveTwoGradients(pConfig, szSection, "colorSpeedData.Color", pColorSpeedData->getColor());
+		pConfig->setVector2(szSection, "colorSpeedData.SpeedRange", pColorSpeedData->getSpeedRange());
 	}
 
 	isSaved = pConfig->save();

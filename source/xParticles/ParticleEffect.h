@@ -15,6 +15,7 @@ public:
 	UINT XMETHODCALLTYPE getEmitterCount() override;
 	void XMETHODCALLTYPE setEmitterCount(UINT uCount) override;
 	IXParticleEffectEmitter* XMETHODCALLTYPE getEmitterAt(UINT uIdx) override;
+	void XMETHODCALLTYPE removeEmitterAt(UINT uIdx) override;
 
 	bool XMETHODCALLTYPE save() override;
 

@@ -8,6 +8,15 @@
 class CParticleEffectEmitterShapeData final: public IXParticleEffectEmitterShapeData
 {
 public:
+	bool XMETHODCALLTYPE isEnabled() const override
+	{
+		return(m_isEnabled);
+	}
+	void XMETHODCALLTYPE enable(bool yesNo) override
+	{
+		m_isEnabled = yesNo;
+	}
+
 	XMETHOD_GETSET_IMPL(Shape, XPARTICLE_SHAPE, shape, m_shape);
 	XMETHOD_GETSET_IMPL(Radius, float, fValue, m_fRadius);
 	XMETHOD_GETSET_IMPL(RadiusThickness, float, fValue, m_fRadiusThickness);
@@ -34,6 +43,8 @@ private:
 	float evalArc(float fMaxAngle, float fTime, UINT uCountInGen, UINT uIdInGen);
 
 private:
+	bool m_isEnabled = false;
+
 	XPARTICLE_SHAPE m_shape = XPS_SPHERE;
 	float m_fRadius = 1.0f;
 	float m_fRadiusThickness = 1.0f;

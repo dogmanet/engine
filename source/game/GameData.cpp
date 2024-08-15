@@ -1143,8 +1143,8 @@ GameData::GameData(HWND hWnd, bool isGame):
 		wdesc.flags = XWF_BUTTON_CLOSE | XWF_BUTTON_MINIMIZE | XWF_BUTTON_MAXIMIZE | /*XWF_NORESIZE | */XWF_TRANSPARENT;
 		IXUI *pXUI = (IXUI*)Core_GetIXCore()->getPluginManager()->getInterface(IXUI_GUID);
 		IUIWindow *pWindow = pXUI->createWindow(&wdesc);
-		IUIButton *pButton = pXUI->createButton();
-		pWindow->insertChild(pButton);
+		//IUIButton *pButton = pXUI->createButton();
+		//pWindow->insertChild(pButton);
 	});
 
 	Core_0RegisterConcmd("calc", []()

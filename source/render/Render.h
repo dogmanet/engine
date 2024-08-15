@@ -5,6 +5,7 @@
 #include <xcommon/IXCore.h>
 #include <common/AAString.h>
 #include "FinalTarget.h"
+#include "TextureTarget.h"
 #include <mtrl/IXMaterialSystem.h>
 #include <xcommon/IXRenderable.h>
 #include "ShaderManager.h"
@@ -38,6 +39,8 @@ public:
 
 	bool XMETHODCALLTYPE newFinalTarget(SXWINDOW hWnd, const char *szName, IXRenderTarget **ppOut) override;
 
+	bool XMETHODCALLTYPE newTextureTarget(IXRenderTarget **ppOut, char *szTextureName = NULL, size_t sizeTextureNameBuffer = 0) override;
+
 	bool XMETHODCALLTYPE getFinalTarget(const char *szName, IXRenderTarget **ppOut) override;
 
 	bool XMETHODCALLTYPE getGraphNode(const char *szName, IXRenderGraphNode **ppOut) override;
@@ -45,6 +48,7 @@ public:
 	bool XMETHODCALLTYPE getGraph(const char *szName, IXRenderGraph **ppOut) override;
 
 	void onFinalTargetReleased(CFinalTarget *pTarget);
+	void onTextureTargetReleased(CTextureTarget *pTarget);
 
 	void XMETHODCALLTYPE updateVisibility() override;
 
@@ -153,6 +157,7 @@ private:
 
 	Map<AAString, FinalTarget> m_mapFinalTargets;
 	Array<FinalTarget*> m_aFinalTargets;
+	Array<CTextureTarget*> m_aTextureTargets;
 
 	Map<AAString, GraphNode> m_mapRenderNodes;
 
@@ -180,7 +185,7 @@ private:
 	} m_cameraShaderData;
 	IGXConstantBuffer *m_pCameraShaderData = NULL;
 
-	CFinalTarget *m_pCurrentFinalTarget = NULL;
+	CBaseTarget *m_pCurrentRenderTarget = NULL;
 
 	CShaderManager *m_pShaderManager = NULL;
 

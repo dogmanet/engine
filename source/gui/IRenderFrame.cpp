@@ -58,7 +58,7 @@ namespace gui
 				{
 					return;
 				}
-						
+								
 				m_pNode->setRenderFrame(this);
 				const IDOMnodeCollection * pChilds = pNode->getChilds();
 				bool bNeedBoxWrap = false;
@@ -216,6 +216,10 @@ namespace gui
 
 			IRenderFrame::~IRenderFrame()
 			{
+				if(m_pNode && m_pNode->getRenderFrame() == this)
+				{
+					m_pNode->setRenderFrame(NULL);
+				}
 				m_pDoc->forgotRenderFrame(this);
 
 				for(UINT i = 0, l = m_pChilds.size(); i < l; i++)
@@ -307,6 +311,19 @@ namespace gui
 
 			void IRenderFrame::addChild(IRenderFrame * pChild, bool bOutFlow)
 			{
+				if(bOutFlow)
+				{
+					int idx = m_pChildsOutFlow.indexOf(pChild, [](IRenderFrame *a, IRenderFrame *b){
+						return(a->getNode() == b->getNode());
+					});
+					if(idx >= 0)
+					{
+						removeChild(m_pChildsOutFlow[idx], pChild);
+						return;
+					}
+				}
+
+
 				Array<IRenderFrame*> * pArr = bOutFlow ? &m_pChildsOutFlow : &m_pChilds;
 				pChild->isOutOfFlow(bOutFlow);
 				pChild->m_pPrev = pChild->m_pNext = NULL;
@@ -388,11 +405,11 @@ namespace gui
 
 			int IRenderFrame::getScrollTop()
 			{
-				return(m_iScrollTop);
+				return(m_pNode ? m_pNode->getScrollTop() : 0);
 			}
 			int IRenderFrame::getScrollLeft()
 			{
-				return(m_iScrollLeft);
+				return(m_pNode ? m_pNode->getScrollLeft() : 0);
 			}
 
 			int IRenderFrame::getScrollTopMax()
@@ -417,13 +434,19 @@ namespace gui
 						x = m_iScrollTopMax;
 					}
 				}
-				m_iScrollTop = x;
-				m_pDoc->markDirty();
+				if(m_pNode)
+				{
+					m_pNode->setScrollTop(x);
+					m_pDoc->markDirty();
+				}
 			}
 			void IRenderFrame::setScrollLeft(int x)
 			{
-				m_iScrollLeft = x;
-				m_pDoc->markDirty();
+				if(m_pNode)
+				{
+					m_pNode->setScrollLeft(x);
+					m_pDoc->markDirty();
+				}
 			}
 
 			//m_iScrollSpeedX
@@ -441,7 +464,7 @@ namespace gui
 				int accell = 5;
 				if(m_iScrollSpeedX != 0)
 				{
-					setScrollLeft(m_iScrollLeft + m_iScrollSpeedX);
+					setScrollLeft(getScrollLeft() + m_iScrollSpeedX);
 					int sign = m_iScrollSpeedX > 0 ? 1 : -1;
 
 					m_iScrollSpeedX -= accell * sign;
@@ -452,7 +475,7 @@ namespace gui
 				}
 				if(m_iScrollSpeedY != 0)
 				{
-					setScrollTop(m_iScrollTop + m_iScrollSpeedY, true);
+					setScrollTop(getScrollTop() + m_iScrollSpeedY, true);
 					int sign = m_iScrollSpeedY > 0 ? 1 : -1;
 
 					m_iScrollSpeedY -= accell * sign;
@@ -619,8 +642,10 @@ namespace gui
 				}*/
 				if(m_pParent && m_pParent->hasFixedSize() && changed && isLastChild())
 				{
+#if 0
 					m_pParent->m_iTopPos += h;
 					m_pParent->m_iScrollTopMax += h;
+#endif
 				}
 				return(h);
 			}
@@ -775,7 +800,7 @@ namespace gui
 
 			UINT IRenderFrame::getClientTop()
 			{
-				UINT r = m_iYpos - m_iScrollTop;
+				UINT r = m_iYpos - getScrollTop();
 				if(m_pParent)
 				{
 					r += m_pParent->getClientTop();
@@ -784,7 +809,7 @@ namespace gui
 			}
 			UINT IRenderFrame::getClientLeft()
 			{
-				UINT r = m_iXpos - m_iScrollLeft;
+				UINT r = m_iXpos - getScrollLeft();
 				if(m_pParent)
 				{
 					r += m_pParent->getClientLeft();
@@ -866,7 +891,8 @@ namespace gui
 						{
 							m_bNeedCut = true;
 							m_iScrollLeftMax = iNewWidth - m_iWidth;
-							m_iScrollLeft = m_iScrollLeftMax;
+							//m_iScrollLeft = m_iScrollLeftMax;
+							setScrollLeft(m_iScrollLeftMax);
 						}
 					}
 				}
@@ -1309,8 +1335,8 @@ namespace gui
 						pt = mt._42;
 					}
 
-					float2 vTexTransform((float)((m_bBackgroundScrolling ? m_iScrollLeft : 0) + m_iBackgroundOffsetX + pl) / m_fBackgroundImageSize.x, // X-shift
-						(float)((m_bBackgroundScrolling ? m_iScrollTop : 0) + m_iBackgroundOffsetY + pt) / m_fBackgroundImageSize.y);
+					float2 vTexTransform((float)((m_bBackgroundScrolling ? getScrollLeft() : 0) + m_iBackgroundOffsetX + pl) / m_fBackgroundImageSize.x, // X-shift
+						(float)((m_bBackgroundScrolling ? getScrollTop() : 0) + m_iBackgroundOffsetY + pt) / m_fBackgroundImageSize.y);
 
 				//	vTexTransform.x = 0;
 				//	vTexTransform.y = 0;
@@ -1557,17 +1583,21 @@ namespace gui
 
 				RECT prc = m_pParent->getVisibleRect();
 
-
 				rc = getClientRect();
-				if(m_pParent->getNode() && m_pParent->getNode()->getStyle()->overflow_y->getInt() != css::ICSSproperty::OVERFLOW_VISIBLE)
+
+				if(m_pParent->getNode())
 				{
-					rc.top = max(rc.top, prc.top);
-					rc.bottom = min(rc.bottom, prc.bottom);
-				}
-				if(m_pParent->getNode() && m_pParent->getNode()->getStyle()->overflow_x->getInt() != css::ICSSproperty::OVERFLOW_VISIBLE)
-				{
-					rc.left = max(rc.left, prc.left);
-					rc.right = min(rc.right, prc.right);
+					css::ICSSstyle *pStyle = m_pParent->getNode()->getStyle();
+					if(pStyle->overflow_y->isSet() && pStyle->overflow_y->getInt() != css::ICSSproperty::OVERFLOW_VISIBLE)
+					{
+						rc.top = max(rc.top, prc.top);
+						rc.bottom = min(rc.bottom, prc.bottom);
+					}
+					if(pStyle->overflow_x->isSet() && pStyle->overflow_x->getInt() != css::ICSSproperty::OVERFLOW_VISIBLE)
+					{
+						rc.left = max(rc.left, prc.left);
+						rc.right = min(rc.right, prc.right);
+					}
 				}
 
 				return(rc);
@@ -1667,6 +1697,25 @@ namespace gui
 						{
 							m_iWidth = style->width->getPX(_parentWidth);
 						}
+
+						if(style->min_width->isSet())
+						{
+							int iMinWidth = style->min_width->getPX(_parentWidth);
+							if(m_iWidth < iMinWidth)
+							{
+								m_iWidth = iMinWidth;
+							}
+						}
+
+						if(style->max_width->isSet())
+						{
+							int iMaxWidth = style->max_width->getPX(_parentWidth);
+							if(m_iWidth > iMaxWidth)
+							{
+								m_iWidth = iMaxWidth;
+							}
+						}
+
 						m_iYpos = m_pParent->getContentTop();
 					}
 					else
@@ -1785,6 +1834,12 @@ namespace gui
 					updateBorder();
 					updateBackground();
 				}
+
+				if(m_pNode->wantLayoutEvents())
+				{
+					m_pNode->triggerLayoutEvent();
+				}
+				
 				return(bReturnHeight ? m_iHeight : 0);
 			}
 
@@ -1793,28 +1848,32 @@ namespace gui
 				IGXContext *pCtx = GetGUI()->getDevice()->getThreadContext();
 
 				pCtx->setStencilRef(lvl);
-				if(m_iScrollTop != 0 || m_iScrollTopMax != 0)
+				if(getScrollTop() != 0 || m_iScrollTopMax != 0)
 				{
 					//m_iScrollTop = Config::TestScrollPos;
-					if(m_iScrollTop > m_iScrollTopMax)
+					if(getScrollTop() > m_iScrollTopMax)
 					{
-						m_iScrollTop = /*Config::TestScrollPos = */m_iScrollTopMax;
+						//m_iScrollTop = /*Config::TestScrollPos = */m_iScrollTopMax;
+						setScrollTop(m_iScrollTopMax);
 					}
-					if(m_iScrollTop < 0)
+					if(getScrollTop() < 0)
 					{
-						m_iScrollTop/* = Config::TestScrollPos*/ = 0;
+						//m_iScrollTop/* = Config::TestScrollPos*/ = 0;
+						setScrollTop(0);
 					}
 				}
 				if(m_iScrollLeftMax != 0)
 				{
 					//m_iScrollTop = Config::TestScrollPos;
-					if(m_iScrollLeft > m_iScrollLeftMax)
+					if(getScrollLeft() > m_iScrollLeftMax)
 					{
-						m_iScrollLeft = /*Config::TestScrollPos = */m_iScrollLeftMax;
+						//m_iScrollLeft = /*Config::TestScrollPos = */m_iScrollLeftMax;
+						setScrollLeft(m_iScrollLeftMax);
 					}
-					if(m_iScrollLeft < 0)
+					if(getScrollLeft() < 0)
 					{
-						m_iScrollLeft/* = Config::TestScrollPos*/ = 0;
+						//m_iScrollLeft/* = Config::TestScrollPos*/ = 0;
+						setScrollLeft(0);
 					}
 				}
 				if(m_iScrollTopMax != 0 && !m_pScrollBarVert)
@@ -1916,7 +1975,7 @@ namespace gui
 					}
 
 
-					m_pDoc->getTranslationManager()->pushMatrix(SMMatrixTranslation(-m_iScrollLeft, -m_iScrollTop, 0.0f));
+					m_pDoc->getTranslationManager()->pushMatrix(SMMatrixTranslation(-getScrollLeft(), -getScrollTop(), 0.0f));
 					BaseClass::render(lvl + (m_bNeedCut ? 1 : 0));
 					m_pDoc->getTranslationManager()->popMatrix();
 					if(m_bNeedCut)
@@ -3321,12 +3380,60 @@ namespace gui
 				return(iHeight);
 			}
 
+			static void StoreFrames(CDOMnode *pNode, Array<IRenderFrame*> &aFrames, const UINT c_uOptionNode)
+			{
+				if(pNode->getNodeId() != c_uOptionNode)
+				{
+					aFrames.push_back(pNode->getRenderFrame());
+
+					const IDOMnodeCollection &aNodeChildren = *pNode->getChilds();
+					fora(i, aNodeChildren)
+					{
+						StoreFrames((CDOMnode*)aNodeChildren[i], aFrames, c_uOptionNode);
+					}
+				}
+			}
+
+			static void RestoreFrames(CDOMnode *pNode, IRenderSelectOptionsBlock *pFrame, Array<IRenderFrame*> &aFrames, const UINT c_uOptionNode)
+			{
+				if(pNode->getNodeId() != c_uOptionNode)
+				{
+					const IDOMnodeCollection &aNodeChildren = *pNode->getChilds();
+					forar(i, aNodeChildren)
+					{
+						RestoreFrames((CDOMnode*)aNodeChildren[i], pFrame, aFrames, c_uOptionNode);
+					}
+
+					pFrame->removeChild(pNode->getRenderFrame());
+					pNode->setRenderFrame(aFrames[aFrames.size() - 1]);
+					aFrames.erase(aFrames.size() - 1);
+				}
+			}
+
 			void IRenderSelectBlock::onCreated()
 			{
 				assert(!m_pOptionsFrame);
 
-				IRenderSelectOptionsBlock *pFrame = new IRenderSelectOptionsBlock(this, m_pRootNode);
+				const UINT c_uOptionNode = CDOMnode::getNodeIdByName(L"option");
 
+				IRenderSelectOptionsBlock *pFrame;
+
+				{
+					const IDOMnodeCollection &aNodeChildren = *m_pNode->getChilds();
+					Array<IRenderFrame*> aFrames(aNodeChildren.size());
+
+					fora(i, aNodeChildren)
+					{
+						StoreFrames((CDOMnode*)aNodeChildren[i], aFrames, c_uOptionNode);
+					}
+
+					pFrame = new IRenderSelectOptionsBlock(this, m_pRootNode);
+
+					forar(i, aNodeChildren)
+					{
+						RestoreFrames((CDOMnode*)aNodeChildren[i], pFrame, aFrames, c_uOptionNode);
+					}
+				}
 				getNode()->setRenderFrame(this);
 
 				CDOMnode *pTextNode = NULL;
@@ -3345,8 +3452,11 @@ namespace gui
 
 				for(int i = (int)m_pChilds.size() - 1; i >= (bAppend ? 0 : 1); --i)
 				{
-					mem_delete(m_pChilds[i]);
-					m_pChilds.erase(i);
+					if(m_pChilds[i]->getNode()->getNodeId() == c_uOptionNode)
+					{
+						mem_delete(m_pChilds[i]);
+						m_pChilds.erase(i);
+					}
 				}
 
 				if(!bAppend)
@@ -3358,18 +3468,27 @@ namespace gui
 				const IDOMnodeCollection &nodeChildren = *(m_pNode->getChilds());
 				StringW sCurrentValue = m_pNode->getAttribute(L"value");
 				bool bFound = false;
+				IDOMnode *pFirstOptionNode = NULL;
 				for(int i = 0, l = nodeChildren.size(); i < l; ++i)
 				{
-					if(sCurrentValue == nodeChildren[i]->getAttribute(L"value"))
+					if(((CDOMnode*)nodeChildren[i])->getNodeId() == c_uOptionNode)
 					{
-						pTextNode->setText(nodeChildren[i]->getText());
-						bFound = true;
-						break;
+						if(!pFirstOptionNode)
+						{
+							pFirstOptionNode = nodeChildren[i];
+						}
+
+						if(sCurrentValue == nodeChildren[i]->getAttribute(L"value"))
+						{
+							pTextNode->setText(nodeChildren[i]->getText());
+							bFound = true;
+							break;
+						}
 					}
 				}
-				if(!bFound && nodeChildren.size())
+				if(!bFound && pFirstOptionNode)
 				{
-					pTextNode->setText(nodeChildren[0]->getText());
+					pTextNode->setText(pFirstOptionNode->getText());
 				}
 
 				if(bAppend)
@@ -3381,7 +3500,7 @@ namespace gui
 					addChild(pTextFrame);
 				}
 
-				IRenderFrame * pCur = this;
+				IRenderFrame *pCur = getParent();
 				while(pCur->getParent() && pCur->getNode()->getStyle()->position->getInt() == css::ICSSproperty::POSITION_STATIC)
 				{
 					pCur = pCur->getParent();

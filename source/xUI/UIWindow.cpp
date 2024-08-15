@@ -4,6 +4,11 @@
 
 INT_PTR XMETHODCALLTYPE CWindowCallback::onMessage(UINT msg, WPARAM wParam, LPARAM lParam, IXWindow *pWindow)
 {
+	if(!m_pUIWindow)
+	{
+		return(pWindow->runDefaultCallback(msg, wParam, lParam));
+	}
+
 	if(!m_pDesktopStack->putMessage(msg, wParam, lParam))
 	{
 		return(TRUE);
@@ -17,8 +22,7 @@ INT_PTR XMETHODCALLTYPE CWindowCallback::onMessage(UINT msg, WPARAM wParam, LPAR
 		m_isScreenSizeChanged = true;
 		if(!m_isResizing)
 		{
-			m_pUIWindow->releaseSwapChain();
-			m_pUIWindow->createSwapChain(m_uNewWidth, m_uNewHeight);
+			m_pUIWindow->onResize(m_uNewWidth, m_uNewHeight);
 		}
 		break;
 
@@ -32,10 +36,16 @@ INT_PTR XMETHODCALLTYPE CWindowCallback::onMessage(UINT msg, WPARAM wParam, LPAR
 		if(m_isScreenSizeChanged)
 		{
 			m_isScreenSizeChanged = false;
-			m_pUIWindow->releaseSwapChain();
-			m_pUIWindow->createSwapChain(m_uNewWidth, m_uNewHeight);
+			m_pUIWindow->onResize(m_uNewWidth, m_uNewHeight);
 		}
 		break;
+
+	case WM_CLOSE:
+		if(!m_pUIWindow->onClose())
+		{
+			break;
+		}
+		// fallthrough
 
 	default:
 		return(pWindow->runDefaultCallback(msg, wParam, lParam));
@@ -44,6 +54,11 @@ INT_PTR XMETHODCALLTYPE CWindowCallback::onMessage(UINT msg, WPARAM wParam, LPAR
 	return(0);
 }
 
+void CWindowCallback::dropWindow()
+{
+	m_pUIWindow = NULL;
+	m_pDesktopStack = NULL;
+}
 
 //##########################################################################
 
@@ -53,10 +68,20 @@ CUIWindow::CUIWindow(CXUI *pXUI, const XWINDOW_DESC *pWindowDesc, IUIWindow *pPa
 	IXWindow *pXParent = NULL;
 	if(pParent)
 	{
-		pXParent = ((CUIWindow*)pParent)->getXWindow();
+		if(IsWindow((HWND)pParent))
+		{
+			FIXME("HACK: Remove that as soon as all windows is turned to xWindow");
+			pXParent = (IXWindow*)pParent;
+		}
+		else
+		{
+			pXParent = ((CUIWindow*)pParent)->getXWindow();
+		}
 	}
 	m_pDesktopStack = pXUI->getGUI()->newDesktopStack("editor_gui/", (UINT)pWindowDesc->iSizeX, (UINT)pWindowDesc->iSizeY);
-	m_pDefaultDesktop = m_pDesktopStack->createDesktopW(L"default", L"main.html");
+	wchar_t wszName[64];
+	swprintf(wszName, L"xui/0x%p", this);
+	m_pDefaultDesktop = m_pDesktopStack->createDesktopW(wszName, L"main.html");
 	m_pDesktopStack->setActiveDesktop(m_pDefaultDesktop);
 
 	m_pDesktopStack->registerCallbackDefault([](const WCHAR *cb_name, gui::IEvent *ev)
@@ -75,8 +100,9 @@ CUIWindow::CUIWindow(CXUI *pXUI, const XWINDOW_DESC *pWindowDesc, IUIWindow *pPa
 CUIWindow::~CUIWindow()
 {
 	releaseSwapChain();
+	m_pXWindowCallback->dropWindow();
 	mem_release(m_pXWindow);
-	mem_delete(m_pXWindowCallback);
+	mem_release(m_pXWindowCallback);
 	mem_release(m_pDefaultDesktop);
 	mem_release(m_pDesktopStack);
 
@@ -99,6 +125,19 @@ void CUIWindow::createSwapChain(UINT uWidth, UINT uHeight)
 	}
 	m_pGuiSwapChain = m_pXUI->getGXDevice()->createSwapChain(uWidth, uHeight, m_pXWindow->getOSHandle());
 	m_pGuiDepthStencilSurface = m_pXUI->getGXDevice()->createDepthStencilSurface(uWidth, uHeight, GXFMT_D24S8, GXMULTISAMPLE_NONE);
+}
+
+void CUIWindow::onResize(UINT uWidth, UINT uHeight)
+{
+	releaseSwapChain();
+	createSwapChain(uWidth, uHeight);
+
+	if(m_pfnCallback)
+	{
+		gui::IEvent ev;
+		ev.type = gui::GUI_EVENT_TYPE_RESIZE;
+		m_pfnCallback(m_pCallbackContext, NULL, &ev);
+	}
 }
 
 void XMETHODCALLTYPE CUIWindow::hide()
@@ -149,7 +188,66 @@ gui::IDesktop* XMETHODCALLTYPE CUIWindow::getDesktop() const
 
 void CUIWindow::callEventHandler(const WCHAR *cb_name, gui::IEvent *ev)
 {
+	if(!wcscmp(cb_name, L"mbox_click"))
+	{
+		XMESSAGE_BOX_RESULT result = XMBR_OK;
+
+		if(ev->type == gui::GUI_EVENT_TYPE_CLICK)
+		{
+			const wchar_t *wszName = ev->target->getAttribute(L"name").c_str();
+
+			if(!wcscmp(wszName, L"IDOK"))
+			{
+				result = XMBR_OK;
+			}
+			else if(!wcscmp(wszName, L"IDYES"))
+			{
+				result = XMBR_YES;
+			}
+			else if(!wcscmp(wszName, L"IDNO"))
+			{
+				result = XMBR_NO;
+			}
+			else if(!wcscmp(wszName, L"IDCANCEL"))
+			{
+				result = XMBR_CANCEL;
+			}
+			else if(!wcscmp(wszName, L"IDTRYAGAIN"))
+			{
+				result = XMBR_TRY_AGAIN;
+			}
+			else if(!wcscmp(wszName, L"IDCONTINUE"))
+			{
+				result = XMBR_CONTINUE;
+			}
+			else if(!wcscmp(wszName, L"IDRETRY"))
+			{
+				result = XMBR_RETRY;
+			}
+		}
+
+		if((ev->key == KEY_ESCAPE && ((m_messageBoxFlags & 0xf) == XMBF_OK)) || ev->type == gui::GUI_EVENT_TYPE_CLICK)
+		{
+			m_pDesktopStack->popDesktop();
+
+			// copy handler so we can spawn another messagebox from it
+			XMESSAGEBOXFUNC pfnHandler = m_pfnMessageBoxHandler;
+			m_pfnMessageBoxHandler = NULL;
+			pfnHandler(m_pMessageBoxHandlerContext, result);
+		}
+
+		if(ev->key == KEY_ESCAPE)
+		{
+			ev->preventDefault = true;
+		}
+		return;
+	}
+
 	IUIControl *pControl = (IUIControl*)ev->target->getUserData();
+	if(!pControl)
+	{
+		pControl = (IUIControl*)ev->currentTarget->getUserData();
+	}
 
 	if(m_pfnCallback)
 	{
@@ -174,6 +272,8 @@ void CUIWindow::render(IGXContext *pContext)
 	mem_release(pTarget);
 
 	pContext->setDepthStencilSurface(m_pGuiDepthStencilSurface);
+
+	pContext->clear(GX_CLEAR_COLOR);
 
 	m_pDesktopStack->render();
 }
@@ -205,4 +305,119 @@ void XMETHODCALLTYPE CUIWindow::setCallback(XUIWINDOW_PROC pfnCallback, void *pC
 {
 	m_pfnCallback = pfnCallback;
 	m_pCallbackContext = pCtx;
+}
+
+bool CUIWindow::onClose()
+{
+	if(m_pfnCallback)
+	{
+		gui::IEvent ev;
+		ev.type = gui::GUI_EVENT_TYPE_CLOSE;
+
+		m_pfnCallback(m_pCallbackContext, NULL, &ev);
+
+		return(!ev.preventDefault);
+	}
+	return(true);
+}
+
+void XMETHODCALLTYPE CUIWindow::messageBox(const char *szMessage, const char *szTitle, XMESSAGE_BOX_FLAG flags, XMESSAGEBOXFUNC pfnHandler, void *pCtx)
+{
+	assert(!m_pfnMessageBoxHandler);
+	assert(pfnHandler);
+	if(m_pfnMessageBoxHandler)
+	{
+		LogError("Unable to spawn second messagebox!\n");
+		return;
+	}
+	if(!pfnHandler)
+	{
+		LogError("Messagebox handler cannot be NULL!\n");
+		return;
+	}
+
+	m_pfnMessageBoxHandler = pfnHandler;
+	m_pMessageBoxHandlerContext = pCtx;
+	m_messageBoxFlags = flags;
+
+	XMESSAGE_BOX_FLAG icon = (XMESSAGE_BOX_FLAG)(flags & 0xf0);
+	XMESSAGE_BOX_FLAG buttons = (XMESSAGE_BOX_FLAG)(flags & 0x0f);
+	gui::IDesktop *dp;
+	if((icon == XMBF_ICONERROR || icon == XMBF_ICONWARNING) && buttons == XMBF_OK)
+	{
+		dp = m_pDesktopStack->createDesktopW(L"MessageBoxUI", L"sys/messagebox_warn.html");
+		
+		gui::dom::IDOMdocument *doc = dp->getDocument();
+		doc->getElementById(L"mb_title")->setText(StringW(szTitle ? CMB2WC(szTitle) : ((flags & XMBF_ICONERROR) ? L"ERROR" : L"WARNING")), TRUE);
+		doc->getElementById(L"mb_text")->setText(StringW(CMB2WC(szMessage)), TRUE);
+
+		m_pDesktopStack->pushDesktop(dp);
+	}
+	else
+	{
+		dp = m_pDesktopStack->createDesktopW(L"MessageBoxUI", L"sys/messagebox_reg.html");
+
+		gui::dom::IDOMdocument *doc = dp->getDocument();
+
+		const wchar_t *wszDefaultTitle = NULL;
+		switch(icon)
+		{
+		case XMBF_ICONERROR:
+			wszDefaultTitle = L"ERROR";
+			break;
+		case XMBF_ICONWARNING:
+			wszDefaultTitle = L"WARNING";
+			break;
+		case XMBF_ICONINFORMATION:
+			wszDefaultTitle = L"INFO";
+			break;
+		case XMBF_ICONQUESTION:
+			wszDefaultTitle = L"QUESTION";
+			break;
+		}
+
+		const wchar_t *wszId = NULL;
+		switch(flags & 0xF)
+		{
+		case XMBF_OK:
+			wszId = L"XMBF_OK";
+			break;
+		case XMBF_YESNO:
+			wszId = L"XMBF_YESNO";
+			break;
+		case XMBF_YESNOCANCEL:
+			wszId = L"XMBF_YESNOCANCEL";
+			break;
+		case XMBF_CANCELTRYCONTINUE:
+			wszId = L"XMBF_CANCELTRYCONTINUE";
+			break;
+		case XMBF_OKCANCEL:
+			wszId = L"XMBF_OKCANCEL";
+			break;
+		case XMBF_RETRYCANCEL:
+			wszId = L"XMBF_RETRYCANCEL";
+			break;
+		}
+
+		if(wszId)
+		{
+			gui::dom::IDOMnode *pNode = doc->getElementById(wszId);
+			if(pNode)
+			{
+				pNode->getStyleSelf()->display->unset();
+				pNode->updateStyles(true);
+			}
+		}
+
+		gui::dom::IDOMnode *pBody = doc->getElementsByTag(L"body")[0][0];
+		pBody->classAdd((icon == XMBF_ICONERROR || icon == XMBF_ICONWARNING) ? L"warn" : L"info");
+		pBody->updateStyles();
+
+		doc->getElementById(L"mb_title")->setText(StringW(szTitle ? CMB2WC(szTitle) : wszDefaultTitle), TRUE);
+		doc->getElementById(L"mb_text")->setText(StringW(CMB2WC(szMessage)), TRUE);
+		
+		m_pDesktopStack->pushDesktop(dp);
+	}
+
+	mem_release(dp);
 }

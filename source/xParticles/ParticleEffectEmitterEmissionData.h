@@ -37,9 +37,16 @@ public:
 		return(&m_aBursts[uIndex]);
 	}
 
+	void XMETHODCALLTYPE removeBurstAt(UINT uIndex) override
+	{
+		assert(uIndex < m_aBursts.size());
+
+		m_aBursts.erase(uIndex);
+	}
+
 private:
-	CMinMaxCurve m_curveRatePerSecond;
-	CMinMaxCurve m_curveRatePerMeter;
+	CMinMaxCurve m_curveRatePerSecond = 10.0f;
+	CMinMaxCurve m_curveRatePerMeter = 0.0f;
 
 	Array<CParticleBurst> m_aBursts;
 };

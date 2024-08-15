@@ -26,12 +26,17 @@ void XMETHODCALLTYPE CCurveEditorGraphNodeData::resize(UINT uWidth, UINT uHeight
 {
 	m_uWidth = uWidth;
 	m_uHeight = uHeight;
-	
+
 	mem_release(m_pSurface);
 	m_pSurface = m_pDevice->createColorTarget(m_uWidth, m_uHeight, GXFMT_A8B8G8R8_SRGB, GXMULTISAMPLE_4_SAMPLES);
 
+	drawDecoration();
+}
+
+void CCurveEditorGraphNodeData::drawDecoration()
+{
 	const float c_fWindowPadding = 5.0f;
-	const float2_t c_vWindowSize((float)uWidth, (float)uHeight);
+	const float2_t c_vWindowSize((float)m_uWidth, (float)m_uHeight);
 
 	m_pRenderer->reset();
 
@@ -133,13 +138,15 @@ void XMETHODCALLTYPE CCurveEditorGraphNodeData::resize(UINT uWidth, UINT uHeight
 		m_pRenderer->jumpTo(float3(vAreaMin.x, fY, 0.0f));
 		m_pRenderer->lineTo(float3(vAreaMax.x, fY, 0.0f));
 
-		sprintf(tmp, "%g", fVal);
+		sprintf(tmp, "%.1f", lerpf(m_vRange.x, m_vRange.y, fVal));
 		m_pRenderer->drawString(tmp, float3(vAreaMin.x - 3.0f, fY, 0.0f));
 	}
 	vColor.w = 1.0f;
 	m_pRenderer->setColor(vColor);
-	m_pRenderer->drawString("0.0", float3(vAreaMin.x - 3.0f, vAreaMin.y, 0.0f));
-	m_pRenderer->drawString("1.0", float3(vAreaMin.x - 3.0f, vAreaMax.y, 0.0f));
+	sprintf(tmp, "%.1f", m_vRange.x);
+	m_pRenderer->drawString(tmp, float3(vAreaMin.x - 3.0f, vAreaMin.y, 0.0f));
+	sprintf(tmp, "%.1f", m_vRange.y);
+	m_pRenderer->drawString(tmp, float3(vAreaMin.x - 3.0f, vAreaMax.y, 0.0f));
 
 
 	fp.verticalAlign = XGTVA_TOP;
@@ -443,4 +450,12 @@ void CCurveEditorGraphNodeData::drawArea(IXMinMaxCurve *pCurve)
 		fYMinPrev = fYMin;
 		fYMaxPrev = fYMax;
 	}
+}
+
+void CCurveEditorGraphNodeData::updateRange(float fMin, float fMax)
+{
+	m_vRange.x = fMin;
+	m_vRange.y = fMax;
+
+	drawDecoration();
 }

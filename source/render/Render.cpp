@@ -58,6 +58,21 @@ bool XMETHODCALLTYPE CRender::newFinalTarget(SXWINDOW hWnd, const char *szName, 
 	return(true);
 }
 
+bool XMETHODCALLTYPE CRender::newTextureTarget(IXRenderTarget **ppOut, char *szTextureName, size_t sizeTextureNameBuffer)
+{
+	CTextureTarget *pTarget = new CTextureTarget(this, m_pDevice, m_pMaterialSystem);
+	*ppOut = pTarget;
+
+	m_aTextureTargets.push_back(pTarget);
+
+	if(szTextureName)
+	{
+		pTarget->getTextureName(szTextureName, sizeTextureNameBuffer);
+	}
+
+	return(true);
+}
+
 bool XMETHODCALLTYPE CRender::getFinalTarget(const char *szName, IXRenderTarget **ppOut)
 {
 	const Map<AAString, FinalTarget>::Node *pNode;
@@ -116,6 +131,18 @@ void CRender::onFinalTargetReleased(CFinalTarget *pTarget)
 			break;
 		}
 	}
+
+	mem_delete(pTarget);
+}
+
+void CRender::onTextureTargetReleased(CTextureTarget *pTarget)
+{
+	int idx = m_aTextureTargets.indexOf(pTarget);
+	if(idx >= 0)
+	{
+		m_aTextureTargets.erase(idx);
+	}
+	mem_delete(pTarget);
 }
 
 void XMETHODCALLTYPE CRender::updateVisibility()
@@ -123,6 +150,11 @@ void XMETHODCALLTYPE CRender::updateVisibility()
 	fora(i, m_aFinalTargets)
 	{
 		m_aFinalTargets[i]->pFinalTarget->updateVisibility();
+	}
+
+	fora(i, m_aTextureTargets)
+	{
+		m_aTextureTargets[i]->updateVisibility();
 	}
 }
 
@@ -147,8 +179,8 @@ void XMETHODCALLTYPE CRender::renderFrame(float fDeltaTime)
 	{
 		FinalTarget *pFinalTarget = m_aFinalTargets[i];
 
-		m_pCurrentFinalTarget = pFinalTarget->pFinalTarget;
-		add_ref(m_pCurrentFinalTarget);
+		m_pCurrentRenderTarget = pFinalTarget->pFinalTarget;
+		add_ref(m_pCurrentRenderTarget);
 
 		IGXConstantBuffer *pCamConstant = NULL;
 		pFinalTarget->pFinalTarget->getCamera(&pCamera);
@@ -170,7 +202,37 @@ void XMETHODCALLTYPE CRender::renderFrame(float fDeltaTime)
 
 		pFinalTarget->pFinalTarget->render(fDeltaTime);
 		
-		mem_release(m_pCurrentFinalTarget);
+		mem_release(m_pCurrentRenderTarget);
+	}
+
+	fora(i, m_aTextureTargets)
+	{
+		CTextureTarget *pTextureTarget = m_aTextureTargets[i];
+
+		m_pCurrentRenderTarget = pTextureTarget;
+		add_ref(m_pCurrentRenderTarget);
+
+		IGXConstantBuffer *pCamConstant = NULL;
+		pTextureTarget->getCamera(&pCamera);
+		if(pCamera)
+		{
+			pTextureTarget->getSize(&uWidth, &uHeight);
+			updateMatrices(pCamera, uWidth, uHeight);
+			mem_release(pCamera);
+
+			pCamConstant = m_pCameraShaderData;
+		}
+
+		pCtx->setVSConstant(pCamConstant, SCR_CAMERA);
+		pCtx->setGSConstant(pCamConstant, SCR_CAMERA);
+		pCtx->setPSConstant(pCamConstant, SCR_CAMERA);
+		pCtx->setVSConstant(pCamConstant, SCR_OBSERVER_CAMERA);
+		pCtx->setGSConstant(pCamConstant, SCR_OBSERVER_CAMERA);
+		pCtx->setPSConstant(pCamConstant, SCR_OBSERVER_CAMERA);
+
+		pTextureTarget->render(fDeltaTime);
+
+		mem_release(m_pCurrentRenderTarget);
 	}
 }
 
@@ -285,6 +347,7 @@ void CRender::setupPasses()
 		{"vPos", GXDECLTYPE_FLOAT4, GXDECLUSAGE_TEXCOORD2},
 		{"vTangent", GXDECLTYPE_FLOAT3, GXDECLUSAGE_TEXCOORD3},
 		{"vBinormal", GXDECLTYPE_FLOAT3, GXDECLUSAGE_TEXCOORD4},
+		{"vColor", GXDECLTYPE_FLOAT4, GXDECLUSAGE_COLOR},
 		{"uInstanceId", GXDECLTYPE_UBYTE4, GXDECLUSAGE_BLENDINDICES},
 		XVERTEX_OUTPUT_DECL_END()
 	};
@@ -827,9 +890,20 @@ IGXDevice* XMETHODCALLTYPE CRender::getDevice()
 	return(m_pDevice);
 }
 
-void XMETHODCALLTYPE CRender::drawScreenQuad(IGXContext *pCtx, IXRenderTarget *pFinalTarget)
+void XMETHODCALLTYPE CRender::drawScreenQuad(IGXContext *pCtx, IXRenderTarget *pRenderTarget)
 {
-	pCtx->setRenderBuffer((pFinalTarget ? ((CFinalTarget*)pFinalTarget) : m_pCurrentFinalTarget)->getScreenRB());
+	IGXRenderBuffer *pRB = NULL;
+
+	if(pRenderTarget)
+	{
+		pRB = ((CBaseTarget*)pRenderTarget)->getScreenRB();
+	}
+	else
+	{
+		pRB = m_pCurrentRenderTarget->getScreenRB();
+	}
+
+	pCtx->setRenderBuffer(pRB);
 	pCtx->setPrimitiveTopology(GXPT_TRIANGLELIST);
 	pCtx->drawPrimitive(0, 2);
 }
@@ -1013,6 +1087,16 @@ IXRenderUtils* XMETHODCALLTYPE CRender::getUtils()
 
 const GXModeDesc* XMETHODCALLTYPE CRender::getModes(UINT *puCount, IXRenderTarget *pTarget)
 {
+	if(pTarget)
+	{
+		void *isFinalTarget = NULL;
+		pTarget->getInternalData(&X_IS_FINAL_TARGET_GUID, &isFinalTarget);
+		if(!isFinalTarget)
+		{
+			return(NULL);
+		}
+	}
+
 	CFinalTarget *pFT = (CFinalTarget*)pTarget;
 	if(!pFT)
 	{
@@ -1023,6 +1107,7 @@ const GXModeDesc* XMETHODCALLTYPE CRender::getModes(UINT *puCount, IXRenderTarge
 
 		pFT = m_aFinalTargets[0]->pFinalTarget;
 	}
+
 
 	IGXSwapChain *pSwapChain = pFT->getSwapChain();
 	assert(pSwapChain);

@@ -2,12 +2,17 @@
 #define __FINALTARGET_H
 
 #include <xcommon/render/IXRender.h>
+#include "BaseTarget.h"
+
+// {6CFA187C-5714-4016-B105-E53D1700F0D9}
+#define X_IS_FINAL_TARGET_GUID DEFINE_XGUID(0x6cfa187c, 0x5714, 0x4016, 0xb1, 0x5, 0xe5, 0x3d, 0x17, 0x0, 0xf0, 0xd9)
 
 class CRender;
 class CRenderGraph;
 class CRenderGraphData;
-class CFinalTarget final: public IXUnknownImplementation<IXRenderTarget>
+class CFinalTarget final: public CBaseTarget
 {
+	DECLARE_CLASS(CFinalTarget, CBaseTarget);
 public:
 	CFinalTarget(CRender *pRender, IGXDevice *pDevice, SXWINDOW hWnd);
 	~CFinalTarget();
@@ -16,52 +21,26 @@ public:
 
 	void XMETHODCALLTYPE resize(UINT uWidth, UINT uHeight) override;
 
-	void XMETHODCALLTYPE attachGraph(IXRenderGraph *pGraph) override;
-
-	void XMETHODCALLTYPE setCamera(IXCamera *pCamera) override;
-	void XMETHODCALLTYPE getCamera(IXCamera **ppCamera) override;
-
-	void XMETHODCALLTYPE getSize(UINT *puWidth, UINT *puHeight) const override;
-
 	void swapChain();
-
-	IGXRenderBuffer* getScreenRB() const;
 
 	IGXSwapChain* getSwapChain();
 
-	void render(float fDeltaTime);
+	void XMETHODCALLTYPE getInternalData(const XGUID *pGUID, void **ppOut) override;
 
-	void updateVisibility();
-
-	CRenderGraph* getGraph()
-	{
-		return(m_pGraph);
-	}
-
-	CRenderGraphData* getGraphData()
-	{
-		return(m_pGraphData);
-	}
+	bool isEnabled() override;
 
 private:
 	void XMETHODCALLTYPE FinalRelease() override;
 
 private:
-	UINT m_uWidth = 0;
-	UINT m_uHeight = 0;
+	//UINT m_uWidth = 0;
+	//UINT m_uHeight = 0;
 
-	CRender *m_pRender;
-	IGXDevice *m_pDevice = NULL;
 	SXWINDOW m_hWnd = NULL;
 
-	IXCamera *m_pCamera = NULL;
+	//IXCamera *m_pCamera = NULL;
 
 	IGXSwapChain *m_pSwapChain = NULL;
-
-	IGXRenderBuffer *m_pScreenTextureRB = NULL;
-
-	CRenderGraph *m_pGraph = NULL;
-	CRenderGraphData *m_pGraphData = NULL;
 };
 
 #endif

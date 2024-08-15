@@ -15,13 +15,9 @@ CCurveEditorDialog::CCurveEditorDialog(HINSTANCE hInstance, HWND hMainWnd):
 	//m_curve.getMaxCurve()->addKey(0.5f, 0.1f);
 	//m_curve.getMaxCurve()->addKey(0.6f, 0.3f);
 	//m_curve.getMaxCurve()->addKey(1.0f, 0.0f);
-	m_curve.setMode(XMCM_TWO_CURVES);
+	/*m_curve.setMode(XMCM_TWO_CURVES);
 
 	IXAnimationCurve *pCurve = m_curve.getMaxCurve();
-
-
-	/*pCurve->addKey(0.20512706f, 0.3297542f);
-	pCurve->addKey(0.7526245f, 0.5924988f);*/
 
 	pCurve->addKey(0.0f, 0.608581543f);
 	pCurve->addKey(0.162895843f, 0.6514799f);
@@ -60,7 +56,7 @@ CCurveEditorDialog::CCurveEditorDialog(HINSTANCE hInstance, HWND hMainWnd):
 	kf.weightedMode = XKWM_IN;
 	pCurve->setKey(1, kf);
 
-
+	*/
 	registerClass();
 
 	CreateDialogParamA(m_hInstance, MAKEINTRESOURCE(IDD_CURVE_EDITOR), hMainWnd, DlgProc, (LPARAM)this);
@@ -68,6 +64,8 @@ CCurveEditorDialog::CCurveEditorDialog(HINSTANCE hInstance, HWND hMainWnd):
 
 CCurveEditorDialog::~CCurveEditorDialog()
 {
+	callAbort();
+
 	mem_release(m_pNodeData);
 
 	mem_release(m_pSurface);
@@ -152,18 +150,44 @@ INT_PTR CALLBACK CCurveEditorDialog::dlgProc(HWND hWnd, UINT msg, WPARAM wParam,
 	case WM_COMMAND:
 		switch(LOWORD(wParam))
 		{
-		
+		case IDOK:
+			callAccept();
+			ShowWindow(m_hDlgWnd, SW_HIDE);
+			break;
+		case IDCANCEL:
+			callAbort();
+			ShowWindow(m_hDlgWnd, SW_HIDE);
+			break;
+
+		case IDC_EDIT_RANGE_MIN:
+		case IDC_EDIT_RANGE_MAX:
+			if(HIWORD(wParam) == EN_CHANGE)
+			{
+				float fParam = 0.0f;
+				char tmp[64];
+				GetWindowTextA((HWND)lParam, tmp, sizeof(tmp));
+
+				if(sscanf(tmp, "%g", &fParam) == 1)
+				{
+					if(LOWORD(wParam) == IDC_EDIT_RANGE_MIN)
+					{
+						m_pCurve->setMin(fParam);
+					}
+					else
+					{
+						m_pCurve->setMax(fParam);
+					}
+
+					m_pNodeData->updateRange(m_pCurve->getMin(), m_pCurve->getMax());
+				}
+			}
+			break;
 		}
+
 		break;
 
 	case WM_CLOSE:
-		/*
-		if(m_pCallback)
-		{
-			m_pCallback->onCancel();
-			m_pCallback = NULL;
-		}
-		*/
+		callAbort();
 		ShowWindow(m_hDlgWnd, SW_HIDE);
 		break;
 
@@ -208,12 +232,6 @@ INT_PTR CALLBACK CCurveEditorDialog::dlgProc(HWND hWnd, UINT msg, WPARAM wParam,
 		return(FALSE);
 	}
 	return(TRUE);
-}
-
-void CCurveEditorDialog::browse()
-{
-	ShowWindow(m_hDlgWnd, SW_SHOWNA);
-	SetFocus(m_hDlgWnd);
 }
 
 void CCurveEditorDialog::registerClass()
@@ -303,11 +321,11 @@ LRESULT CALLBACK CCurveEditorDialog::wndProc(HWND hWnd, UINT msg, WPARAM wParam,
 
 		int iHitCurve = -1;
 		int iHitKey = -1;
-		if(hitTest(fX, fY, m_curve.getMaxCurve(), &iHitKey))
+		if(hitTest(fX, fY, m_pCurve->getMaxCurve(), &iHitKey))
 		{
 			iHitCurve = 1;
 		}
-		else if(hitTest(fX, fY, m_curve.getMinCurve(), &iHitKey))
+		else if(hitTest(fX, fY, m_pCurve->getMinCurve(), &iHitKey))
 		{
 			iHitCurve = 0;
 		}
@@ -322,7 +340,7 @@ LRESULT CALLBACK CCurveEditorDialog::wndProc(HWND hWnd, UINT msg, WPARAM wParam,
 			{
 				if(iHitKey < 0)
 				{
-					IXAnimationCurve *pCurve = iHitCurve == 0 ? m_curve.getMinCurve() : m_curve.getMaxCurve();
+					IXAnimationCurve *pCurve = iHitCurve == 0 ? m_pCurve->getMinCurve() : m_pCurve->getMaxCurve();
 
 					const float c_fDtX = 0.001f;
 					float fVal = pCurve->evaluate(fX);
@@ -422,6 +440,23 @@ LRESULT CALLBACK CCurveEditorDialog::wndProc(HWND hWnd, UINT msg, WPARAM wParam,
 		m_isDraggingTangent = false;
 		break;
 
+	case WM_KEYDOWN:
+		if(wParam == VK_DELETE)
+		{
+			if(m_iActiveCurve >= 0 && m_iActiveKey >= 0)
+			{
+				IXAnimationCurve *pCurve = m_iActiveCurve == 0 ? m_pCurve->getMinCurve() : m_pCurve->getMaxCurve();
+				if(pCurve->getKeyframeCount() > 2)
+				{
+					pCurve->removeKey(m_iActiveKey);
+					m_iActiveKey = -1;
+					m_pNodeData->setHighlight(m_iActiveCurve, m_iActiveKey);
+					m_pNodeData->setSelect(m_iActiveCurve, m_iActiveKey);
+				}
+			}
+		}
+		break;
+
 	case WM_MOUSEMOVE:
 		{
 			xPos = GET_X_LPARAM(lParam);
@@ -440,7 +475,7 @@ LRESULT CALLBACK CCurveEditorDialog::wndProc(HWND hWnd, UINT msg, WPARAM wParam,
 			{
 				assert(m_iActiveCurve >= 0);
 
-				IXAnimationCurve *pCurve = m_iActiveCurve == 0 ? m_curve.getMinCurve() : m_curve.getMaxCurve();
+				IXAnimationCurve *pCurve = m_iActiveCurve == 0 ? m_pCurve->getMinCurve() : m_pCurve->getMaxCurve();
 				XKeyframe kf = *pCurve->getKeyAt(m_iActiveKey);
 				kf.fTime = fX;
 				kf.fValue = fY;
@@ -454,11 +489,11 @@ LRESULT CALLBACK CCurveEditorDialog::wndProc(HWND hWnd, UINT msg, WPARAM wParam,
 			else
 			{
 				int iHitKey;
-				if(hitTest(fX, fY, m_curve.getMaxCurve(), &iHitKey))
+				if(hitTest(fX, fY, m_pCurve->getMaxCurve(), &iHitKey))
 				{
 					m_pNodeData->setHighlight(1, iHitKey);
 				}
-				else if(hitTest(fX, fY, m_curve.getMinCurve(), &iHitKey))
+				else if(hitTest(fX, fY, m_pCurve->getMinCurve(), &iHitKey))
 				{
 					m_pNodeData->setHighlight(0, iHitKey);
 				}
@@ -520,116 +555,47 @@ void CCurveEditorDialog::initGraphics(IXRender *pRender)
 
 	m_pNodeData = (CCurveEditorGraphNodeData*)pNodeData;
 
-	m_pNodeData->updateLine(&m_curve);
+	if(m_pCurve)
+	{
+		m_pNodeData->updateLine(m_pCurve);
+	}
 
 	mem_release(pNodeInstance);
 
 	mem_release(pRenderGraph);
-
-#if 0
-	m_pMaterialSystem = (IXMaterialSystem*)Core_GetIXCore()->getPluginManager()->getInterface(IXMATERIALSYSTEM_GUID);
-
-	m_pFontManager = (IXFontManager*)Core_GetIXCore()->getPluginManager()->getInterface(IXFONTMANAGER_GUID);
-	if(m_pFontManager)
-	{
-		m_pFontManager->getFont(&m_pFont, "gui/fonts/tahoma.ttf", 10);
-		m_pFontManager->getFontVertexDeclaration(&m_pTextVD);
-	}
-#endif
 }
-void CCurveEditorDialog::render()
+void XMETHODCALLTYPE CCurveEditorDialog::edit(IXMinMaxCurve *pCurve, IXCurveEditorCallback *pCallback)
 {
-	//if(IsWindowVisible(m_hBrowserWnd) && m_isDirty)
-	{
-		IGXContext *pCtx = m_pDev->getThreadContext();
-		IGXSurface *pOldRT = pCtx->getColorTarget();
-		pCtx->setColorTarget(m_pSurface);
-		//IGXDepthStencilSurface *pOldDS = pCtx->getDepthStencilSurface();
-		pCtx->setDepthStencilSurface(NULL);
+	assert(pCurve);
 
-		pCtx->clear(GX_CLEAR_COLOR, float4(0, 1, 0, 0));
+	callAbort();
 
-#if 0
-		pCtx->setPrimitiveTopology(GXPT_TRIANGLELIST);
-		pCtx->setRasterizerState(NULL);
-		pCtx->setBlendState(g_xRenderStates.pBlendAlpha);
+	ShowWindow(m_hDlgWnd, SW_SHOWNA);
+	SetFocus(m_hDlgWnd);
 
-		pCtx->setVSConstant(m_pTransformCB, SCR_CAMERA);
+	m_curveBackup.setFrom(pCurve);
 
-		IGXBaseTexture *pTexture;
+	m_iActiveCurve = -1;
+	m_iActiveKey = -1;
 
-		int iYStart = m_iScrollPos - m_frameSize-27;
-		int iYEnd = m_iScrollPos + m_uPanelHeight;
-		for(UINT i = 0, l = m_aMaterials.size(); i < l; ++i)
-		{
-			MaterialItem &item = m_aMaterials[i];
-			if((int)item.uYpos >= iYStart && item.uYpos <= iYEnd)
-			{
-				pCtx->setBlendState(g_xRenderStates.pBlendAlpha);
+	m_pCurve = pCurve;
+	m_pCallback = pCallback;
+	m_pNodeData->updateLine(m_pCurve);
+	m_pNodeData->setSelect(-1, -1);
+	m_pNodeData->setHighlight(-1, -1);
 
-				drawFrame(item.uXpos, item.uYpos, m_frameSize, item.uTitleWidth, m_uSelectedItem == i ? 1.0f : 0.0f);
+	char tmp[64];
+	sprintf(tmp, "%g", pCurve->getMin());
+	SetDlgItemTextA(m_hDlgWnd, IDC_EDIT_RANGE_MIN, tmp);
+	sprintf(tmp, "%g", pCurve->getMax());
+	SetDlgItemTextA(m_hDlgWnd, IDC_EDIT_RANGE_MAX, tmp);
 
-				if(item.pTexture)
-				{
-					if(!item.isTransparent && !item.isTexture)
-					{
-						pCtx->setBlendState(NULL);
-					}
-
-					m_pRender->bindShader(pCtx, m_idInnerShader);
-
-					item.pTexture->getAPITexture(&pTexture, item.uCurrentFrame);
-					pCtx->setPSTexture(pTexture);
-					mem_release(pTexture);
-
-					pCtx->setIndexBuffer(m_pInnerIB);
-					pCtx->setRenderBuffer(m_pInnerRB);
-					pCtx->drawIndexed(m_uInnerVC, m_uInnerPC);
-
-					m_pRender->unbindShader(pCtx);
-				}
-			}
-		}
-
-		m_pScrollBar->render();
-
-		if(m_uTextQuadCount)
-		{
-			IGXTexture2D *pTex;
-			m_pFont->getTexture(0, &pTex);
-			pCtx->setPSTexture(pTex);
-			mem_release(pTex);
-			pCtx->setRenderBuffer(m_pTextRB);
-			pCtx->setIndexBuffer(m_pTextIB);
-			pCtx->setPSConstant(m_pTextColorCB);
-			m_pTextOffsetCB->update(&float4_t(0.0f, (float)m_iScrollPos, 0.0f, 0.0f));
-			pCtx->setVSConstant(m_pTextOffsetCB, 6);
-			m_pRender->bindShader(pCtx, m_idTextShader);
-			pCtx->drawIndexed(m_uTextVertexCount, m_uTextQuadCount * 2);
-			m_pRender->unbindShader(pCtx);
-		}
-#endif
-		//pCtx->setDepthStencilSurface(pOldDS);
-		//mem_release(pOldDS);
-		pCtx->setColorTarget(pOldRT);
-		pCtx->downsampleColorTarget(m_pSurface, pOldRT);
-		mem_release(pOldRT);
-
-
-		//IGXSurface *pRT = m_pSwapChain->getColorTarget();
-		//mem_release(pRT);
-
-		//m_isDirty = false;
-		m_bDoSwap = true;
-	}
+	m_pNodeData->updateRange(m_pCurve->getMin(), m_pCurve->getMax());
 }
-void CCurveEditorDialog::swapBuffers()
+void XMETHODCALLTYPE CCurveEditorDialog::abort()
 {
-	if(IsWindowVisible(m_hBrowserWnd) && m_bDoSwap)
-	{
-		//m_pSwapChain->swapBuffers();
-		m_bDoSwap = false;
-	}
+	callAbort();
+	ShowWindow(m_hDlgWnd, SW_HIDE);
 }
 
 void CCurveEditorDialog::initViewport()
@@ -717,4 +683,18 @@ bool CCurveEditorDialog::hitTest(float fX, float fY, IXAnimationCurve *pCurve, i
 	*piHitKeyframe = iMinKey;
 
 	return(isOnCurve);
+}
+
+void CCurveEditorDialog::callAccept()
+{
+	SAFE_CALL(m_pCallback, onAccept);
+	m_pCallback = NULL;
+	m_pCurve = NULL;
+}
+void CCurveEditorDialog::callAbort()
+{
+	SAFE_CALL(m_pCurve, setFrom, &m_curveBackup);
+	SAFE_CALL(m_pCallback, onCancel);
+	m_pCallback = NULL;
+	m_pCurve = NULL;
 }

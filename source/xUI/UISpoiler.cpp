@@ -33,18 +33,23 @@ void CUISpoiler::dispatchEvent(gui::IEvent *ev)
 {
 	if(ev->type == gui::GUI_EVENT_TYPE_CLICK)
 	{
-		m_isCollapsed = !m_isCollapsed;
-
-		if(m_isCollapsed)
-		{
-			m_pContainerNode->getStyleSelf()->display->set(gui::css::ICSSproperty::DISPLAY_NONE);
-		}
-		else
-		{
-			m_pContainerNode->getStyleSelf()->display->unset();
-		}
-		m_pContainerNode->updateStyles();
+		setCollapsed(!m_isCollapsed);
 	}
+}
+
+void XMETHODCALLTYPE CUISpoiler::setCollapsed(bool yesNo)
+{
+	m_isCollapsed = yesNo;
+
+	if(m_isCollapsed)
+	{
+		m_pContainerNode->getStyleSelf()->display->set(gui::css::ICSSproperty::DISPLAY_NONE);
+	}
+	else
+	{
+		m_pContainerNode->getStyleSelf()->display->unset();
+	}
+	m_pContainerNode->updateStyles();
 }
 
 void CUISpoiler::cleanupNodes()
