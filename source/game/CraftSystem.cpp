@@ -9,6 +9,10 @@ CCraftSystem::CCraftSystem(CCharacterInventory *pInventory)
 bool CCraftSystem::canCreate(CBaseRecipe *pRecipe)
 {
 	assert(pRecipe);
+	if(!pRecipe)
+	{
+		return(false);
+	}
 
 	const Array<RecipeItem> &aItems = pRecipe->getRecipeItems();
 	assert(aItems.size());
@@ -23,9 +27,19 @@ bool CCraftSystem::canCreate(CBaseRecipe *pRecipe)
 	return(true);
 }
 
-void CCraftSystem::createItem(CBaseRecipe *pRecipe)
+bool CCraftSystem::createItem(CBaseRecipe *pRecipe)
 {
 	assert(pRecipe);
+
+	if(!pRecipe)
+	{
+		return(false);
+	}
+
+	if(!canCreate(pRecipe))
+	{
+		return(false);
+	}
 
 	const Array<RecipeItem> &aItems = pRecipe->getRecipeItems();
 	assert(aItems.size());
@@ -36,4 +50,6 @@ void CCraftSystem::createItem(CBaseRecipe *pRecipe)
 	}
 
 	m_pInventory->putItems(pRecipe->getOutItemName(), pRecipe->getOutItemCount());
+
+	return(true);
 }

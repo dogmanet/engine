@@ -47,42 +47,48 @@ base_class = base_item
 show_in_listing = 1
 inv_name = "Порох А"
 inv_icon = "gunpowder_a"
-inv_stackable = 64
+inv_stackable = 1
+inv_stack_max = 300
 
 [item_gunpowder_b]
 base_class = base_item
 show_in_listing = 1
 inv_name = "Порох Б"
 inv_icon = "gunpowder_b"
-inv_stackable = 64
+inv_stackable = 1
+inv_stack_max = 300
 
 [item_gunpowder_c]
 base_class = base_item
 show_in_listing = 1
 inv_name = "Порох С"
 inv_icon = "gunpowder_c"
-inv_stackable = 64
+inv_stackable = 1
+inv_stack_max = 300
 
 [item_ammo_a]
 base_class = base_item
 show_in_listing = 1
 inv_name = "Патроны А"
 inv_icon = "ammo_a"
-inv_stackable = 64
+inv_stackable = 1
+inv_stack_max = 300
 
 [item_ammo_b]
 base_class = base_item
 show_in_listing = 1
 inv_name = "Патроны Б"
 inv_icon = "ammo_b"
-inv_stackable = 64
+inv_stackable = 1
+inv_stack_max = 300
 
 [item_ammo_c]
 base_class = base_item
 show_in_listing = 1
 inv_name = "Патроны С"
 inv_icon = "ammo_c"
-inv_stackable = 64
+inv_stackable = 1
+inv_stack_max = 300
 
 [item_recipe_gunpowder_c]
 base_class = base_recipe

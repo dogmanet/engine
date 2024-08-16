@@ -1102,22 +1102,29 @@ GameData::GameData(HWND hWnd, bool isGame):
 		});
 	});
 
-	m_pGUIStack->registerCallback("close_craft", [](gui::IEvent * ev){
-		if (ev->key == KEY_ESCAPE || ev->key == KEY_LBUTTON)
+	m_pGUIStack->registerCallback("command_close_craft", [](gui::IEvent * ev){
+		if(ev->key == KEY_ESCAPE || ev->key == KEY_LBUTTON)
 		{
 			ccmd_craft();
 		}
-		if (ev->key == KEY_LBUTTON)
+		if(ev->key == KEY_LBUTTON)
 		{
 			m_pGUIStack->popDesktop();
 		}
 	});
 
-	m_pGUIStack->registerCallback("list_item_click", [](gui::IEvent * ev){
+	m_pGUIStack->registerCallback("command_create_item", [](gui::IEvent * ev)
+	{
+		m_pGuiCraft->createSelectedItem();
+	});
+
+	m_pGUIStack->registerCallback("list_item_click", [](gui::IEvent * ev)
+	{
 		m_pGuiCraft->pickCraftItem(ev);
 	});
 
-	m_pGUIStack->registerCallback("close_inventory", [](gui::IEvent * ev){
+	m_pGUIStack->registerCallback("close_inventory", [](gui::IEvent * ev)
+	{
 		if(ev->key == KEY_ESCAPE || ev->key == KEY_LBUTTON)
 		{
 			ccmd_inventory();
@@ -1128,27 +1135,33 @@ GameData::GameData(HWND hWnd, bool isGame):
 		}
 	});
 
-	m_pGUIStack->registerCallback("open_menu", [](gui::IEvent * ev){
+	m_pGUIStack->registerCallback("open_menu", [](gui::IEvent * ev)
+	{
 		m_pGuiInventory->openContextMenu(ev);
 	});
 
-	m_pGUIStack->registerCallback("global_click", [](gui::IEvent * ev){
+	m_pGUIStack->registerCallback("global_click", [](gui::IEvent * ev)
+	{
 		m_pGuiInventory->closeContextMenu(ev);
 	});
 
-	m_pGUIStack->registerCallback("begin_drag", [](gui::IEvent * ev){
+	m_pGUIStack->registerCallback("begin_drag", [](gui::IEvent * ev)
+	{
 		m_pGuiInventory->beginDrag(ev);
 	});
 
-	m_pGUIStack->registerCallback("drag_move", [](gui::IEvent * ev){
+	m_pGUIStack->registerCallback("drag_move", [](gui::IEvent * ev)
+	{
 		m_pGuiInventory->dragMove(ev);
 	});
 
-	m_pGUIStack->registerCallback("end_drag", [](gui::IEvent * ev){
+	m_pGUIStack->registerCallback("end_drag", [](gui::IEvent * ev)
+	{
 		m_pGuiInventory->endDrag(ev);
 	});
 
-	m_pGUIStack->registerCallback("drop_item", [](gui::IEvent * ev){
+	m_pGUIStack->registerCallback("drop_item", [](gui::IEvent * ev)
+	{
 		m_pGuiInventory->dropItem(ev);
 	});
 

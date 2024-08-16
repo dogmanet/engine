@@ -1038,6 +1038,10 @@ namespace gui
 
 		void CDOMnode::dispatchEvent(IEvent & ev)
 		{
+			if(pseudoclassExists(css::ICSSrule::PSEUDOCLASS_DISABLED))
+			{
+				return;
+			}
 			if(ev.target == this)
 			{
 				dispatchClientEvent(ev, &ev.preventDefault);

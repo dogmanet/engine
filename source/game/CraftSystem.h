@@ -11,7 +11,7 @@ public:
 
 	bool canCreate(CBaseRecipe *pRecipe);
 
-	void createItem(CBaseRecipe *pRecipe);
+	bool createItem(CBaseRecipe *pRecipe);
 
 private:
 	CCharacterInventory *m_pInventory = NULL;

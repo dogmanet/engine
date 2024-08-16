@@ -17,9 +17,13 @@ public:
 
 	void update();
 
+	void updateCurrentRecipe();
+
 	void pickCraftItem(gui::IEvent *ev);
 
 	void removeNodeItems(bool isUpdate = false);
+
+	void createSelectedItem();
 
 private:
 	gui::IDesktop *m_pCraftDesktop = NULL;
@@ -30,6 +34,7 @@ private:
 	gui::dom::IDOMnode *m_pRecipeItems = NULL;
 	gui::dom::IDOMnode *m_pActiveNode = NULL;
 	gui::dom::IDOMnode *m_pMainCellNode = NULL;
+	gui::dom::IDOMnode *m_pCreateButton = NULL;
 };
 
 #endif 

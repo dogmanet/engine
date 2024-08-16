@@ -289,9 +289,9 @@ bool CBaseEntity::setKV(const char * name, const char * value)
 		}
 		return(false);
 	case PDF_UINT:
-		if (1 == sscanf(value, "%u", &u))
+		if(1 == sscanf(value, "%u", &u))
 		{
-			if (field->fnSet.i)
+			if(field->fnSet.i)
 			{
 				(this->*(field->fnSet.i))(u);
 			}

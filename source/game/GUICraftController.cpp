@@ -13,6 +13,7 @@ CGUICraftController::CGUICraftController(CCraftSystem *pCraftSystem, CCharacterI
 	m_pLeftAreaNode = pDocument->getElementById(L"left_area");
 	m_pRecipeItems = pDocument->getElementById(L"recipe_items");
 	m_pMainCellNode = pDocument->getElementById(L"main_cell");
+	m_pCreateButton = pDocument->getElementById(L"create_button");
 }
 
 void CGUICraftController::showScreen()
@@ -42,6 +43,11 @@ void CGUICraftController::update()
 
 	const Array<CBaseRecipe*> &aRecipes = m_pInventory->getRecipes(); 
 
+	if(m_pCreateButton->pseudoclassExists(4))
+	{
+		m_pCreateButton->removePseudoclass(4);
+	}
+
 	if(m_pLeftAreaNode)
 	{
 		wchar_t wsNode[256];
@@ -50,6 +56,56 @@ void CGUICraftController::update()
 		{
 			swprintf(wsNode, L"<div class=\"list_item\" onclick=\"list_item_click\" item_id=\"%d\">%s</div>", i, CMB2WC(aRecipes[i]->getItemName()).m_szBuffer);
 			m_pLeftAreaNode->appendHTML(wsNode);
+		}
+	}
+}
+
+void CGUICraftController::updateCurrentRecipe()
+{
+	if(!m_pActiveNode)
+	{
+		return;
+	}
+
+	gui::dom::IDOMdocument *pDocument = m_pCraftDesktop->getDocument();
+	int iIndex = m_pActiveNode->getAttribute(L"item_id").toInt();
+	const Array<CBaseRecipe*> &aRecipes = m_pInventory->getRecipes();
+	UINT uCount = aRecipes[iIndex]->getRecipeItemsCount();
+
+	wchar_t wsCount[16];
+	wchar_t wsItemId[32];
+
+	if(!m_pCraftSystem->canCreate(aRecipes[iIndex]))
+	{
+		//m_pCreateButton->addPseudoclass(4);
+	}
+	else
+	{
+		//m_pCreateButton->removePseudoclass(4);
+	}
+
+	while(uCount--)
+	{
+		const RecipeItem &item = aRecipes[iIndex]->getRecipeItems()[uCount];
+		const UINT uCurrentCount = m_pInventory->getItemCount(item.sItemName.c_str());
+		const wchar_t *wsClass = (uCurrentCount >= item.uCount ? L"cell" : L"cell_no_item");
+
+		swprintf(wsItemId, L"recipe_item_%i", uCount);
+
+		gui::dom::IDOMnode *pItem = pDocument->getElementById(wsItemId);
+
+		if(pItem)
+		{
+			pItem->setAttribute(L"class", wsClass);
+			//pItem->classAdd(wsClass);
+			pItem->updateStyles();
+			gui::dom::IDOMnode *pCounter = pItem->getChilds()[0][0];
+
+			if(pCounter)
+			{
+				swprintf(wsCount, L"%i/%i", uCurrentCount, item.uCount);
+				pCounter->setText(wsCount, true);
+			}		
 		}
 	}
 }
@@ -80,7 +136,7 @@ void CGUICraftController::pickCraftItem(gui::IEvent *ev)
 		EntDefaultsMap *mDefaultsMap = NULL;
 		const EntDefaultsMap::Node *pNode = NULL;
 		wchar_t wsNode[256];
-		wchar_t wsCount[64];
+		wchar_t wsCount[128];
 
 		removeNodeItems();
 
@@ -93,9 +149,18 @@ void CGUICraftController::pickCraftItem(gui::IEvent *ev)
 			mDefaultsMap = pMap->getDefaults(item.sItemName.c_str());
 			mDefaultsMap->KeyExists("inv_icon", &pNode);
 
-			swprintf(wsCount, L"<div class=\"item_count\">%i/%i</div>", uCurrentCount, item.uCount);
-			swprintf(wsNode, L"<div class=\"cell_wrapper\"><div class=\"%s\" style=\"background-image: /hud/items/%s.png; background-size-x: 100% background-size-y: 100%\">%s</div></div>", wsClass, CMB2WC(*pNode->Val).m_szBuffer, wsCount);
+			swprintf(wsCount, L"<div class=\"item_count\" id=\"item_counter_%i\">%i/%i</div>", uCount, uCurrentCount, item.uCount);
+			swprintf(wsNode, L"<div class=\"cell_wrapper\"><div class=\"%s\" id=\"recipe_item_%i\" style=\"background-image: /hud/items/%s.png; background-size-x: 100% background-size-y: 100%\">%s</div></div>", wsClass, uCount, CMB2WC(*pNode->Val).m_szBuffer, wsCount);
 			m_pRecipeItems->appendHTML(wsNode);
+		}
+
+		if(!m_pCraftSystem->canCreate(aRecipes[iIndex]))
+		{
+			m_pCreateButton->addPseudoclass(4);
+		}
+		else
+		{
+			m_pCreateButton->removePseudoclass(4);
 		}
 
 		mDefaultsMap = pMap->getDefaults(aRecipes[iIndex]->getOutItemName());
@@ -134,4 +199,19 @@ void CGUICraftController::removeNodeItems(bool isUpdate)
 	{
 		m_pRecipeItems->removeChild((*(m_pRecipeItems->getChilds()))[0]);
 	}
+}
+
+void CGUICraftController::createSelectedItem()
+{
+	if(m_pActiveNode == NULL)
+	{
+		return;
+	}
+
+	int iIndex = m_pActiveNode->getAttribute(L"item_id").toInt();
+	const Array<CBaseRecipe*> &aRecipes = m_pInventory->getRecipes();
+
+	m_pCraftSystem->createItem(aRecipes[iIndex]);
+
+	updateCurrentRecipe();
 }
