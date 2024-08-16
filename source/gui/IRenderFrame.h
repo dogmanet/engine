@@ -132,7 +132,7 @@ namespace gui
 				void resetLayout(bool first = true, bool bForce = false);
 
 				RECT getClientRect();
-				RECT getVisibleRect();
+				RECT getVisibleRect(bool *puseForceCrop = NULL, RECT *prcForceCrop = NULL);
 
 				virtual int getScrollLeft();
 				int getScrollLeftMax();

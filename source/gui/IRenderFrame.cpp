@@ -1567,7 +1567,7 @@ namespace gui
 				return(rc);
 			}
 
-			RECT IRenderFrame::getVisibleRect()
+			RECT IRenderFrame::getVisibleRect(bool *puseForceCrop, RECT *prcForceCrop)
 			{
 				RECT rc;
 				if(m_pNode && m_pNode->getStyle()->visibility->getInt() == css::ICSSproperty::VISIBILITY_HIDDEN)
@@ -1581,23 +1581,65 @@ namespace gui
 					return(getClientRect());
 				}
 
-				RECT prc = m_pParent->getVisibleRect();
+				bool useForceCrop = false;
+				RECT rcForce;
+				RECT prc = m_pParent->getVisibleRect(&useForceCrop, &rcForce);
+
+				if(useForceCrop && puseForceCrop)
+				{
+					if(puseForceCrop)
+					{
+						*prcForceCrop = rcForce;
+						*puseForceCrop = true;
+					}
+				}
 
 				rc = getClientRect();
+
+				if(puseForceCrop && *puseForceCrop)
+				{
+					rc.top = max(rc.top, prcForceCrop->top);
+					rc.bottom = min(rc.bottom, prcForceCrop->bottom);
+					rc.left = max(rc.left, prcForceCrop->left);
+					rc.right = min(rc.right, prcForceCrop->right);
+				}
+				else if(useForceCrop)
+				{
+					rc.top = max(rc.top, rcForce.top);
+					rc.bottom = min(rc.bottom, rcForce.bottom);
+					rc.left = max(rc.left, rcForce.left);
+					rc.right = min(rc.right, rcForce.right);
+				}
 
 				if(m_pParent->getNode())
 				{
 					css::ICSSstyle *pStyle = m_pParent->getNode()->getStyle();
-					if(pStyle->overflow_y->isSet() && pStyle->overflow_y->getInt() != css::ICSSproperty::OVERFLOW_VISIBLE)
-				{
-					rc.top = max(rc.top, prc.top);
-					rc.bottom = min(rc.bottom, prc.bottom);
-				}
-					if(pStyle->overflow_x->isSet() && pStyle->overflow_x->getInt() != css::ICSSproperty::OVERFLOW_VISIBLE)
-				{
-					rc.left = max(rc.left, prc.left);
-					rc.right = min(rc.right, prc.right);
-				}
+					if(
+						(pStyle->overflow_y->isSet() && pStyle->overflow_y->getInt() != css::ICSSproperty::OVERFLOW_VISIBLE) || 
+						(pStyle->overflow_x->isSet() && pStyle->overflow_x->getInt() != css::ICSSproperty::OVERFLOW_VISIBLE)
+					)
+					{
+						rc.top = max(rc.top, prc.top);
+						rc.bottom = min(rc.bottom, prc.bottom);
+						rc.left = max(rc.left, prc.left);
+						rc.right = min(rc.right, prc.right);
+
+						if(puseForceCrop)
+						{
+							if(*puseForceCrop)
+							{
+								prcForceCrop->top = max(prc.top, prcForceCrop->top);
+								prcForceCrop->bottom = min(prc.bottom, prcForceCrop->bottom);
+								prcForceCrop->left = max(prc.left, prcForceCrop->left);
+								prcForceCrop->right = min(prc.right, prcForceCrop->right);
+							}
+							else
+							{
+								*prcForceCrop = prc;
+							}
+							*puseForceCrop = true;
+						}
+					}
 				}
 
 				return(rc);
