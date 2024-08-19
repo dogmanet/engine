@@ -49,6 +49,7 @@ public:
 
 	void onFinalTargetReleased(CFinalTarget *pTarget);
 	void onTextureTargetReleased(CTextureTarget *pTarget);
+	void onGraphDestroyed(CRenderGraph *pGraph);
 
 	void XMETHODCALLTYPE updateVisibility() override;
 

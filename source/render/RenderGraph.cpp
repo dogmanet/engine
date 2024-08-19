@@ -8,6 +8,7 @@ CRenderGraph::CRenderGraph(CRender *pRender):
 
 CRenderGraph::~CRenderGraph()
 {
+	m_pRender->onGraphDestroyed(this);
 	fora(i, m_aNodes)
 	{
 		mem_release(m_aNodes[i].pNode);

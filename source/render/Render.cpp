@@ -145,6 +145,11 @@ void CRender::onTextureTargetReleased(CTextureTarget *pTarget)
 	mem_delete(pTarget);
 }
 
+void CRender::onGraphDestroyed(CRenderGraph *pGraph)
+{
+	m_mapRenderGraphs.erase(pGraph->getName());
+}
+
 void XMETHODCALLTYPE CRender::updateVisibility()
 {
 	fora(i, m_aFinalTargets)
