@@ -42,6 +42,93 @@ show_in_listing = 1
 inv_name = "Ключ-карта"
 inv_stackable = 0
 
+[item_gunpowder_a]
+base_class = base_item
+show_in_listing = 1
+inv_name = "Порох А"
+inv_icon = "gunpowder_a"
+inv_stackable = 64
+
+[item_gunpowder_b]
+base_class = base_item
+show_in_listing = 1
+inv_name = "Порох Б"
+inv_icon = "gunpowder_b"
+inv_stackable = 64
+
+[item_gunpowder_c]
+base_class = base_item
+show_in_listing = 1
+inv_name = "Порох С"
+inv_icon = "gunpowder_c"
+inv_stackable = 64
+
+[item_ammo_a]
+base_class = base_item
+show_in_listing = 1
+inv_name = "Патроны А"
+inv_icon = "ammo_a"
+inv_stackable = 64
+
+[item_ammo_b]
+base_class = base_item
+show_in_listing = 1
+inv_name = "Патроны Б"
+inv_icon = "ammo_b"
+inv_stackable = 64
+
+[item_ammo_c]
+base_class = base_item
+show_in_listing = 1
+inv_name = "Патроны С"
+inv_icon = "ammo_c"
+inv_stackable = 64
+
+[item_recipe_gunpowder_c]
+base_class = base_recipe
+show_in_listing = 1
+inv_icon = "gunpowder_a"
+inv_name = "Порох С"
+item_count = 1
+recipe_items = "item_gunpowder_a:1,item_gunpowder_b:1"
+recipe_out_item = "item_gunpowder_c"
+
+[item_recipe_gunpowder_b]
+base_class = base_recipe
+show_in_listing = 1
+inv_icon = "gunpowder_a"
+inv_name = "Порох Б"
+item_count = 1
+recipe_items = "item_gunpowder_a:2"
+recipe_out_item = "item_gunpowder_b"
+
+[item_recipe_ammo_a]
+base_class = base_recipe
+show_in_listing = 1
+inv_icon = "ammo_a"
+inv_name = "Патроны А"
+item_count = 11
+recipe_items = "item_gunpowder_a:3,item_gunpowder_b:1"
+recipe_out_item = "item_ammo_a"
+
+[item_recipe_ammo_b]
+base_class = base_recipe
+show_in_listing = 1
+inv_icon = "ammo_b"
+inv_name = "Патроны Б"
+item_count = 7
+recipe_items = "item_gunpowder_b:4"
+recipe_out_item = "item_ammo_b"
+
+[item_recipe_ammo_c]
+base_class = base_recipe
+show_in_listing = 1
+inv_icon = "ammo_c"
+inv_name = "Патроны С"
+item_count = 10
+recipe_items = "item_gunpowder_a:5,item_gunpowder_b:5,item_gunpowder_c:5"
+recipe_out_item = "item_ammo_c"
+
 [weapon_ak74]
 inv_name = "AK-47"
 inv_icon = "ak74"

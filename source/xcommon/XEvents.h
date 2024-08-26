@@ -260,4 +260,15 @@ struct XEventEditorXformType
 	X_2DXFORM_TYPE newXformType;
 };
 
+#define EVENT_INVENTORY_CHANGED_GUID DEFINE_GUID(0xe08d7a34, 0x8c88, 0x4713, 0xa4, 0x7b, 0x1e, 0xe5, 0x98, 0x19, 0x39, 0xf0);
+struct XEventInventoryChanged
+{
+	enum TYPE
+	{
+		TYPE_UPDATE
+		//TYPE_ADD_ITEM,
+		//TYPE_REMOVE_ITEM
+	};
+};
+
 #endif

@@ -14,6 +14,7 @@ See the license in LICENSE
 #include <xcommon/IXSoundSystem.h>
 
 #include "GUIInventoryController.h"
+#include "GUICraftController.h"
 #include "Player.h"
 #include "crosshair.h"
 #include "HUDcontroller.h"
@@ -38,6 +39,7 @@ public:
 	static IXSoundLayer *m_pGuiLayer;
 	static IXSoundPlayer *m_pSoundPlayer;
 	static CGUIInventoryController *m_pGuiInventory;
+	static CGUICraftController *m_pGuiCraft;
 	HWND m_hWnd;
 
 	CCrosshair * m_pCrosshair;
@@ -108,6 +110,7 @@ protected:
 	static void ccmd_use_off();
 
 	static void ccmd_inventory();
+	static void ccmd_craft();
 
 	bool m_isGame;
 };

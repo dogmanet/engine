@@ -45,6 +45,7 @@ enum PDF_TYPE
 {
 	PDF_NONE,
 	PDF_INT,
+	PDF_UINT,
 	PDF_FLOAT,
 	PDF_VECTOR,
 	PDF_VECTOR4,
@@ -474,6 +475,7 @@ const char * GetEmptyString();
 #define DEFINE_FIELD_VECTOR4(field, flags, keyname, edname, editor)             , {propdata_t::ToFieldType<float4_t DataClass::*>(&DataClass::field),             PDF_VECTOR4, flags, keyname, edname, editor
 #define DEFINE_FIELD_ANGLES(field, flags, keyname, edname, editor)              , {propdata_t::ToFieldType<SMQuaternion DataClass::*>(&DataClass::field),         PDF_ANGLES,  flags, keyname, edname, editor
 #define DEFINE_FIELD_INT(field, flags, keyname, edname, editor)                 , {propdata_t::ToFieldType<int DataClass::*>(&DataClass::field),                  PDF_INT,     flags, keyname, edname, editor
+#define DEFINE_FIELD_UINT(field, flags, keyname, edname, editor)                , {propdata_t::ToFieldType<UINT DataClass::*>(&DataClass::field),                 PDF_UINT,    flags, keyname, edname, editor
 #define DEFINE_FIELD_ENUM(type, field, flags, keyname, edname, editor)          , {propdata_t::ToFieldType<type DataClass::*>(&DataClass::field),                 PDF_INT,     flags, keyname, edname, editor
 #define DEFINE_FIELD_FLOAT(field, flags, keyname, edname, editor)               , {propdata_t::ToFieldType<float DataClass::*>(&DataClass::field),                PDF_FLOAT,   flags, keyname, edname, editor
 #define DEFINE_FIELD_BOOL(field, flags, keyname, edname, editor)                , {propdata_t::ToFieldType<bool DataClass::*>(&DataClass::field),                 PDF_BOOL,    flags, keyname, edname, editor

@@ -21,9 +21,9 @@ BEGIN_PROPTABLE(CBaseItem)
 	//! Может ли стакаться
 	DEFINE_FIELD_BOOL(m_bInvStackable, PDFF_NOEDIT | PDFF_NOEXPORT, "inv_stackable", "", EDITOR_NONE)
 	//! Текущий размер стака
-	DEFINE_FIELD_INT(m_iInvStackCurSize, PDFF_NOEDIT, "inv_stack_cur", "", EDITOR_NONE)
+	DEFINE_FIELD_UINT(m_uInvStackCurSize, PDFF_NOEDIT, "inv_stack_cur", "", EDITOR_NONE)
 	//! Максимальное число объектов в стаке
-	DEFINE_FIELD_INT(m_iInvStackMaxSize, PDFF_NOEDIT | PDFF_NOEXPORT, "inv_stack_max", "", EDITOR_NONE)
+	DEFINE_FIELD_UINT(m_uInvStackMaxSize, PDFF_NOEDIT | PDFF_NOEXPORT, "inv_stack_max", "", EDITOR_NONE)
 	//! Масса одного объекта, кг
 	DEFINE_FIELD_FLOAT(m_iInvWeight, PDFF_NOEDIT | PDFF_NOEXPORT, "inv_weight", "", EDITOR_NONE)
 	//! Можно ли поднимать объект
@@ -133,6 +133,7 @@ void CBaseItem::onModeChanged(INVENTORY_ITEM_MODE oldMode, INVENTORY_ITEM_MODE n
 			m_pTriggerUse->setModel("meshes/dev/item_trigger.dse");
 			m_pTriggerUse->setPos(getPos());
 		}
+		setFlags(getFlags() | EF_LEVEL);
 	}
 	else
 	{
@@ -142,6 +143,7 @@ void CBaseItem::onModeChanged(INVENTORY_ITEM_MODE oldMode, INVENTORY_ITEM_MODE n
 			REMOVE_ENTITY(m_pTriggerUse);
 			m_pTriggerUse = NULL;
 		}
+		setFlags(getFlags() & ~EF_LEVEL);
 	}
 }
 
@@ -239,7 +241,7 @@ int CBaseItem::getIconSizeY()
 
 int CBaseItem::getStackCount()
 {
-	return(m_iInvStackCurSize);
+	return(m_uInvStackCurSize);
 }
 
 bool CBaseItem::isStackable()

@@ -336,6 +336,15 @@
     <ClCompile Include="..\..\..\source\game\GUIInventoryController.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\source\game\BaseRecipe.cpp">
+      <Filter>Source Files\ents\items</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\game\GUICraftController.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\game\CraftSystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\source\game\sxgame.h">
@@ -579,6 +588,15 @@
       <Filter>Header Files\ents\point</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\source\game\GUIInventoryController.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\game\BaseRecipe.h">
+      <Filter>Header Files\ents\items</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\game\GUICraftController.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\game\CraftSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

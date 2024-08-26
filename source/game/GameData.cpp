@@ -44,6 +44,7 @@ IXLightSystem* GameData::m_pLightSystem;
 bool GameData::m_isLevelLoaded = false;
 IXSoundPlayer* GameData::m_pSoundPlayer = NULL;
 CGUIInventoryController* GameData::m_pGuiInventory = NULL;
+CGUICraftController* GameData::m_pGuiCraft = NULL;
 IXSoundLayer* GameData::m_pGameLayer = NULL;
 IXSoundLayer* GameData::m_pGuiLayer = NULL;
 CEditable* g_pEditable = NULL;
@@ -509,6 +510,7 @@ GameData::GameData(HWND hWnd, bool isGame):
 	Core_0RegisterConcmd("+use", ccmd_use_on);
 	Core_0RegisterConcmd("-use", ccmd_use_off);
 	Core_0RegisterConcmd("inventory", ccmd_inventory);
+	Core_0RegisterConcmd("craft", ccmd_craft);
 
 
 	Core_0RegisterConcmdArg("gui_load", [](int argc, const char ** argv){
@@ -1100,6 +1102,21 @@ GameData::GameData(HWND hWnd, bool isGame):
 		});
 	});
 
+	m_pGUIStack->registerCallback("close_craft", [](gui::IEvent * ev){
+		if (ev->key == KEY_ESCAPE || ev->key == KEY_LBUTTON)
+		{
+			ccmd_craft();
+		}
+		if (ev->key == KEY_LBUTTON)
+		{
+			m_pGUIStack->popDesktop();
+		}
+	});
+
+	m_pGUIStack->registerCallback("list_item_click", [](gui::IEvent * ev){
+		m_pGuiCraft->pickCraftItem(ev);
+	});
+
 	m_pGUIStack->registerCallback("close_inventory", [](gui::IEvent * ev){
 		if(ev->key == KEY_ESCAPE || ev->key == KEY_LBUTTON)
 		{
@@ -1210,6 +1227,9 @@ GameData::GameData(HWND hWnd, bool isGame):
 		pTool->chargeAmmo(pAmmo);
 
 		m_pPlayer->getInventory()->putItems("ammo_5.45x39ps", 60);
+		//m_pPlayer->getInventory()->putItems("item_gunpowder", 1); TODO:: почему не ломается?
+		m_pPlayer->getInventory()->putItems("item_gunpowder_b", 5);
+		m_pPlayer->getInventory()->putItems("item_gunpowder_a", 9);
 
 		CBaseMag *pMag = (CBaseMag*)CREATE_ENTITY("mag_ak74_30", m_pMgr);
 		pMag->setMode(IIM_INVENTORY);
@@ -1217,8 +1237,14 @@ GameData::GameData(HWND hWnd, bool isGame):
 		((CBaseWeapon*)pTool)->attachMag(pMag);
 
 		m_pPlayer->setActiveTool(pTool);
+		m_pPlayer->getInventory()->putItems("item_recipe_gunpowder_c", 1);
+		m_pPlayer->getInventory()->putItems("item_recipe_gunpowder_b", 1);
+		m_pPlayer->getInventory()->putItems("item_recipe_ammo_a", 1);
+		m_pPlayer->getInventory()->putItems("item_recipe_ammo_b", 1);
+		m_pPlayer->getInventory()->putItems("item_recipe_ammo_c", 1);
 
 		m_pGuiInventory = new CGUIInventoryController(m_pPlayer->getInventory());
+		m_pGuiCraft = new CGUICraftController(m_pPlayer->getCraftSystem(), m_pPlayer->getInventory());
 	}
 	else
 	{
@@ -1244,6 +1270,7 @@ GameData::~GameData()
 	mem_delete(m_pMgr);
 
 	mem_delete(m_pGuiInventory);
+	mem_delete(m_pGuiCraft);
 
 	for(int i = 0; i < MPT_COUNT; ++i)
 	{
@@ -1687,5 +1714,18 @@ void GameData::ccmd_inventory()
 	else
 	{
 		m_pGuiInventory->showScreen();
+	}
+}
+
+
+void GameData::ccmd_craft()
+{
+	if (m_pGuiCraft->isActive())
+	{
+		m_pGuiCraft->hideScreen();
+	}
+	else
+	{
+		m_pGuiCraft->showScreen();
 	}
 }

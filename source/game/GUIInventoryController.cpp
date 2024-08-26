@@ -374,6 +374,7 @@ void CGUIInventoryController::endDrag(gui::IEvent *ev)
 {
 	//@TODO: сделать свап одинаковых по размеру предметов
 	//@TODO: refactor
+	//@TODO: fix drop null item
 	if(!m_pDragNode)
 	{
 		return;
@@ -520,6 +521,7 @@ void CGUIInventoryController::endDrag(gui::IEvent *ev)
 
 	if(bIsDrop)
 	{
+		//@TODO: Пофикси это когда сольешь 
 		//ev->preventDefault = false;
 		//ev->stopPropagation();
 
