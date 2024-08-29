@@ -1870,6 +1870,11 @@ namespace gui
 				m_pseudoclasses |= id;
 				m_pDocument->indexSetPseudoClass(id, this);
 				m_pDocument->updateStyleSubtree(this);
+
+				if(m_pDocument->getFocus() == this && id == css::ICSSrule::PSEUDOCLASS_DISABLED)
+				{
+					m_pDocument->requestFocus(m_pDocument->getElementsByTag(L"body")[0][0]);
+				}
 			}
 		}
 

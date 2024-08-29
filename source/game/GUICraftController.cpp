@@ -77,11 +77,11 @@ void CGUICraftController::updateCurrentRecipe()
 
 	if(!m_pCraftSystem->canCreate(aRecipes[iIndex]))
 	{
-		//m_pCreateButton->addPseudoclass(4);
+		m_pCreateButton->addPseudoclass(4);
 	}
 	else
 	{
-		//m_pCreateButton->removePseudoclass(4);
+		m_pCreateButton->removePseudoclass(4);
 	}
 
 	while(uCount--)
@@ -97,7 +97,6 @@ void CGUICraftController::updateCurrentRecipe()
 		if(pItem)
 		{
 			pItem->setAttribute(L"class", wsClass);
-			//pItem->classAdd(wsClass);
 			pItem->updateStyles();
 			gui::dom::IDOMnode *pCounter = pItem->getChilds()[0][0];
 
@@ -187,12 +186,10 @@ void CGUICraftController::removeNodeItems(bool isUpdate)
 			m_pLeftAreaNode->removeChild((*(m_pLeftAreaNode->getChilds()))[0]);
 		}
 	}
-	else
+
+	while(m_pMainCellNode->getChilds()->size())
 	{
-		while(m_pMainCellNode->getChilds()->size())
-		{
-			m_pMainCellNode->removeChild((*(m_pMainCellNode->getChilds()))[0]);
-		}
+		m_pMainCellNode->removeChild((*(m_pMainCellNode->getChilds()))[0]);
 	}
 
 	while(m_pRecipeItems->getChilds()->size())
