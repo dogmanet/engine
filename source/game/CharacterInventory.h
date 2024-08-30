@@ -5,12 +5,6 @@
 
 class CBaseCharacter;
 
-XENUM(EQUIP_ITEM_TYPE,
-	EIT_WEAPON = 0,
-	EIT_ARMOR = 1,
-	EIT_QUICK_USE = 2
-);
-
 struct EquipItem
 {
 	CBaseItem *pItem = NULL;

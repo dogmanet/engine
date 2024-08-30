@@ -426,45 +426,46 @@ void CGUIInventoryController::endDrag(gui::IEvent *ev)
 	{
 		pCurrentContainer = m_pEquipContainerNode;
 		gui::dom::IDOMnode *pParentNode = NULL;
+		EQUIP_ITEM_TYPE type;
 
 		if(pCell)
 		{
 			pParentNode = pCell->parentNode()->parentNode();
-			const StringW &wsItemClass = pParentNode->getAttribute(L"item_class");
-			//CBaseItem *pItem = m_pInventory->getSlot(m_pDragNode->getAttribute(L"inventoryid").toInt());
-
-			if(wsItemClass.length() != 0 && !CEntityFactoryMap::IsEntityOfClass(pItem, CWC2MB(wsItemClass.c_str())))
-			{
-				pCell = NULL;
-			}
-			else if(!pParentNode->getAttribute(L"split_container").toBool())
-			{
-				pCell = pParentNode->getChilds()[0][0]->getChilds()[0][0];
-			}
-		}
-		if(pCell)
-		{
 			const StringW &wsEquipType = pParentNode->getAttribute(L"equip_type");
 			auto &enumReflector = EnumReflector::Get<EQUIP_ITEM_TYPE>();
 			auto result = enumReflector.find(CWC2MB(wsEquipType.c_str()));
 
 			if(result.isValid())
-			{ 
-				UINT uIndex = 0;
-				if(pParentNode->getAttribute(L"split_container").toBool())
+			{
+				type = (EQUIP_ITEM_TYPE)result.getValue();
+
+				if(type != pItem->getEquipType())
 				{
-					uIndex = pCell->getAttribute(L"equip_index").toInt();
+					pCell = NULL;
 				}
-				else
+				else if(!pParentNode->getAttribute(L"split_container").toBool())
 				{
-					uIndex = pParentNode->getAttribute(L"equip_index").toInt();
+					pCell = pParentNode->getChilds()[0][0]->getChilds()[0][0];
 				}
-				m_pInventory->equipItem(pItem, (EQUIP_ITEM_TYPE)result.getValue(), uIndex);
 			}
 			else
 			{
 				pCell = NULL;
 			}
+		}
+
+		if(pCell)
+		{
+			UINT uIndex = 0;
+			if(pParentNode->getAttribute(L"split_container").toBool())
+			{
+				uIndex = pCell->getAttribute(L"equip_index").toInt();
+			}
+			else
+			{
+				uIndex = pParentNode->getAttribute(L"equip_index").toInt();
+			}
+			m_pInventory->equipItem(pItem, type, uIndex);
 		}
 	}
 	else
@@ -541,6 +542,6 @@ void CGUIInventoryController::dropItem(gui::IEvent *ev)
 	int idx = m_pSelectedNode->getAttribute(L"inventoryid").toInt();
 	CBaseItem *pItem = m_pInventory->getSlot(idx);
 	m_pInventory->getOwner()->dropItem(pItem);
-	update();
 
+	update();
 }

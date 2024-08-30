@@ -19,6 +19,13 @@ See the license in LICENSE
 
 #include "BaseAnimating.h"
 
+XENUM(EQUIP_ITEM_TYPE,
+	EIT_NO_EQUIP = 0, //! Нельзя экипировать
+	EIT_WEAPON = 1,	  //! Оружие
+	EIT_ARMOR = 2,    //! Броня
+	EIT_QUICK_USE = 3 //! Слоты быстрого доступа
+);
+
 enum INVENTORY_ITEM_MODE
 {
 	IIM_WORLD,     //! В мире
@@ -61,6 +68,8 @@ public:
 	const char* getIcon();
 	const char* getItemName();
 
+	EQUIP_ITEM_TYPE getEquipType();
+
 protected:
 	virtual void onModeChanged(INVENTORY_ITEM_MODE oldMode, INVENTORY_ITEM_MODE newMode);
 	void onSetViewModel(const char *mdl);
@@ -90,6 +99,8 @@ protected:
 	IXResourceModelAnimated *m_pViewModelResource = NULL;
 	const char * m_szViewModelFile = NULL;
 	IXResourceModelAnimated *m_pHandsModelResource = NULL;
+
+	EQUIP_ITEM_TYPE m_equipItemType = EIT_NO_EQUIP;
 
 private:
 

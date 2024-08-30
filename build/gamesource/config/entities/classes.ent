@@ -136,6 +136,7 @@ recipe_items = "item_gunpowder_a:5,item_gunpowder_b:5,item_gunpowder_c:5"
 recipe_out_item = "item_ammo_c"
 
 [weapon_ak74]
+inv_equip_type = 1
 inv_name = "AK-47"
 inv_icon = "ak74"
 inv_icon_size_x = 2

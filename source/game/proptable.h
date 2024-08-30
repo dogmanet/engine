@@ -106,6 +106,7 @@ typedef void (CBaseEntity::*PFNFIELDSETV4)(const float4&);
 typedef void (CBaseEntity::*PFNFIELDSETF)(float);
 typedef void (CBaseEntity::*PFNFIELDSETSZ)(const char*);
 typedef void (CBaseEntity::*PFNFIELDSETI)(int);
+typedef void (CBaseEntity::*PFNFIELDSETU)(UINT);
 typedef void (CBaseEntity::*PFNFIELDSETB)(bool);
 typedef void (CBaseEntity::*PFNFIELDSETQ)(const SMQuaternion&);
 typedef void (CBaseEntity::*PFNFIELDSETE)(CBaseEntity*);
@@ -135,6 +136,10 @@ union PFNFIELDSET
 		i(arg)
 	{
 	}
+	PFNFIELDSET(PFNFIELDSETU arg):
+		u(arg)
+	{
+	}
 	PFNFIELDSET(PFNFIELDSETB arg):
 		b(arg)
 	{
@@ -158,6 +163,7 @@ union PFNFIELDSET
 	PFNFIELDSETF f;
 	PFNFIELDSETSZ sz;
 	PFNFIELDSETI i;
+	PFNFIELDSETU u;
 	PFNFIELDSETB b;
 	PFNFIELDSETQ q;
 	PFNFIELDSETE e;
@@ -190,6 +196,7 @@ struct inputdata_t
 	union
 	{
 		int i;
+		UINT u;
 		bool b;
 		float f;
 		const char * str;
@@ -487,6 +494,7 @@ const char * GetEmptyString();
 #define DEFINE_FIELD_VECTOR4FN(field, flags, keyname, edname, fn, editor)       , {propdata_t::ToFieldType<float4_t DataClass::*>(&DataClass::field),             PDF_VECTOR4, flags, keyname, edname, propdata_t::ToPFNFieldSet<DataClass, const float4&>(&DataClass::fn),       editor
 #define DEFINE_FIELD_ANGLESFN(field, flags, keyname, edname, fn, editor)        , {propdata_t::ToFieldType<SMQuaternion DataClass::*>(&DataClass::field),         PDF_ANGLES,  flags, keyname, edname, propdata_t::ToPFNFieldSet<DataClass, const SMQuaternion&>(&DataClass::fn), editor
 #define DEFINE_FIELD_INTFN(field, flags, keyname, edname, fn, editor)           , {propdata_t::ToFieldType<int DataClass::*>(&DataClass::field),                  PDF_INT,     flags, keyname, edname, propdata_t::ToPFNFieldSet<DataClass, int>(&DataClass::fn),                 editor
+#define DEFINE_FIELD_UINTFN(field, flags, keyname, edname, fn, editor)          , {propdata_t::ToFieldType<UINT DataClass::*>(&DataClass::field),                 PDF_UINT,    flags, keyname, edname, propdata_t::ToPFNFieldSet<DataClass, UINT>(&DataClass::fn),                editor
 #define DEFINE_FIELD_ENUMFN(type, field, flags, keyname, edname, fn, editor)    , {propdata_t::ToFieldType<type DataClass::*>(&DataClass::field),                 PDF_INT,     flags, keyname, edname, propdata_t::ToPFNFieldSet<DataClass, int>(&DataClass::fn),                 editor
 #define DEFINE_FIELD_FLOATFN(field, flags, keyname, edname, fn, editor)         , {propdata_t::ToFieldType<float DataClass::*>(&DataClass::field),                PDF_FLOAT,   flags, keyname, edname, propdata_t::ToPFNFieldSet<DataClass, float>(&DataClass::fn),               editor
 #define DEFINE_FIELD_BOOLFN(field, flags, keyname, edname, fn, editor)          , {propdata_t::ToFieldType<bool DataClass::*>(&DataClass::field),                 PDF_BOOL,    flags, keyname, edname, propdata_t::ToPFNFieldSet<DataClass, bool>(&DataClass::fn),                editor

@@ -291,9 +291,9 @@ bool CBaseEntity::setKV(const char * name, const char * value)
 	case PDF_UINT:
 		if(1 == sscanf(value, "%u", &u))
 		{
-			if(field->fnSet.i)
+			if(field->fnSet.u)
 			{
-				(this->*(field->fnSet.i))(u);
+				(this->*(field->fnSet.u))(u);
 			}
 			else
 			{
@@ -788,6 +788,14 @@ void CBaseEntity::broadcastMessage(const char * szInputName, int iArg, float fRa
 	memset(&inputData, 0, sizeof(inputData));
 	inputData.type = PDF_INT;
 	inputData.parameter.i = iArg;
+	broadcastMessage(szInputName, inputData, fRadius);
+}
+void CBaseEntity::broadcastMessage(const char *szInputName, UINT uArg, float fRadius)
+{
+	inputdata_t inputData;
+	memset(&inputData, 0, sizeof(inputData));
+	inputData.type = PDF_UINT;
+	inputData.parameter.u = uArg;
 	broadcastMessage(szInputName, inputData, fRadius);
 }
 void CBaseEntity::broadcastMessage(const char * szInputName, bool bArg, float fRadius)

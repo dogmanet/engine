@@ -43,10 +43,12 @@ void CGUICraftController::update()
 
 	const Array<CBaseRecipe*> &aRecipes = m_pInventory->getRecipes(); 
 
-	if(m_pCreateButton->pseudoclassExists(4))
-	{
-		m_pCreateButton->removePseudoclass(4);
-	}
+	m_pCreateButton->addPseudoclass(4);
+
+
+	gui::css::ICSSstyle *pStyle = m_pMainCellNode->getStyleSelf();
+	pStyle->background_image->unset();
+	m_pMainCellNode->updateStyles();
 
 	if(m_pLeftAreaNode)
 	{

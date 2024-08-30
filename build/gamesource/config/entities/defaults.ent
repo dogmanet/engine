@@ -36,3 +36,6 @@ is_static = 1
 [base_ammobox]
 inv_pickable = 0
 inv_stackable = 0
+
+[base_weapon]
+inv_equip_type = 1

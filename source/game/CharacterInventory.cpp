@@ -23,6 +23,8 @@ CCharacterInventory::~CCharacterInventory()
 		}
 	}
 
+	mem_delete_a(m_ppSlots);
+
 	fora(i, m_aRecipes)
 	{
 		REMOVE_ENTITY(m_aRecipes[i]);

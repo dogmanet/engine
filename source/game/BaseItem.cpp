@@ -32,6 +32,13 @@ BEGIN_PROPTABLE(CBaseItem)
 	DEFINE_FIELD_INT(m_iIconSizeX, PDFF_NOEDIT | PDFF_NOEXPORT, "inv_icon_size_x", "", EDITOR_NONE)
 	//! Размер иконки по Y
 	DEFINE_FIELD_INT(m_iIconSizeY, PDFF_NOEDIT | PDFF_NOEXPORT, "inv_icon_size_y", "", EDITOR_NONE)
+	//! Тип экипировки
+	DEFINE_FIELD_ENUM(EQUIP_ITEM_TYPE, m_equipItemType, PDFF_NONE, "inv_equip_type", "Equip type", EDITOR_COMBOBOX)
+		COMBO_OPTION("No equip", "0")  //! Нельзя экипировать
+		COMBO_OPTION("Weapon", "1")	   //! Оружие
+		COMBO_OPTION("Armor", "2")	   //! Броня
+		COMBO_OPTION("Quick use", "3") //! Слоты быстрого доступа
+	EDITOR_COMBO_END()
 
 	DEFINE_OUTPUT(m_onPickUp, "OnPickUp", "On pickup")
 	DEFINE_OUTPUT(m_onDrop, "OnDrop", "On drop")
@@ -257,6 +264,11 @@ const char* CBaseItem::getItemName()
 const char* CBaseItem::getIcon()
 {
 	return(m_szInvIcon);
+}
+
+EQUIP_ITEM_TYPE CBaseItem::getEquipType()
+{
+	return(m_equipItemType);
 }
 
 void CBaseItem::onIsPickableChanged(bool isPickable)
