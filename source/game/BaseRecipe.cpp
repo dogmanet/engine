@@ -18,10 +18,6 @@ END_PROPTABLE()
 
 REGISTER_ENTITY_NOLISTING(CBaseRecipe, base_recipe);
 
-CBaseRecipe::~CBaseRecipe()
-{
-}
-
 const Array<RecipeItem>& CBaseRecipe::getRecipeItems()
 {
 	return(m_aItems);

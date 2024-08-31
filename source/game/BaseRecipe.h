@@ -26,7 +26,6 @@ class CBaseRecipe: public CBaseItem
 	DECLARE_PROPTABLE();
 public:
 	DECLARE_TRIVIAL_CONSTRUCTOR();
-	~CBaseRecipe();
 
 	const Array<RecipeItem> &getRecipeItems();
 

@@ -348,6 +348,9 @@ void inputdata_t::setParameter(const inputdata_t &other)
 		case PDF_FLOAT:
 			parameter.i = (int)other.parameter.f;
 			break;
+		case PDF_UINT:
+			parameter.i = (int)other.parameter.u;
+			break;
 		case PDF_VECTOR:
 			parameter.i = (int)other.v3Parameter.x;
 			break;
@@ -372,6 +375,9 @@ void inputdata_t::setParameter(const inputdata_t &other)
 		case PDF_FLOAT:
 			parameter.u = (UINT)other.parameter.f;
 			break;
+		case PDF_INT:
+			parameter.u = (UINT)other.parameter.i;
+			break;
 		case PDF_VECTOR:
 			parameter.u = (UINT)other.v3Parameter.x;
 			break;
@@ -379,9 +385,9 @@ void inputdata_t::setParameter(const inputdata_t &other)
 			parameter.u = (UINT)other.v4Parameter.x;
 			break;
 		case PDF_STRING:
-			if(!sscanf(other.parameter.str, "%u", &parameter.i))
+			if(!sscanf(other.parameter.str, "%u", &parameter.u))
 			{
-				parameter.i = 0;
+				parameter.u = 0;
 			}
 			break;
 		}
@@ -422,6 +428,9 @@ void inputdata_t::setParameter(const inputdata_t &other)
 			break;
 		case PDF_INT:
 			v3Parameter = float3((float)other.parameter.i);
+			break;
+		case PDF_UINT:
+			v3Parameter = float3((float)other.parameter.u);
 			break;
 		case PDF_FLOAT:
 			v3Parameter = float3(other.parameter.f);
