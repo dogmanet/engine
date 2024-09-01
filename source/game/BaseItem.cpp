@@ -14,18 +14,31 @@ See the license in LICENSE
 */
 
 BEGIN_PROPTABLE(CBaseItem)
+	//! Иконка в инвентаре (только имя файла, без расширения и пути)
+	DEFINE_FIELD_STRING(m_szInvIcon, PDFF_NOEDIT | PDFF_NOEXPORT, "inv_icon", "", EDITOR_NONE)
 	//! Имя в инвентаре
 	DEFINE_FIELD_STRING(m_szInvName, PDFF_NOEDIT | PDFF_NOEXPORT, "inv_name", "", EDITOR_NONE)
 	//! Может ли стакаться
 	DEFINE_FIELD_BOOL(m_bInvStackable, PDFF_NOEDIT | PDFF_NOEXPORT, "inv_stackable", "", EDITOR_NONE)
 	//! Текущий размер стака
-	DEFINE_FIELD_INT(m_iInvStackCurSize, PDFF_NOEDIT, "inv_stack_cur", "", EDITOR_NONE)
+	DEFINE_FIELD_UINT(m_uInvStackCurSize, PDFF_NOEDIT, "inv_stack_cur", "", EDITOR_NONE)
 	//! Максимальное число объектов в стаке
-	DEFINE_FIELD_INT(m_iInvStackMaxSize, PDFF_NOEDIT | PDFF_NOEXPORT, "inv_stack_max", "", EDITOR_NONE)
+	DEFINE_FIELD_UINT(m_uInvStackMaxSize, PDFF_NOEDIT | PDFF_NOEXPORT, "inv_stack_max", "", EDITOR_NONE)
 	//! Масса одного объекта, кг
 	DEFINE_FIELD_FLOAT(m_iInvWeight, PDFF_NOEDIT | PDFF_NOEXPORT, "inv_weight", "", EDITOR_NONE)
 	//! Можно ли поднимать объект
 	DEFINE_FIELD_BOOLFN(m_bPickable, PDFF_NOEDIT | PDFF_NOEXPORT, "inv_pickable", "", onIsPickableChanged, EDITOR_NONE)
+	//! Размер иконки по X
+	DEFINE_FIELD_INT(m_iIconSizeX, PDFF_NOEDIT | PDFF_NOEXPORT, "inv_icon_size_x", "", EDITOR_NONE)
+	//! Размер иконки по Y
+	DEFINE_FIELD_INT(m_iIconSizeY, PDFF_NOEDIT | PDFF_NOEXPORT, "inv_icon_size_y", "", EDITOR_NONE)
+	//! Тип экипировки
+	DEFINE_FIELD_ENUM(EQUIP_ITEM_TYPE, m_equipItemType, PDFF_NONE, "inv_equip_type", "Equip type", EDITOR_COMBOBOX)
+		COMBO_OPTION("No equip", "0")  //! Нельзя экипировать
+		COMBO_OPTION("Weapon", "1")	   //! Оружие
+		COMBO_OPTION("Armor", "2")	   //! Броня
+		COMBO_OPTION("Quick use", "3") //! Слоты быстрого доступа
+	EDITOR_COMBO_END()
 
 	DEFINE_OUTPUT(m_onPickUp, "OnPickUp", "On pickup")
 	DEFINE_OUTPUT(m_onDrop, "OnDrop", "On drop")
@@ -97,6 +110,11 @@ void CBaseItem::setMode(INVENTORY_ITEM_MODE mode)
 	onModeChanged(oldMode, mode);
 }
 
+INVENTORY_ITEM_MODE CBaseItem::getMode()
+{
+	return(m_inventoryMode);
+}
+
 void CBaseItem::onModeChanged(INVENTORY_ITEM_MODE oldMode, INVENTORY_ITEM_MODE newMode)
 {
 	if(m_pModel)
@@ -105,8 +123,8 @@ void CBaseItem::onModeChanged(INVENTORY_ITEM_MODE oldMode, INVENTORY_ITEM_MODE n
 	}
 	if(m_pViewModel)
 	{
-		m_pViewModel->enable(newMode == IIM_EQUIPPED);
-		if(newMode == IIM_EQUIPPED)
+		m_pViewModel->enable(newMode == IIM_IN_HANDS);
+		if(newMode == IIM_IN_HANDS)
 		{
 			m_pViewModel->startActivity("ACT_HOLSTER");
 		}
@@ -122,6 +140,7 @@ void CBaseItem::onModeChanged(INVENTORY_ITEM_MODE oldMode, INVENTORY_ITEM_MODE n
 			m_pTriggerUse->setModel("meshes/dev/item_trigger.dse");
 			m_pTriggerUse->setPos(getPos());
 		}
+		setFlags(getFlags() | EF_LEVEL);
 	}
 	else
 	{
@@ -131,6 +150,7 @@ void CBaseItem::onModeChanged(INVENTORY_ITEM_MODE oldMode, INVENTORY_ITEM_MODE n
 			REMOVE_ENTITY(m_pTriggerUse);
 			m_pTriggerUse = NULL;
 		}
+		setFlags(getFlags() & ~EF_LEVEL);
 	}
 }
 
@@ -195,7 +215,7 @@ void CBaseItem::onModelChanged()
 		if(pProvider->createModel(2, pAnimatedResources, &m_pViewModel))
 		{
 			m_pViewModel->play("IDLE");
-			m_pViewModel->enable(m_inventoryMode == IIM_EQUIPPED);
+			m_pViewModel->enable(m_inventoryMode == IIM_IN_HANDS);
 			m_pViewModel->setScale(m_fBaseScale);
 		}
 	}
@@ -214,6 +234,41 @@ void CBaseItem::setOrient(const SMQuaternion &q)
 	BaseClass::setOrient(q);
 
 	SAFE_CALL(m_pViewModel, setOrientation, q);
+}
+
+int CBaseItem::getIconSizeX()
+{
+	return(m_iIconSizeX);
+}
+
+int CBaseItem::getIconSizeY()
+{
+	return(m_iIconSizeY);
+}
+
+int CBaseItem::getStackCount()
+{
+	return(m_uInvStackCurSize);
+}
+
+bool CBaseItem::isStackable()
+{
+	return(m_bInvStackable);
+}
+
+const char* CBaseItem::getItemName()
+{
+	return(m_szInvName);
+}
+
+const char* CBaseItem::getIcon()
+{
+	return(m_szInvIcon);
+}
+
+EQUIP_ITEM_TYPE CBaseItem::getEquipType()
+{
+	return(m_equipItemType);
 }
 
 void CBaseItem::onIsPickableChanged(bool isPickable)

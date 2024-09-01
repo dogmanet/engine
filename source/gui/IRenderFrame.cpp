@@ -323,8 +323,25 @@ namespace gui
 					}
 				}
 
+				IRenderFrame *pTarget = this;
+				if(pChild->getNode())
+				{
+					css::ICSSstyle *pStyle = pChild->getNode()->getStyle();
+					if(pStyle->position->getInt() == css::CCSSproperty::POSITION_FIXED)
+					{
+						bOutFlow = true;
+					}
+					else if(pStyle->position->getInt() == css::CCSSproperty::POSITION_ABSOLUTE)
+					{
+						bOutFlow = true;
+						while(pTarget->m_pParent && pTarget->getNode()->getStyle()->position->getInt() == css::CCSSproperty::POSITION_STATIC)
+						{
+							pTarget = pTarget->m_pParent;
+						}
+					}
+				}
+				Array<IRenderFrame*> * pArr = bOutFlow ? &pTarget->m_pChildsOutFlow : &pTarget->m_pChilds;
 
-				Array<IRenderFrame*> * pArr = bOutFlow ? &m_pChildsOutFlow : &m_pChilds;
 				pChild->isOutOfFlow(bOutFlow);
 				pChild->m_pPrev = pChild->m_pNext = NULL;
 				if(pArr->size() > 0)
@@ -334,7 +351,7 @@ namespace gui
 					pChild->m_pPrev = last;
 				}
 				pArr->push_back(pChild);
-				pChild->m_pParent = this;
+				pChild->m_pParent = pTarget;
 			}
 
 			void IRenderFrame::removeChild(IRenderFrame * pEl, IRenderFrame *pReplaceWith)
@@ -364,7 +381,7 @@ namespace gui
 						}
 						else
 						{
-						m_pChilds.erase(i);
+							m_pChilds.erase(i);
 						}
 						return;
 					}
@@ -390,7 +407,7 @@ namespace gui
 						}
 						else
 						{
-						m_pChildsOutFlow.erase(i);
+							m_pChildsOutFlow.erase(i);
 						}
 						mem_delete(pToDelete);
 						return;
@@ -437,16 +454,16 @@ namespace gui
 				if(m_pNode)
 				{
 					m_pNode->setScrollTop(x);
-				m_pDoc->markDirty();
-			}
+					m_pDoc->markDirty();
+				}
 			}
 			void IRenderFrame::setScrollLeft(int x)
 			{
 				if(m_pNode)
 				{
 					m_pNode->setScrollLeft(x);
-				m_pDoc->markDirty();
-			}
+					m_pDoc->markDirty();
+				}
 			}
 
 			//m_iScrollSpeedX
@@ -1478,7 +1495,7 @@ namespace gui
 							if(m_pNode->parentNode()->parentNode())
 							{
 								pReplacedFrame = ((CDOMnode*)m_pNode->parentNode())->getRenderFrame();
-							}
+						}
 
 							pParent = pReplacedFrame->m_pParent;
 
@@ -1533,7 +1550,7 @@ namespace gui
 					if(pChanged == this)
 					{
 						--i;
-					}
+				}
 					else if(pChanged)
 					{
 						return(pChanged);
@@ -1545,13 +1562,13 @@ namespace gui
 					if(pChanged == this)
 					{
 						--i;
-					}
+				}
 					else if(pChanged)
 					{
 						return(pChanged);
-					}
+			}
 				}
-				
+
 				return(NULL);
 			}
 
@@ -1619,8 +1636,8 @@ namespace gui
 						(pStyle->overflow_x->isSet() && pStyle->overflow_x->getInt() != css::ICSSproperty::OVERFLOW_VISIBLE)
 					)
 					{
-						rc.top = max(rc.top, prc.top);
-						rc.bottom = min(rc.bottom, prc.bottom);
+					rc.top = max(rc.top, prc.top);
+					rc.bottom = min(rc.bottom, prc.bottom);
 						rc.left = max(rc.left, prc.left);
 						rc.right = min(rc.right, prc.right);
 
@@ -1632,9 +1649,9 @@ namespace gui
 								prcForceCrop->bottom = min(prc.bottom, prcForceCrop->bottom);
 								prcForceCrop->left = max(prc.left, prcForceCrop->left);
 								prcForceCrop->right = min(prc.right, prcForceCrop->right);
-							}
+				}
 							else
-							{
+				{
 								*prcForceCrop = prc;
 							}
 							*puseForceCrop = true;
@@ -2091,7 +2108,7 @@ namespace gui
 			UINT IRenderInlineBlock::layout(bool changed)
 			{
 				bool bChanged = !hasFixedSize();
-				m_bHasFixedSize = true;
+				//m_bHasFixedSize = true;
 				css::ICSSstyle * style = m_pNode->getStyle();
 				if(bChanged)
 				{
@@ -3472,7 +3489,7 @@ namespace gui
 					pFrame = new IRenderSelectOptionsBlock(this, m_pRootNode);
 
 					forar(i, aNodeChildren)
-					{
+				{
 						RestoreFrames((CDOMnode*)aNodeChildren[i], pFrame, aFrames, c_uOptionNode);
 					}
 				}

@@ -8,13 +8,16 @@ See the license in LICENSE
 #define __GAME_DATA_H
 
 
-#include "Player.h"
-#include "crosshair.h"
 #include <gui/guimain.h>
-#include "HUDcontroller.h"
-#include "GameStateManager.h"
 #include <light/IXLightSystem.h>
 #include <xcommon/IXSoundSystem.h>
+
+#include "GUIInventoryController.h"
+#include "GUICraftController.h"
+#include "Player.h"
+#include "crosshair.h"
+#include "HUDcontroller.h"
+#include "GameStateManager.h"
 
 class GameData
 {
@@ -34,6 +37,8 @@ public:
 	static IXSoundLayer *m_pGameLayer;
 	static IXSoundLayer *m_pGuiLayer;
 	static IXSoundPlayer *m_pSoundPlayer;
+	static CGUIInventoryController *m_pGuiInventory;
+	static CGUICraftController *m_pGuiCraft;
 	HWND m_hWnd;
 
 	CCrosshair * m_pCrosshair;
@@ -103,7 +108,8 @@ protected:
 	static void ccmd_use_on();
 	static void ccmd_use_off();
 
-	static void ccmd_send_camera();
+	static void ccmd_inventory();
+	static void ccmd_craft();
 
 	bool m_isGame;
 };

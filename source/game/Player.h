@@ -20,6 +20,7 @@ See the license in LICENSE
 #include "PointCamera.h"
 #include "crosshair.h"
 #include "BaseTool.h"
+#include "CraftSystem.h"
 
 //! Класс игрока  \ingroup cbaseanimating
 class CPlayer: public CBaseCharacter
@@ -77,6 +78,8 @@ public:
 
 	SMQuaternion getOrient() override;
 
+	CCraftSystem* getCraftSystem();
+
 protected:
 	//! Камера
 	CPointCamera * m_pCamera;
@@ -111,6 +114,8 @@ protected:
 private:
 	float3_t m_vTargetSpeed;
 	float3_t m_vCurrentSpeed;
+
+	CCraftSystem *m_pCraftSystem = NULL;
 };
 
 #endif

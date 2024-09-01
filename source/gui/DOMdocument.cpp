@@ -268,7 +268,7 @@ namespace gui
 			else
 			{
 				fora(i, *pChildren)
-		{
+				{
 					loadStyles((*pChildren)[i]);
 				}
 			}
@@ -927,7 +927,7 @@ namespace gui
 			if(idx >= 0)
 			{
 				m_ReflowQueue.erase(idx);
-		}
+			}
 		}
 
 		bool CDOMdocument::isDirty()
@@ -1105,7 +1105,7 @@ namespace gui
 			if(forceUpdate)
 			{
 				m_pDocument->updateStyles(0.0f);
-		}
+			}
 		}
 
 		void CDOMnode::dispatchEvent(IEvent & ev)
@@ -1528,12 +1528,12 @@ namespace gui
 		{
 			if(getRenderFrame())
 			{
-			getDocument()->addReflowItem(getRenderFrame());
-			if(bForce)
-			{
-				getRenderFrame()->m_bHasFixedSize = false;
+				getDocument()->addReflowItem(getRenderFrame());
+				if(bForce)
+				{
+					getRenderFrame()->m_bHasFixedSize = false;
+				}
 			}
-		}
 		}
 		
 #define APPLY_RULE(rule) if(style->rule.isSet()){pNode->m_css.rule = style->rule;}
@@ -1815,24 +1815,24 @@ namespace gui
 
 				if(getRenderFrame() && !pEl->getRenderFrame())
 				{
-				render::IRenderFrame * pNewRF;
-				if(pEl->isTextNode())
-				{
-					pNewRF = render::IRenderFrame::createNode(NULL, getRenderFrame()->m_pRootNode);
-					pNewRF->addChild(render::IRenderFrame::createNode(pEl, getRenderFrame()->m_pRootNode));
-				}
-				else
-				{
-					pNewRF = render::IRenderFrame::createNode(pEl, getRenderFrame()->m_pRootNode);
-				}
-				if(pNewRF)
-				{
-					getRenderFrame()->addChild(pNewRF);
-					pNewRF->onCreated();
-					getDocument()->addReflowItem(pNewRF, true);
+					render::IRenderFrame * pNewRF;
+					if(pEl->isTextNode())
+					{
+						pNewRF = render::IRenderFrame::createNode(NULL, getRenderFrame()->m_pRootNode);
+						pNewRF->addChild(render::IRenderFrame::createNode(pEl, getRenderFrame()->m_pRootNode));
+					}
+					else
+					{
+						pNewRF = render::IRenderFrame::createNode(pEl, getRenderFrame()->m_pRootNode);
+					}
+					if(pNewRF)
+					{
+						getRenderFrame()->addChild(pNewRF);
+						pNewRF->onCreated();
+						getDocument()->addReflowItem(pNewRF, true);
+					}
 				}
 			}
-		}
 		}
 
 		void CDOMnode::classAdd(const StringW & cls)
@@ -1910,6 +1910,11 @@ namespace gui
 		}
 
 
+		RECT CDOMnode::getClientRect()
+		{
+			return(m_pRenderFrame->getClientRect());
+		}
+
 		void CDOMnode::removeChild(IDOMnode * _pEl, bool regen)
 		{
 			CDOMnode * pEl = (CDOMnode*)_pEl;
@@ -1943,18 +1948,56 @@ namespace gui
 					{
 						((CDOMnode*)m_vChilds[i + 1])->m_pPrevSibling = ((CDOMnode*)m_vChilds[i])->m_pPrevSibling;
 					}
-					if(pEl->getRenderFrame() && regen)
+					if(pEl->getRenderFrame())
 					{
-						pEl->getRenderFrame()->getParent()->removeChild(pEl->getRenderFrame());
+						if(regen)
+						{
+							pEl->getRenderFrame()->getParent()->removeChild(pEl->getRenderFrame());
+						}
+						else
+						{
+							pEl->setRenderFrame(NULL);
+						}
 					}
 					m_pDocument->forgotNode(m_vChilds[i]);
 					mem_delete(m_vChilds[i]);
 					m_vChilds.erase(i);
+					updateLayout();
 					break;
 				}
 			}
 		}
 		
+		void CDOMnode::takeChild(IDOMnode * _pEl, bool regen)
+		{
+			CDOMnode * pEl = (CDOMnode*)_pEl;
+			for(UINT i = 0, l = m_vChilds.size(); i < l; ++i)
+			{
+				if(m_vChilds[i] == pEl)
+				{
+					if(getDocument()->getFocus() == pEl)
+					{
+						getDocument()->requestFocus(getDocument()->getElementsByTag(L"body")[0][0]);
+					}
+					if(i > 0)
+					{
+						((CDOMnode*)m_vChilds[i - 1])->m_pNextSibling = ((CDOMnode*)m_vChilds[i])->m_pNextSibling;
+					}
+					if(i + 1 < m_vChilds.size())
+					{
+						((CDOMnode*)m_vChilds[i + 1])->m_pPrevSibling = ((CDOMnode*)m_vChilds[i])->m_pPrevSibling;
+					}
+					if(pEl->getRenderFrame() && regen)
+					{
+						pEl->getRenderFrame()->getParent()->removeChild(pEl->getRenderFrame());
+					}
+					m_pDocument->forgotNode(m_vChilds[i]);
+					m_vChilds.erase(i);
+					break;
+				}
+			}
+		}
+
 		void CDOMnode::addPseudoclass(UINT id)
 		{
 			if(!(m_pseudoclasses & id))
@@ -1962,6 +2005,11 @@ namespace gui
 				m_pseudoclasses |= id;
 				m_pDocument->indexSetPseudoClass(id, this);
 				m_pDocument->updateStyleSubtree(this);
+
+				if(m_pDocument->getFocus() == this && id == css::ICSSrule::PSEUDOCLASS_DISABLED)
+				{
+					m_pDocument->requestFocus(m_pDocument->getElementsByTag(L"body")[0][0]);
+				}
 			}
 		}
 

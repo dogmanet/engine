@@ -237,7 +237,7 @@ void CBaseTool::updateTransform()
 
 void CBaseTool::_update(float dt)
 {
-	if(m_inventoryMode == IIM_EQUIPPED && m_fCenterLength > 0.4f /* player capsule radius */) 
+	if(m_inventoryMode == IIM_IN_HANDS && m_fCenterLength > 0.4f /* player capsule radius */)
 	{
 		// raycast towards to check if
 		float3 start = m_pParent->getPos();

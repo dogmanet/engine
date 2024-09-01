@@ -37,10 +37,11 @@ namespace gui
 
 			CDOMnode() = default;
 			~CDOMnode();
-			void appendChild(IDOMnode * pEl, bool regen = true, IDOMnode *pInsertBefore = NULL);
-			void appendHTML(const StringW &wsHTML, bool regen = true, IDOMnode *pInsertBefore = NULL);
-			void setHTML(const StringW &wsHTML, bool regen = true);
-			void removeChild(IDOMnode * pEl, bool regen = true);
+			void appendChild(IDOMnode * pEl, bool regen = true, IDOMnode *pInsertBefore = NULL) override;
+			void appendHTML(const StringW &wsHTML, bool regen = true, IDOMnode *pInsertBefore = NULL) override;
+			void setHTML(const StringW &wsHTML, bool regen = true) override;
+			void removeChild(IDOMnode * pEl, bool regen = true) override;
+			void takeChild(IDOMnode * pEl, bool regen = true) override;
 			IDOMnode * parentNode();
 
 			void setDocument(CDOMdocument * doc);
@@ -220,6 +221,7 @@ namespace gui
 				m_iScrollTop = x;
 			}
 
+			RECT getClientRect() override;
 		protected:
 			IDOMnode *m_pParent = NULL;
 			IDOMnode *m_pPrevSibling = NULL;

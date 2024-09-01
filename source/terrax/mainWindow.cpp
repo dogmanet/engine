@@ -999,9 +999,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 
 		g_hBottomLeftWnd = CreateWindowExA(WS_EX_CLIENTEDGE, RENDER_WINDOW_CLASS, "", WS_CHILD | WS_VISIBLE | SS_SUNKEN, MulDpi(rect.left, g_uWndMainDpi), MulDpi(rect.top + iTopHeight + SPLITTER_BAR_WIDTH, g_uWndMainDpi), MulDpi(iLeftWidth, g_uWndMainDpi), MulDpi(iTopHeight, g_uWndMainDpi), hWnd, NULL, hInst, NULL);
-		if(g_hTopLeftWnd)
+		if(g_hBottomLeftWnd)
 		{
-			ShowWindow(g_hTopLeftWnd, SW_SHOW);
+			ShowWindow(g_hBottomLeftWnd, SW_SHOW);
 			//	UpdateWindow(g_hTopLeftWnd);
 		}
 

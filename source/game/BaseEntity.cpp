@@ -271,6 +271,7 @@ bool CBaseEntity::setKV(const char * name, const char * value)
 	SMQuaternion q;
 	int d;
 	float f;
+	UINT u;
 	switch(field->type)
 	{
 	case PDF_INT:
@@ -283,6 +284,20 @@ bool CBaseEntity::setKV(const char * name, const char * value)
 			else
 			{
 				this->*((int ThisClass::*)field->pField) = d;
+			}
+			return(true);
+		}
+		return(false);
+	case PDF_UINT:
+		if(1 == sscanf(value, "%u", &u))
+		{
+			if(field->fnSet.u)
+			{
+				(this->*(field->fnSet.u))(u);
+			}
+			else
+			{
+				this->*((UINT ThisClass::*)field->pField) = u;
 			}
 			return(true);
 		}
@@ -496,6 +511,9 @@ bool CBaseEntity::getKV(const char * name, char * out, int bufsize)
 	{
 	case PDF_INT:
 		sprintf_s(out, bufsize, "%d", this->*((int ThisClass::*)field->pField));
+		break;
+	case PDF_UINT:
+		sprintf_s(out, bufsize, "%u", this->*((int ThisClass::*)field->pField));
 		break;
 	case PDF_FLAGS:
 		sprintf_s(out, bufsize, "%u", this->*((int ThisClass::*)field->pField) & 0xFFFF0000);
@@ -770,6 +788,14 @@ void CBaseEntity::broadcastMessage(const char * szInputName, int iArg, float fRa
 	memset(&inputData, 0, sizeof(inputData));
 	inputData.type = PDF_INT;
 	inputData.parameter.i = iArg;
+	broadcastMessage(szInputName, inputData, fRadius);
+}
+void CBaseEntity::broadcastMessage(const char *szInputName, UINT uArg, float fRadius)
+{
+	inputdata_t inputData;
+	memset(&inputData, 0, sizeof(inputData));
+	inputData.type = PDF_UINT;
+	inputData.parameter.u = uArg;
 	broadcastMessage(szInputName, inputData, fRadius);
 }
 void CBaseEntity::broadcastMessage(const char * szInputName, bool bArg, float fRadius)

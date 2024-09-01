@@ -64,6 +64,8 @@ void CPlayer::onPostLoad()
 	IXResourceManager *pResourceManager = Core_GetIXCore()->getResourceManager();
 	pResourceManager->getModelAnimated("models/weapons/hands.dse", &m_pHandsModelResource);
 
+	m_pCraftSystem = new CCraftSystem(getInventory());
+
 	//m_pGhostObject->setCollisionFlags(m_pGhostObject->getCollisionFlags() | btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT);
 }
 
@@ -72,8 +74,10 @@ CPlayer::~CPlayer()
 	mem_delete(m_pCrosshair);
 	CLEAR_INTERVAL(m_iUpdIval);
 	REMOVE_ENTITY(m_pCamera);
+	mem_delete(m_pCraftSystem);
 }
 
+// TODO: убрать блять, что б я этого не видел
 static float GetAngleBetweenVectors(const float3 &v1, const float3 &v2, const float3 &vRotationAxis)
 {
 	float fAngle = SMVector3Dot(v1, v2);
@@ -121,6 +125,11 @@ void CPlayer::setOrient(const SMQuaternion &q)
 SMQuaternion CPlayer::getOrient()
 {
 	return(m_pHeadEnt ? m_pHeadEnt->getOrient() : BaseClass::getOrient());
+}
+
+CCraftSystem* CPlayer::getCraftSystem()
+{
+	return(m_pCraftSystem);
 }
 
 void CPlayer::updateInput(float dt)

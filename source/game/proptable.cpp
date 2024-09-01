@@ -163,6 +163,7 @@ void named_output_t::onEntityAdded(CBaseEntity *pEnt)
 		float4_t f4;
 		SMQuaternion q;
 		int d;
+		UINT u;
 		float f;
 		const char *value = szTargetData;
 		bool bParsed = false;
@@ -175,6 +176,13 @@ void named_output_t::onEntityAdded(CBaseEntity *pEnt)
 			if(1 == sscanf(value, "%d", &d))
 			{
 				out.data.parameter.i = d;
+				bParsed = true;
+			}
+			break;
+		case PDF_UINT:
+			if(1 == sscanf(value, "%u", &u))
+			{
+				out.data.parameter.u = u;
 				bParsed = true;
 			}
 			break;
@@ -309,6 +317,9 @@ void inputdata_t::setParameter(const inputdata_t &other)
 		case PDF_INT:
 			parameter.b = other.parameter.i != 0;
 			break;
+		case PDF_UINT:
+			parameter.b = other.parameter.u != 0;
+			break;
 		case PDF_FLOAT:
 			parameter.b = other.parameter.f != 0.0f;
 			break;
@@ -337,6 +348,9 @@ void inputdata_t::setParameter(const inputdata_t &other)
 		case PDF_FLOAT:
 			parameter.i = (int)other.parameter.f;
 			break;
+		case PDF_UINT:
+			parameter.i = (int)other.parameter.u;
+			break;
 		case PDF_VECTOR:
 			parameter.i = (int)other.v3Parameter.x;
 			break;
@@ -352,6 +366,33 @@ void inputdata_t::setParameter(const inputdata_t &other)
 		}
 		break;
 
+	case PDF_UINT:
+		switch(other.type)
+		{
+		case PDF_BOOL:
+			parameter.u = other.parameter.b ? 1 : 0;
+			break;
+		case PDF_FLOAT:
+			parameter.u = (UINT)other.parameter.f;
+			break;
+		case PDF_INT:
+			parameter.u = (UINT)other.parameter.i;
+			break;
+		case PDF_VECTOR:
+			parameter.u = (UINT)other.v3Parameter.x;
+			break;
+		case PDF_VECTOR4:
+			parameter.u = (UINT)other.v4Parameter.x;
+			break;
+		case PDF_STRING:
+			if(!sscanf(other.parameter.str, "%u", &parameter.u))
+			{
+				parameter.u = 0;
+			}
+			break;
+		}
+		break;
+
 	case PDF_FLOAT:
 		switch(other.type)
 		{
@@ -360,6 +401,9 @@ void inputdata_t::setParameter(const inputdata_t &other)
 			break;
 		case PDF_INT:
 			parameter.f = (float)other.parameter.i;
+			break;
+		case PDF_UINT:
+			parameter.f = (float)other.parameter.u;
 			break;
 		case PDF_VECTOR:
 			parameter.f = other.v3Parameter.x;
@@ -385,6 +429,9 @@ void inputdata_t::setParameter(const inputdata_t &other)
 		case PDF_INT:
 			v3Parameter = float3((float)other.parameter.i);
 			break;
+		case PDF_UINT:
+			v3Parameter = float3((float)other.parameter.u);
+			break;
 		case PDF_FLOAT:
 			v3Parameter = float3(other.parameter.f);
 			break;
@@ -408,6 +455,9 @@ void inputdata_t::setParameter(const inputdata_t &other)
 			break;
 		case PDF_INT:
 			v4Parameter = float4((float)other.parameter.i);
+			break;
+		case PDF_UINT:
+			v4Parameter = float4((float)other.parameter.u);
 			break;
 		case PDF_FLOAT:
 			v4Parameter = float4(other.parameter.f);
@@ -434,6 +484,9 @@ void inputdata_t::setParameter(const inputdata_t &other)
 			break;
 		case PDF_INT:
 			sprintf(tmp, "%d", other.parameter.i);
+			break;
+		case PDF_UINT:
+			sprintf(tmp, "%u", other.parameter.u);
 			break;
 		case PDF_FLOAT:
 			sprintf(tmp, "%f", other.parameter.f);

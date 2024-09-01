@@ -126,6 +126,7 @@ public:
 	void broadcastMessage(const char *szInputName, inputdata_t inputData, float fRadius);
 	void broadcastMessage(const char *szInputName, float fArg, float fRadius);
 	void broadcastMessage(const char *szInputName, int iArg, float fRadius);
+	void broadcastMessage(const char *szInputName, UINT uArg, float fRadius);
 	void broadcastMessage(const char *szInputName, bool bArg, float fRadius);
 	void broadcastMessage(const char *szInputName, const char *szArg, float fRadius);
 	void broadcastMessage(const char *szInputName, const float3_t &f3Arg, float fRadius);
