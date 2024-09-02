@@ -78,16 +78,16 @@ public:
 	void XMETHODCALLTYPE onGraphicsResize(UINT uWidth, UINT uHeight, bool isFullscreen, bool isBorderless, IXEngine *pEngine) override
 	{
 		XWINDOW_DESC wdesc = *m_pWindow->getDesc();
-		if(isFullscreen || isBorderless)
+		/*if(isFullscreen || isBorderless)
 		{
 			wdesc.iPosX = 0;
 			wdesc.iPosY = 0;
 		}
 		else if(wdesc.iPosX == 0 && wdesc.iPosY == 0)
-		{
+		{*/
 			wdesc.iPosX = XCW_CENTER;
 			wdesc.iPosY = XCW_CENTER;
-		}
+		//}
 		wdesc.iSizeX = (int)uWidth;
 		wdesc.iSizeY = (int)uHeight;
 		wdesc.flags = XWF_BUTTON_CLOSE | XWF_BUTTON_MINIMIZE | XWF_NORESIZE;
