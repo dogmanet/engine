@@ -2583,7 +2583,7 @@ static void XTrackMouse(HWND hWnd, LPARAM lParam)
 	}
 
 	RECT rc;
-	GetWindowRect(hWnd, &rc);
+	GetClientRect(hWnd, &rc);
 	float2 vWinSize((float)(rc.right - rc.left), (float)(rc.bottom - rc.top));
 	g_xState.vWinSize = vWinSize;
 
