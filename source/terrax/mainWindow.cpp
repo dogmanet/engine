@@ -154,10 +154,6 @@ HWND CreateToolbar(HWND hWndParent);
 HBITMAP StretchBitmap(HDC hDC, HBITMAP hBitmap);
 
 UINT GetWindowDPI(HWND hWnd);
-int DivDpi(int iUnscaled, UINT uCurrentDpi);
-int MulDpi(int iUnscaled, UINT uCurrentDpi);
-void DivDpiRect(RECT *pRc, UINT uCurrentDpi);
-void MulDpiRect(RECT *pRc, UINT uCurrentDpi);
 
 HFONT GetDefaultFont(UINT uDpi);
 void ReleaseDefaultFont(HFONT hFont);
@@ -2702,7 +2698,7 @@ static bool XIsClicked(const float3 &vPos)
 	X_2D_VIEW xCurView = g_xConfig.m_x2DView[g_xState.activeWindow];
 	float fViewScale = g_xConfig.m_fViewportScale[g_xState.activeWindow];
 
-	const float fWorldSize = 3.5f * fViewScale;
+	const float fWorldSize = MulDpiF(3.5f, g_uWndMainDpi) * fViewScale;
 
 	bool sel = false;
 	switch(xCurView)
@@ -3173,8 +3169,9 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 				if(g_xState.bHasSelection)
 				{
 					float fScale = g_xConfig.m_fViewportScale[g_xState.activeWindow];
-					float fPtSize = 3.0f * fScale;
-					float fPtMargin = 7.0f * fScale;
+					
+					float fPtSize = MulDpiF(3.0f, g_uWndMainDpi) * fScale;
+					float fPtMargin = MulDpiF(7.0f, g_uWndMainDpi) * fScale;
 					float2 vSelectionCenter;
 					float4 vBorder;
 
@@ -3584,8 +3581,8 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 				else if(g_xState.bHasSelection)
 				{
 					float fScale = g_xConfig.m_fViewportScale[g_xState.activeWindow];
-					float fPtSize = 3.0f * fScale;
-					float fPtMargin = 7.0f * fScale;
+					float fPtSize = MulDpiF(3.0f, g_uWndMainDpi) * fScale;
+					float fPtMargin = MulDpiF(7.0f, g_uWndMainDpi) * fScale;
 					float2 vSelectionCenter;
 					float4 vBorder;
 
@@ -4761,6 +4758,10 @@ UINT GetWindowDPI(HWND hWnd)
 int MulDpi(int iUnscaled, UINT uCurrentDpi)
 {
 	return(MulDiv(iUnscaled, uCurrentDpi, USER_DEFAULT_SCREEN_DPI));
+}
+float MulDpiF(float fUnscaled, UINT uCurrentDpi)
+{
+	return(fUnscaled * (float)uCurrentDpi / (float)USER_DEFAULT_SCREEN_DPI);
 }
 
 int DivDpi(int iUnscaled, UINT uCurrentDpi)

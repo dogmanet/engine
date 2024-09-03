@@ -1854,7 +1854,7 @@ void XRender2D(IXCamera *pCamera, X_2D_VIEW view, float fScale, bool preScene, b
 			s_pColorBuffer->update(&float4(0.0f, 1.0f, 0.0f, 1.0f));
 
 			float3_t *pvData;
-			float fPtSize = 3.5f * fScale;
+			float fPtSize = MulDpiF(3.5f, g_uWndMainDpi) * fScale;
 			if(g_xRenderStates.pHandlerVB->lock((void**)&pvData, GXBL_WRITE))
 			{
 				pvData[0] = float3_t(fPtSize, fPtSize, fPtSize);
@@ -2076,8 +2076,8 @@ void XRender2D(IXCamera *pCamera, X_2D_VIEW view, float fScale, bool preScene, b
 			XDrawBorder(GX_COLOR_ARGB(255, 255, 0, 0), va, vb, vc, vd, fScale);
 
 			float3_t *pvData;
-			float fPtSize = 3.0f * fScale;
-			float fPtMargin = 7.0f * fScale;
+			float fPtSize = MulDpiF(3.0f, g_uWndMainDpi) * fScale;
+			float fPtMargin = MulDpiF(7.0f, g_uWndMainDpi) * fScale;
 			if(g_xRenderStates.pTransformHandlerVB->lock((void**)&pvData, GXBL_WRITE))
 			{
 				UINT uCV = 0;
