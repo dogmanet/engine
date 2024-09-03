@@ -187,7 +187,14 @@ extern BOOL g_is2DPanning;
 
 extern IXEditorTool *g_pCurrentTool;
 
+struct XExtMenuItem
+{
+	const XEditorMenuItem *pItem;
+	HMENU hMenu;
+};
+
 extern Array<IXEditorImporter*> g_pEditorImporters;
+extern Array<XExtMenuItem> g_aExtMenuItems;
 
 void XResetLevel();
 bool XSaveLevel(const char *szNewName=NULL, bool bForcePrompt = false);

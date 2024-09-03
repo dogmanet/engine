@@ -1190,6 +1190,15 @@ public:
 		return(m_pRenderer);
 	}
 
+	UINT XMETHODCALLTYPE getMenuCount() override
+	{
+		return(0);
+	}
+	const XEditorMenuItem* XMETHODCALLTYPE getMenu(UINT uId) override
+	{
+		return(NULL);
+	}
+
 private:
 	IXGizmoRenderer *m_pRenderer = NULL;
 	IXCore *m_pCore = NULL;

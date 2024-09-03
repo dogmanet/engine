@@ -113,6 +113,26 @@ public:
 
 //##########################################################################
 
+typedef void(*XEditorMenuCallback)(void*);
+
+struct XEditorMenuItem
+{
+	const char *szText;
+	XEditorMenuCallback pfnCallback;
+	void *pContext;
+
+	const XAccelItem *pAccel;
+	void *pPlacement;
+
+	const XEditorMenuItem *aItems;
+	UINT uItemCount;
+
+	bool isDisabled;
+	bool isChecked;
+};
+
+//##########################################################################
+
 class IXEditorExtension: public IXUnknown
 {
 public:
@@ -129,6 +149,9 @@ public:
 
 	virtual UINT XMETHODCALLTYPE getResourceBrowserCount() = 0;
 	virtual bool XMETHODCALLTYPE getResourceBrowser(UINT uId, IXEditorResourceBrowser **ppOut) = 0;
+
+	virtual UINT XMETHODCALLTYPE getMenuCount() = 0;
+	virtual const XEditorMenuItem* XMETHODCALLTYPE getMenu(UINT uId) = 0;
 };
 
 #endif

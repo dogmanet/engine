@@ -32,6 +32,15 @@ public:
 	{
 		return(m_pVertexTool);
 	}
+
+	UINT XMETHODCALLTYPE getMenuCount() override
+	{
+		return(0);
+	}
+	const XEditorMenuItem* XMETHODCALLTYPE getMenu(UINT uId) override
+	{
+		return(NULL);
+	}
 	
 private:
 	CEditorBrushTool *m_pBrushTool = NULL;

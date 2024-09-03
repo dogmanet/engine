@@ -1335,7 +1335,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 		XUpdateUndoRedo();
 
-#if 0
 		{
 			const XEditorMenuItem *pItem;
 			HMENU hMenu;
@@ -1351,7 +1350,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				SetMenuItemInfoA(hMenu, ID_EXT_MENU_FIRST + i, FALSE, &mii);
 			}
 		}
-#endif
 		break;
 
 	case WM_COMMAND:
@@ -1395,7 +1393,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			IXEditorImporter *pImporter = g_pEditorImporters[LOWORD(wParam) - IDC_FILE_IMPORT_FIRST];
 			pImporter->startImport();
 		}
-#if 0
+
 		if(LOWORD(wParam) >= ID_EXT_MENU_FIRST && LOWORD(wParam) < ID_EXT_MENU_FIRST + g_aExtMenuItems.size())
 		{
 			const XEditorMenuItem *pMenuItem = g_aExtMenuItems[LOWORD(wParam) - ID_EXT_MENU_FIRST].pItem;
@@ -1404,7 +1402,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				pMenuItem->pfnCallback(pMenuItem->pContext);
 			}
 		}
-#endif
+
 		switch(LOWORD(wParam))
 		{
 		case ID_FILE_OPEN:
