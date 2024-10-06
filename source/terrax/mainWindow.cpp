@@ -154,10 +154,6 @@ HWND CreateToolbar(HWND hWndParent);
 HBITMAP StretchBitmap(HDC hDC, HBITMAP hBitmap);
 
 UINT GetWindowDPI(HWND hWnd);
-int DivDpi(int iUnscaled, UINT uCurrentDpi);
-int MulDpi(int iUnscaled, UINT uCurrentDpi);
-void DivDpiRect(RECT *pRc, UINT uCurrentDpi);
-void MulDpiRect(RECT *pRc, UINT uCurrentDpi);
 
 HFONT GetDefaultFont(UINT uDpi);
 void ReleaseDefaultFont(HFONT hFont);
@@ -1339,7 +1335,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 		XUpdateUndoRedo();
 
-#if 0
 		{
 			const XEditorMenuItem *pItem;
 			HMENU hMenu;
@@ -1355,7 +1350,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				SetMenuItemInfoA(hMenu, ID_EXT_MENU_FIRST + i, FALSE, &mii);
 			}
 		}
-#endif
 		break;
 
 	case WM_COMMAND:
@@ -1399,7 +1393,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			IXEditorImporter *pImporter = g_pEditorImporters[LOWORD(wParam) - IDC_FILE_IMPORT_FIRST];
 			pImporter->startImport();
 		}
-#if 0
+
 		if(LOWORD(wParam) >= ID_EXT_MENU_FIRST && LOWORD(wParam) < ID_EXT_MENU_FIRST + g_aExtMenuItems.size())
 		{
 			const XEditorMenuItem *pMenuItem = g_aExtMenuItems[LOWORD(wParam) - ID_EXT_MENU_FIRST].pItem;
@@ -1408,7 +1402,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				pMenuItem->pfnCallback(pMenuItem->pContext);
 			}
 		}
-#endif
+
 		switch(LOWORD(wParam))
 		{
 		case ID_FILE_OPEN:
@@ -2606,7 +2600,7 @@ static void XTrackMouse(HWND hWnd, LPARAM lParam)
 	}
 
 	RECT rc;
-	GetWindowRect(hWnd, &rc);
+	GetClientRect(hWnd, &rc);
 	float2 vWinSize((float)(rc.right - rc.left), (float)(rc.bottom - rc.top));
 	g_xState.vWinSize = vWinSize;
 
@@ -2725,7 +2719,7 @@ static bool XIsClicked(const float3 &vPos)
 	X_2D_VIEW xCurView = g_xConfig.m_x2DView[g_xState.activeWindow];
 	float fViewScale = g_xConfig.m_fViewportScale[g_xState.activeWindow];
 
-	const float fWorldSize = 3.5f * fViewScale;
+	const float fWorldSize = MulDpiF(3.5f, g_uWndMainDpi) * fViewScale;
 
 	bool sel = false;
 	switch(xCurView)
@@ -3196,8 +3190,9 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 				if(g_xState.bHasSelection)
 				{
 					float fScale = g_xConfig.m_fViewportScale[g_xState.activeWindow];
-					float fPtSize = 3.0f * fScale;
-					float fPtMargin = 7.0f * fScale;
+					
+					float fPtSize = MulDpiF(3.0f, g_uWndMainDpi) * fScale;
+					float fPtMargin = MulDpiF(7.0f, g_uWndMainDpi) * fScale;
 					float2 vSelectionCenter;
 					float4 vBorder;
 
@@ -3607,8 +3602,8 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 				else if(g_xState.bHasSelection)
 				{
 					float fScale = g_xConfig.m_fViewportScale[g_xState.activeWindow];
-					float fPtSize = 3.0f * fScale;
-					float fPtMargin = 7.0f * fScale;
+					float fPtSize = MulDpiF(3.0f, g_uWndMainDpi) * fScale;
+					float fPtMargin = MulDpiF(7.0f, g_uWndMainDpi) * fScale;
 					float2 vSelectionCenter;
 					float4 vBorder;
 
@@ -4787,6 +4782,10 @@ UINT GetWindowDPI(HWND hWnd)
 int MulDpi(int iUnscaled, UINT uCurrentDpi)
 {
 	return(MulDiv(iUnscaled, uCurrentDpi, USER_DEFAULT_SCREEN_DPI));
+}
+float MulDpiF(float fUnscaled, UINT uCurrentDpi)
+{
+	return(fUnscaled * (float)uCurrentDpi / (float)USER_DEFAULT_SCREEN_DPI);
 }
 
 int DivDpi(int iUnscaled, UINT uCurrentDpi)

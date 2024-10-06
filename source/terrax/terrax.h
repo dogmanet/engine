@@ -172,6 +172,8 @@ extern CEditor *g_pEditor;
 extern IXEditorGizmoMove *g_pGizmoMove;
 extern IXEditorGizmoRotate *g_pGizmoRotate;
 
+extern UINT g_uWndMainDpi;
+
 #define X2D_TOP_POS float3(0.0f, 1000.0f, 0.0f)
 #define X2D_TOP_ROT SMQuaternion(-SM_PIDIV2, 'x')
 #define X2D_FRONT_POS float3(0.0f, 0.0f, -1000.0f)
@@ -185,7 +187,14 @@ extern BOOL g_is2DPanning;
 
 extern IXEditorTool *g_pCurrentTool;
 
+struct XExtMenuItem
+{
+	const XEditorMenuItem *pItem;
+	HMENU hMenu;
+};
+
 extern Array<IXEditorImporter*> g_pEditorImporters;
+extern Array<XExtMenuItem> g_aExtMenuItems;
 
 void XResetLevel();
 bool XSaveLevel(const char *szNewName=NULL, bool bForcePrompt = false);
@@ -282,6 +291,13 @@ IXEditorObject* XFindObjectByGUID(const XGUID &guid);
 CProxyObject* XGetObjectParent(IXEditorObject *pObject);
 
 void CheckToolbarButton(int iCmd, BOOL isChecked);
+
+
+int DivDpi(int iUnscaled, UINT uCurrentDpi);
+int MulDpi(int iUnscaled, UINT uCurrentDpi);
+float MulDpiF(float fUnscaled, UINT uCurrentDpi);
+void DivDpiRect(RECT *pRc, UINT uCurrentDpi);
+void MulDpiRect(RECT *pRc, UINT uCurrentDpi);
 
 extern IXEngine *g_pEngine;
 

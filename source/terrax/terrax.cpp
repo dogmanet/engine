@@ -583,6 +583,41 @@ bool XIsKeyPressed(UINT uKey)
 	return(g_pEngineCallback->isKeyPressed(uKey));
 }
 
+Array<XExtMenuItem> g_aExtMenuItems;
+
+HMENU BuildExtMenu(const XEditorMenuItem *pMenu)
+{
+	UINT uMenus = pMenu->uItemCount;
+	if(!uMenus)
+	{
+		return(NULL);
+	}
+	HMENU hMenu = CreatePopupMenu();
+	for(UINT j = 0; j < uMenus; ++j)
+	{
+		const XEditorMenuItem *pMenuItem = &pMenu->aItems[j];
+		if(!pMenuItem->szText)
+		{
+			AppendMenuW(hMenu, MF_SEPARATOR, NULL, NULL);
+		}
+		else
+		{
+			HMENU hSubMenu = BuildExtMenu(pMenuItem);
+
+			if(hSubMenu)
+			{
+				AppendMenuW(hMenu, MF_STRING | MF_POPUP, (UINT_PTR)hSubMenu, CMB2WC(pMenuItem->szText));
+			}
+			else
+			{
+				AppendMenuW(hMenu, MF_STRING, ID_EXT_MENU_FIRST + g_aExtMenuItems.size(), CMB2WC(pMenuItem->szText));
+				g_aExtMenuItems.push_back({pMenuItem, hMenu});
+			}
+		}
+	}
+	return(hMenu);
+}
+
 #if defined(_WINDOWS)
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow)
 {
@@ -825,6 +860,24 @@ int main(int argc, char **argv)
 		mii.hSubMenu = hImportersMenu;
 
 		SetMenuItemInfoW(hFileMenu, ID_FILE_IMPORT, FALSE, &mii);
+	}
+
+	fora(i, g_apExtensions)
+	{
+		UINT uMenus = g_apExtensions[i]->getMenuCount();
+		for(UINT j = 0; j < uMenus; ++j)
+		{
+			const XEditorMenuItem *pMenuItem;
+			if((pMenuItem = g_apExtensions[i]->getMenu(j)))
+			{
+				HMENU hSubMenu = BuildExtMenu(pMenuItem);
+
+				if(hSubMenu)
+				{
+					InsertMenuW(GetMenu(g_hWndMain), GetMenuItemCount(GetMenu(g_hWndMain)) - 1, MF_STRING | MF_POPUP | MF_BYPOSITION, (UINT_PTR)hSubMenu, CMB2WC(pMenuItem->szText));
+				}
+			}
+		}
 	}
 
 	SetForegroundWindow(g_hWndMain);
@@ -1865,7 +1918,7 @@ void XRender2D(IXCamera *pCamera, X_2D_VIEW view, float fScale, bool preScene, b
 			s_pColorBuffer->update(&float4(0.0f, 1.0f, 0.0f, 1.0f));
 
 			float3_t *pvData;
-			float fPtSize = 3.5f * fScale;
+			float fPtSize = MulDpiF(3.5f, g_uWndMainDpi) * fScale;
 			if(g_xRenderStates.pHandlerVB->lock((void**)&pvData, GXBL_WRITE))
 			{
 				pvData[0] = float3_t(fPtSize, fPtSize, fPtSize);
@@ -2087,8 +2140,8 @@ void XRender2D(IXCamera *pCamera, X_2D_VIEW view, float fScale, bool preScene, b
 			XDrawBorder(GX_COLOR_ARGB(255, 255, 0, 0), va, vb, vc, vd, fScale);
 
 			float3_t *pvData;
-			float fPtSize = 3.0f * fScale;
-			float fPtMargin = 7.0f * fScale;
+			float fPtSize = MulDpiF(3.0f, g_uWndMainDpi) * fScale;
+			float fPtMargin = MulDpiF(7.0f, g_uWndMainDpi) * fScale;
 			if(g_xRenderStates.pTransformHandlerVB->lock((void**)&pvData, GXBL_WRITE))
 			{
 				UINT uCV = 0;

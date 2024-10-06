@@ -383,7 +383,14 @@ void XMETHODCALLTYPE CWindow::update(const XWINDOW_DESC *pWindowDesc)
 	int iPosX = pWindowDesc->iPosX;
 	int iPosY = pWindowDesc->iPosY;
 
-	if(pWindowDesc->iPosX != XCW_USEDEFAULT && pWindowDesc->iPosY != XCW_USEDEFAULT)
+	if(bForceNoBorder)
+	{
+		iPosX = 0;
+		iPosY = 0;
+
+		uSWPflags &= ~SWP_NOMOVE;
+	}
+	else if(pWindowDesc->iPosX != XCW_USEDEFAULT && pWindowDesc->iPosY != XCW_USEDEFAULT)
 	{
 		if(iPosX == XCW_CENTER)
 		{

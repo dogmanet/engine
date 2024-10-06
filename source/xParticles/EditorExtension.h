@@ -27,6 +27,15 @@ public:
 
 	void setRender(IXRender *pRender);
 
+	UINT XMETHODCALLTYPE getMenuCount() override
+	{
+		return(0);
+	}
+	const XEditorMenuItem* XMETHODCALLTYPE getMenu(UINT uId) override
+	{
+		return(NULL);
+	}
+
 private:
 	CEditable *m_pEditable = NULL;
 
