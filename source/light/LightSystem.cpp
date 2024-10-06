@@ -522,7 +522,7 @@ void CLightSystem::updateVisibility(IXCamera *pCamera)
 		{
 			m_aLights[i]->testDirty();
 
-			if(m_aLights[i]->isDirty(LRT_ALL))
+			//if(m_aLights[i]->isDirty(LRT_ALL))
 			{
 				m_aLights[i]->updateVisibility(pCamera, vLPVmin, vLPVmax, iCascades > 0);
 			}
