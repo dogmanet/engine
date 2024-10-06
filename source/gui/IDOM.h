@@ -70,7 +70,15 @@ namespace gui
 			virtual UINT getInnerWidth() = 0;
 			virtual UINT getInnerHeight() = 0;
 
+			virtual float getScrollLeft() = 0;
+			virtual void setScrollLeft(float x) = 0;
+
+			virtual float getScrollTop() = 0;
+			virtual void setScrollTop(float x) = 0;
+
 			virtual RECT getClientRect() = 0;
+
+			virtual void updateLayout(bool bForce = false) = 0;
 		};
 
 

@@ -22,6 +22,11 @@ public:
 
 	const XWINDOW_DESC* XMETHODCALLTYPE getDesc() override;
 	
+	IXWindow* XMETHODCALLTYPE getParent() override;
+
+	bool XMETHODCALLTYPE getPlacement(XWindowPlacement *pPlacement) override;
+	void XMETHODCALLTYPE setPlacement(const XWindowPlacement &placement, bool bSkipVisibility = false) override;
+
 	INT_PTR runCallback(UINT msg, WPARAM wParam, LPARAM lParam);
 
 protected:
@@ -30,6 +35,12 @@ protected:
 	XWINDOW_DESC m_windowDesc;
 	UINT m_uId;
 	IXWindowCallback *m_pCallback;
+	IXWindow *m_pParent;
+
+	bool m_isVisible = false;
+
+private:
+	static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 };
 
 #endif

@@ -60,18 +60,20 @@ namespace gui
 					}
 					//m_pRenderFrame->m_iScrollTop -= 32;
 
-					if(pRF->m_fScrollSpeedY > 0)
+					float fScrollSpeedY = pRF->getScrollSpeedY();
+					if(fScrollSpeedY > 0.0f)
 					{
-						pRF->m_fScrollSpeedY = -SCROLL_SPEED;
+						fScrollSpeedY = -SCROLL_SPEED;
 					}
 					else
 					{
-						pRF->m_fScrollSpeedY -= SCROLL_SPEED;
-						if(pRF->m_fScrollSpeedY < -SCROLL_SPEED_MAX)
+						fScrollSpeedY -= SCROLL_SPEED;
+						if(fScrollSpeedY < -SCROLL_SPEED_MAX)
 						{
-							pRF->m_fScrollSpeedY = -SCROLL_SPEED_MAX;
+							fScrollSpeedY = -SCROLL_SPEED_MAX;
 						}
 					}
+					pRF->setScrollSpeedY(fScrollSpeedY);
 				}
 				break;
 			case GUI_EVENT_TYPE_MOUSEWHEELDOWN:
@@ -82,20 +84,21 @@ namespace gui
 						ev.stopPropagation();
 						m_pDocument->markDirty();
 					}
+					float fScrollSpeedY = pRF->getScrollSpeedY();
 					//m_pRenderFrame->m_iScrollTop += 32;
-					if(pRF->m_fScrollSpeedY < 0)
+					if(fScrollSpeedY < 0.0f)
 					{
-						pRF->m_fScrollSpeedY = SCROLL_SPEED;
+						fScrollSpeedY = SCROLL_SPEED;
 					}
 					else
 					{
-						pRF->m_fScrollSpeedY += SCROLL_SPEED;
-						if(pRF->m_fScrollSpeedY > SCROLL_SPEED_MAX)
+						fScrollSpeedY += SCROLL_SPEED;
+						if(fScrollSpeedY > SCROLL_SPEED_MAX)
 						{
-							pRF->m_fScrollSpeedY = SCROLL_SPEED_MAX;
+							fScrollSpeedY = SCROLL_SPEED_MAX;
 						}
 					}
-
+					pRF->setScrollSpeedY(fScrollSpeedY);
 				}
 				break;
 			}

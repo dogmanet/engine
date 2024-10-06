@@ -191,7 +191,7 @@ void CGUIInventoryController::update()
 				szItemCount[0] = 0;
 			}
 
-			sprintf_s(szBuffer, "<div inventoryid=\"%i\" onmousedown=\"begin_drag\" onclick=\"open_menu\" class=\"icon\" style=\"background-image: /hud/items/%s.png; top: %i%s; left: %i%s; width: %ivw; height: %ivw;\"><div class=\"item_name\">%s</div>%s</div>",
+			sprintf_s(szBuffer, "<div inventoryid=\"%i\" onmousedown=\"begin_drag\" oncontextmenu=\"open_menu\" class=\"icon\" style=\"background-image: /hud/items/%s.png; top: %i%s; left: %i%s; width: %ivw; height: %ivw;\"><div class=\"item_name\">%s</div>%s</div>",
 				i, szIcon, y, szDim, x, szDim, INV_CELL_SIZE * pItem->getIconSizeX(), INV_CELL_SIZE * pItem->getIconSizeY(), szName, szItemCount);
 
 			gui::dom::IDOMnodeCollection newItems = m_pInventoryDesktop->createFromText(StringW(CMB2WC(szBuffer)));

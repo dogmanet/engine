@@ -102,7 +102,7 @@
       </PrecompiledHeader>
       <WarningLevel>TurnOffAllWarnings</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;SX_TERRAX;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);SX_LIB_NAME="LEd"</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;SX_TERRAX;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);SX_LIB_NAME="TrX"</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <TreatSpecificWarningsAsErrors>4316</TreatSpecificWarningsAsErrors>
@@ -125,7 +125,7 @@
       </PrecompiledHeader>
       <WarningLevel>TurnOffAllWarnings</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN64;SX_TERRAX;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);SX_LIB_NAME="LEd"</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN64;SX_TERRAX;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);SX_LIB_NAME="TrX"</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <TreatSpecificWarningsAsErrors>4316</TreatSpecificWarningsAsErrors>
@@ -150,7 +150,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;SX_TERRAX;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);SX_LIB_NAME="LEd"</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;SX_TERRAX;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);SX_LIB_NAME="TrX"</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <TreatSpecificWarningsAsErrors>4316</TreatSpecificWarningsAsErrors>
     </ClCompile>
@@ -175,7 +175,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN64;SX_TERRAX;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);SX_LIB_NAME="LEd"</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN64;SX_TERRAX;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);SX_LIB_NAME="TrX"</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <TreatSpecificWarningsAsErrors>4316</TreatSpecificWarningsAsErrors>
     </ClCompile>
@@ -242,6 +242,7 @@
     <ClCompile Include="..\..\..\source\terrax\MaterialEditor.cpp" />
     <ClCompile Include="..\..\..\source\terrax\PropertyWindow.cpp" />
     <ClCompile Include="..\..\..\source\terrax\ProxyObject.cpp" />
+    <ClCompile Include="..\..\..\source\terrax\SceneTreeWindow.cpp" />
     <ClCompile Include="..\..\..\source\terrax\ScrollBar.cpp" />
     <ClCompile Include="..\..\..\source\terrax\terrax.cpp" />
     <ClCompile Include="..\..\..\source\terrax\TextureViewGraphNode.cpp" />
@@ -296,6 +297,7 @@
     <ClInclude Include="..\..\..\source\terrax\MaterialEditor.h" />
     <ClInclude Include="..\..\..\source\terrax\PropertyWindow.h" />
     <ClInclude Include="..\..\..\source\terrax\ProxyObject.h" />
+    <ClInclude Include="..\..\..\source\terrax\SceneTreeWindow.h" />
     <ClInclude Include="..\..\..\source\terrax\ScrollBar.h" />
     <ClInclude Include="..\..\..\source\terrax\TextureViewGraphNode.h" />
     <ClInclude Include="..\..\..\source\terrax\TextureViewGraphNodeData.h" />

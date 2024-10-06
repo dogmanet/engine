@@ -14,6 +14,7 @@
 #include "CurveEditorDialog.h"
 #include "ColorGradientEditorDialog.h"
 #include "ColorPicker.h"
+#include "SceneTreeWindow.h"
 
 #define GIZMO_TYPES() \
 	GTO(Handle)\
@@ -47,6 +48,8 @@ public:
 	bool onMouseDown();
 	void onMouseUp();
 
+	void update(float dt);
+
 	const TerraXState* XMETHODCALLTYPE getState() override;
 
 	X_2D_VIEW XMETHODCALLTYPE getViewForWindow(X_WINDOW_POS winPos) override;
@@ -79,6 +82,14 @@ public:
 
 	void XMETHODCALLTYPE editMaterial(const char *szMatName) override;
 
+	void onObjectsetChanged();
+	void onObjectNameChanged(IXEditorObject *pObject = NULL);
+	void onObjectAdded(IXEditorObject *pObject);
+	void onObjectRemoved(IXEditorObject *pObject);
+	void onSelectionChanged();
+
+	void showSceneTree();
+
 private:
 #define GTO(gt) Array<CGizmo##gt*> m_aGizmos##gt; CGizmo##gt *m_pSelected##gt = NULL;
 	GIZMO_TYPES();
@@ -103,6 +114,8 @@ private:
 	CColorGradientEditorDialog m_gradientEditor;
 
 	CColorPicker m_colorPicker;
+
+	CSceneTreeWindow *m_pSceneTreeWindow = NULL;
 };
 
 #endif

@@ -53,6 +53,8 @@ namespace gui
 					Array<RECT> *m_prc;
 
 					CRenderElement *m_pNextREl;
+
+					IRenderFrame *m_pBlock = NULL;
 				};
 
 				/*enum CUT_TYPE
@@ -111,6 +113,8 @@ namespace gui
 				UINT getClientLeft();
 
 				CDOMnode* getNode();
+				void clearNode();
+				void setNode(CDOMnode *pNode);
 
 				UINT getContentTop();
 				UINT getContentLeft();
@@ -122,6 +126,7 @@ namespace gui
 				void textClear();
 				void textBreak();
 				void textAppend(CRenderElement *rel, int iLineIdx);
+				void textDel(CRenderElement *rel, int iLineIdx);
 				int textGetLineIdx();
 				UINT textFixUp();
 
@@ -134,16 +139,18 @@ namespace gui
 				RECT getClientRect();
 				RECT getVisibleRect(bool *puseForceCrop = NULL, RECT *prcForceCrop = NULL);
 
-				virtual int getScrollLeft();
+				virtual float getScrollLeft();
 				int getScrollLeftMax();
-				virtual void setScrollLeft(int x);
+				virtual void setScrollLeft(float x);
 
-				virtual int getScrollTop();
+				virtual float getScrollTop();
 				int getScrollTopMax();
-				virtual void setScrollTop(int x, bool _check_bounds = false);
+				virtual void setScrollTop(float x, bool _check_bounds = false);
 
-				void setScrollSpeedX(int x);
-				void setScrollSpeedY(int x);
+				void setScrollSpeedX(float x);
+				void setScrollSpeedY(float y);
+				float getScrollSpeedX();
+				float getScrollSpeedY();
 				void updateScroll(float fDT);
 
 				void findElementByXY(int x, int y, IDOMnode **ppNode, bool sendEnterLeave = false);
@@ -259,8 +266,6 @@ namespace gui
 				//int m_iScrollLeft = 0;
 				int m_iScrollTopMax = 0;
 				int m_iScrollLeftMax = 0;
-				float m_fScrollSpeedX = 0.0f;
-				float m_fScrollSpeedY = 0.0f;
 
 				bool m_bBackgroundRepeatX = true;
 				bool m_bBackgroundRepeatY = true;
@@ -361,6 +366,7 @@ namespace gui
 					BaseClass(pNode, pRootNode)
 				{
 				}
+				~IRenderTextNew();
 
 				UINT layout(bool changed = true) override;
 				void render(UINT lvl, float fDT) override;
@@ -444,7 +450,7 @@ namespace gui
 				~IRenderSelectBlock()
 				{
 					//LogInfo("~IRenderSelectBlock(%p)\n", this);
-					if(m_pOptionsFrame)
+					if(m_pOptionsFrame && m_pOptionsFrame->getParent())
 					{
 						m_pOptionsFrame->getParent()->removeChild(m_pOptionsFrame);
 					}
@@ -454,18 +460,18 @@ namespace gui
 
 				void onCreated() override;
 
-				int getScrollLeft() override
+				float getScrollLeft() override
 				{
-					return(0);
+					return(0.0f);
 				}
-				void setScrollLeft(int x) override
+				void setScrollLeft(float x) override
 				{}
 
-				int getScrollTop() override
+				float getScrollTop() override
 				{
-					return(0);
+					return(0.0f);
 				}
-				void setScrollTop(int x, bool _check_bounds = false) override
+				void setScrollTop(float x, bool _check_bounds = false) override
 				{
 
 				}

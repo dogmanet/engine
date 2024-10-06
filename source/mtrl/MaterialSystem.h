@@ -37,7 +37,7 @@ public:
 	UINT XMETHODCALLTYPE getDepth() const override;
 
 	void setName(const char *szName);
-	const char* getName() const;
+	const char* XMETHODCALLTYPE getName() const override;
 
 	void replace(IGXBaseTexture *pGXTexture);
 

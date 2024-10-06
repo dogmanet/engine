@@ -240,6 +240,7 @@ bool CProxyObject::setDstObject(const XGUID &guid)
 		if(idx >= 0)
 		{
 			g_pLevelObjects.erase(idx);
+			g_pEditor->onObjectRemoved(pObj);
 		}
 
 		m_qOrient = pObj->getOrient();
@@ -367,6 +368,7 @@ void CProxyObject::reset()
 	if(m_pTargetObject)
 	{
 		g_pLevelObjects.push_back(m_pTargetObject);
+		g_pEditor->onObjectAdded(m_pTargetObject);
 		m_pTargetObject = NULL;
 	}
 

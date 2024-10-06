@@ -58,7 +58,7 @@ namespace gui
 				{
 					return;
 				}
-						
+
 				m_pNode->setRenderFrame(this);
 				const IDOMnodeCollection * pChilds = pNode->getChilds();
 				bool bNeedBoxWrap = false;
@@ -239,7 +239,7 @@ namespace gui
 
 				mem_release(m_pSamplerState);
 
-				mem_release(m_pBackgroundImage);
+				m_pDoc->getDesktopStack()->getTextureManager()->releaseTexture(m_pBackgroundImage);
 			}
 
 			UINT IRenderFrame::getTopPosMax()
@@ -268,6 +268,16 @@ namespace gui
 			CDOMnode * IRenderFrame::getNode()
 			{
 				return(m_pNode);
+			}
+
+			void IRenderFrame::clearNode()
+			{
+				m_pNode = NULL;
+			}
+
+			void IRenderFrame::setNode(CDOMnode *pNode)
+			{
+				m_pNode = pNode;
 			}
 
 			UINT IRenderFrame::getChildCount()
@@ -356,6 +366,7 @@ namespace gui
 
 			void IRenderFrame::removeChild(IRenderFrame * pEl, IRenderFrame *pReplaceWith)
 			{
+				XPROFILE_FUNCTION();
 				/*if(pReplaceWith)
 				{
 					LogInfo("IRenderFrame[0x%p]::removeChild(0x%p, 0x%p);\n", this, pEl, pReplaceWith);
@@ -420,13 +431,13 @@ namespace gui
 				m_pParent = pParent;
 			}
 
-			int IRenderFrame::getScrollTop()
+			float IRenderFrame::getScrollTop()
 			{
-				return(m_pNode ? m_pNode->getScrollTop() : 0);
+				return(m_pNode ? m_pNode->getScrollTop() : 0.0f);
 			}
-			int IRenderFrame::getScrollLeft()
+			float IRenderFrame::getScrollLeft()
 			{
-				return(m_pNode ? m_pNode->getScrollLeft() : 0);
+				return(m_pNode ? m_pNode->getScrollLeft() : 0.0f);
 			}
 
 			int IRenderFrame::getScrollTopMax()
@@ -438,7 +449,7 @@ namespace gui
 				return(m_iScrollLeftMax);
 			}
 
-			void IRenderFrame::setScrollTop(int x, bool _check_bounds)
+			void IRenderFrame::setScrollTop(float x, bool _check_bounds)
 			{
 				if(_check_bounds)
 				{
@@ -457,7 +468,7 @@ namespace gui
 					m_pDoc->markDirty();
 				}
 			}
-			void IRenderFrame::setScrollLeft(int x)
+			void IRenderFrame::setScrollLeft(float x)
 			{
 				if(m_pNode)
 				{
@@ -468,41 +479,64 @@ namespace gui
 
 			//m_iScrollSpeedX
 
-			void IRenderFrame::setScrollSpeedX(int x)
+			void IRenderFrame::setScrollSpeedX(float x)
 			{
-				m_fScrollSpeedX = x;
+				SAFE_CALL(m_pNode, setScrollSpeedLeft, x);
 			}
-			void IRenderFrame::setScrollSpeedY(int x)
+			void IRenderFrame::setScrollSpeedY(float y)
 			{
-				m_fScrollSpeedY = x;
+				SAFE_CALL(m_pNode, setScrollSpeedTop, y);
+			}
+			float IRenderFrame::getScrollSpeedX()
+			{
+				return(m_pNode ? m_pNode->getScrollSpeedLeft() : 0.0f);
+			}
+			float IRenderFrame::getScrollSpeedY()
+			{
+				return(m_pNode ? m_pNode->getScrollSpeedTop() : 0.0f);
 			}
 			void IRenderFrame::updateScroll(float fDT)
 			{
-				float accell = 25.0 * fDT;
-				if(!SMIsZero(m_fScrollSpeedX))
+				float accell = 5000.0f * fDT;
+				float fScrollSpeedX = getScrollSpeedX();
+				float fScrollSpeedY = getScrollSpeedY();
+				bool wasScrolled = false;
+				if(!SMIsZero(fScrollSpeedX))
 				{
-					setScrollLeft(getScrollLeft() + (int)m_fScrollSpeedX);
-					int sign = m_fScrollSpeedX > 0.0f ? 1 : -1;
+					int sign = fScrollSpeedX > 0.0f ? 1 : -1;
 
-					m_fScrollSpeedX -= accell * sign;
-					if(m_fScrollSpeedX != 0 && (m_fScrollSpeedX > 0 ? 1 : -1) != sign)
+					fScrollSpeedX -= accell * sign;
+					if(fScrollSpeedX != 0.0f && (fScrollSpeedX > 0.0f ? 1 : -1) != sign)
 					{
-						m_fScrollSpeedX = 0;
+						fScrollSpeedX = 0.0f;
+					}
+					setScrollSpeedX(fScrollSpeedX);
+
+					if(!SMIsZero(fScrollSpeedX))
+					{
+						setScrollLeft(getScrollLeft() + fScrollSpeedX * fDT);
+						wasScrolled = true;
 					}
 				}
-				if(!SMIsZero(m_fScrollSpeedY))
+				if(!SMIsZero(fScrollSpeedY))
 				{
-					setScrollTop(getScrollTop() + (int)m_fScrollSpeedY, true);
-					int sign = m_fScrollSpeedY > 0 ? 1 : -1;
+					int sign = fScrollSpeedY > 0 ? 1 : -1;
 
-					m_fScrollSpeedY -= accell * sign;
-					if(m_fScrollSpeedY != 0 && (m_fScrollSpeedY > 0 ? 1 : -1) != sign)
+					fScrollSpeedY -= accell * sign;
+					if(fScrollSpeedY != 0.0f && (fScrollSpeedY > 0 ? 1 : -1) != sign)
 					{
-						m_fScrollSpeedY = 0;
+						fScrollSpeedY = 0.0f;
+					}
+					setScrollSpeedY(fScrollSpeedY);
+
+					if(!SMIsZero(fScrollSpeedY))
+					{
+						setScrollTop(getScrollTop() + fScrollSpeedY * fDT, true);
+						wasScrolled = true;
 					}
 				}
 
-				if(!SMIsZero(m_fScrollSpeedY) || !SMIsZero(m_fScrollSpeedX))
+				if(wasScrolled)
 				{
 					m_pDoc->markDirty();
 				}
@@ -843,7 +877,18 @@ namespace gui
 			}
 			void IRenderFrame::textAppend(CRenderElement * rel, int iLineIdx)
 			{
+				assert(!rel->m_pBlock);
+				rel->m_pBlock = this;
 				m_mTextRELs[iLineIdx].push_back(rel);
+			}
+			void IRenderFrame::textDel(CRenderElement * rel, int iLineIdx)
+			{
+				int idx = m_mTextRELs[iLineIdx].indexOf(rel);
+				assert(idx >= 0);
+				if(idx >= 0)
+				{
+					m_mTextRELs[iLineIdx].erase(idx);
+				}
 			}
 			int IRenderFrame::textGetLineIdx()
 			{
@@ -856,13 +901,18 @@ namespace gui
 					for(UINT j = 0, jl = m_mTextRELs[i].size(); j < jl; ++j)
 					{
 						CRenderElement *rel = m_mTextRELs[i][j];
-						mem_release(rel->m_pIndexBuffer);
-						mem_release(rel->m_pRenderBuffer);
-						if(rel->m_pNextREl)
+						assert(rel->m_pBlock == this);
+						if(rel->m_pBlock == this)
 						{
-							mem_release(rel->m_pNextREl->m_pIndexBuffer);
-							mem_release(rel->m_pNextREl->m_pRenderBuffer);
-							mem_delete(rel->m_pNextREl);
+							rel->m_pBlock = NULL;
+							mem_release(rel->m_pIndexBuffer);
+							mem_release(rel->m_pRenderBuffer);
+							if(rel->m_pNextREl)
+							{
+								mem_release(rel->m_pNextREl->m_pIndexBuffer);
+								mem_release(rel->m_pNextREl->m_pRenderBuffer);
+								mem_delete(rel->m_pNextREl);
+							}
 						}
 					}
 				}
@@ -1220,12 +1270,12 @@ namespace gui
 					m_pDoc->getDesktopStack()->getTextureManager()->getTexture(pStyle->background_image->getString(), &pTex);
 					if(pTex != m_pBackgroundImage)
 					{
-						mem_release(m_pBackgroundImage);
+						m_pDoc->getDesktopStack()->getTextureManager()->releaseTexture(m_pBackgroundImage);
 						m_pBackgroundImage = pTex;
 					}
 					else
 					{
-						mem_release(pTex);
+						m_pDoc->getDesktopStack()->getTextureManager()->releaseTexture(pTex);
 					}
 					UINT tw = m_pBackgroundImage->getWidth();
 					UINT th = m_pBackgroundImage->getHeight();
@@ -1352,8 +1402,8 @@ namespace gui
 						pt = mt._42;
 					}
 
-					float2 vTexTransform((float)((m_bBackgroundScrolling ? getScrollLeft() : 0) + m_iBackgroundOffsetX + pl) / m_fBackgroundImageSize.x, // X-shift
-						(float)((m_bBackgroundScrolling ? getScrollTop() : 0) + m_iBackgroundOffsetY + pt) / m_fBackgroundImageSize.y);
+					float2 vTexTransform((float)((m_bBackgroundScrolling ? (int)getScrollLeft() : 0) + m_iBackgroundOffsetX + pl) / m_fBackgroundImageSize.x, // X-shift
+						(float)((m_bBackgroundScrolling ? (int)getScrollTop() : 0) + m_iBackgroundOffsetY + pt) / m_fBackgroundImageSize.y);
 
 				//	vTexTransform.x = 0;
 				//	vTexTransform.y = 0;
@@ -1495,7 +1545,7 @@ namespace gui
 							if(m_pNode->parentNode()->parentNode())
 							{
 								pReplacedFrame = ((CDOMnode*)m_pNode->parentNode())->getRenderFrame();
-						}
+							}
 
 							pParent = pReplacedFrame->m_pParent;
 
@@ -1550,7 +1600,7 @@ namespace gui
 					if(pChanged == this)
 					{
 						--i;
-				}
+					}
 					else if(pChanged)
 					{
 						return(pChanged);
@@ -1562,11 +1612,11 @@ namespace gui
 					if(pChanged == this)
 					{
 						--i;
-				}
+					}
 					else if(pChanged)
 					{
 						return(pChanged);
-			}
+					}
 				}
 
 				return(NULL);
@@ -1907,32 +1957,32 @@ namespace gui
 				IGXContext *pCtx = GetGUI()->getDevice()->getThreadContext();
 
 				pCtx->setStencilRef(lvl);
-				if(getScrollTop() != 0 || m_iScrollTopMax != 0)
+				if(getScrollTop() != 0.0f || m_iScrollTopMax != 0.0f)
 				{
 					//m_iScrollTop = Config::TestScrollPos;
-					if(getScrollTop() > m_iScrollTopMax)
+					if((int)getScrollTop() > m_iScrollTopMax)
 					{
 						//m_iScrollTop = /*Config::TestScrollPos = */m_iScrollTopMax;
 						setScrollTop(m_iScrollTopMax);
 					}
-					if(getScrollTop() < 0)
+					if(getScrollTop() < 0.0f)
 					{
 						//m_iScrollTop/* = Config::TestScrollPos*/ = 0;
-						setScrollTop(0);
+						setScrollTop(0.0f);
 					}
 				}
-				if(m_iScrollLeftMax != 0)
+				if(m_iScrollLeftMax != 0.0f)
 				{
 					//m_iScrollTop = Config::TestScrollPos;
-					if(getScrollLeft() > m_iScrollLeftMax)
+					if((int)getScrollLeft() > m_iScrollLeftMax)
 					{
 						//m_iScrollLeft = /*Config::TestScrollPos = */m_iScrollLeftMax;
 						setScrollLeft(m_iScrollLeftMax);
 					}
-					if(getScrollLeft() < 0)
+					if(getScrollLeft() < 0.0f)
 					{
 						//m_iScrollLeft/* = Config::TestScrollPos*/ = 0;
-						setScrollLeft(0);
+						setScrollLeft(0.0f);
 					}
 				}
 				if(m_iScrollTopMax != 0 && !m_pScrollBarVert)
@@ -2034,7 +2084,7 @@ namespace gui
 					}
 
 
-					m_pDoc->getTranslationManager()->pushMatrix(SMMatrixTranslation(-getScrollLeft(), -getScrollTop(), 0.0f));
+					m_pDoc->getTranslationManager()->pushMatrix(SMMatrixTranslation(-(int)getScrollLeft(), -(int)getScrollTop(), 0.0f));
 					BaseClass::render(lvl + (m_bNeedCut ? 1 : 0), fDT);
 					m_pDoc->getTranslationManager()->popMatrix();
 					if(m_bNeedCut)
@@ -2540,6 +2590,17 @@ namespace gui
 #endif
 			//##########################################################################
 
+			IRenderTextNew::~IRenderTextNew()
+			{
+				fora(i, m_pRenderElems)
+				{
+					if(m_pRenderElems[i].m_pBlock)
+					{
+						m_pRenderElems[i].m_pBlock->textDel(&m_pRenderElems[i], m_pRenderElems[i].m_iLineIdx);
+					}
+				}
+			}
+
 			void IRenderTextNew::setText(const StringW & text)
 			{
 				if(m_pParent && m_pParent->getNode() && m_pParent->getNode()->getStyle()->_gui_text_format->getInt() == css::ICSSproperty::_GUI_TEXT_FORMAT_PREFORMATTED)
@@ -2788,6 +2849,13 @@ namespace gui
 				CRenderElement rel;
 				UINT sh = 0;
 				pBlock->textStart();
+				fora(i, m_pRenderElems)
+				{
+					if(m_pRenderElems[i].m_pBlock)
+					{
+						m_pRenderElems[i].m_pBlock->textDel(&m_pRenderElems[i], m_pRenderElems[i].m_iLineIdx);
+					}
+				}
 				m_pRenderElems.clearFast();
 				//m_pRenderElemsShadow.clearFast();
 				CFont::char_rects cr;
@@ -2860,14 +2928,16 @@ namespace gui
 							m_vCharRects[o].right -= _cw + (applycsh ? icsh : 0);
 							m_vCharRects[o].left -= _cw + (applycsh ? icsh : 0);
 						}
-						m_vCharRects[crc].bottom -= m_vCharRects[crc].top;
-						m_vCharRects[crc].top = m_vCharRects[crc - 1].top;
-						m_vCharRects[crc].bottom += m_vCharRects[crc].top;
+						if(crc > 0)
+						{
+							m_vCharRects[crc].bottom -= m_vCharRects[crc].top;
+							m_vCharRects[crc].top = m_vCharRects[crc - 1].top;
+							m_vCharRects[crc].bottom += m_vCharRects[crc].top;
 
-						m_vCharRects[crc].right -= m_vCharRects[crc].left;
-						m_vCharRects[crc].left = m_vCharRects[crc - 1].right;
-						m_vCharRects[crc].right += m_vCharRects[crc].left;
-
+							m_vCharRects[crc].right -= m_vCharRects[crc].left;
+							m_vCharRects[crc].left = m_vCharRects[crc - 1].right;
+							m_vCharRects[crc].right += m_vCharRects[crc].left;
+						}
 						pBlock->textBreak();
 						_cw = 0;
 						rel.m_szStr = tmp.substr(i > 0 ? 1 : 0);
@@ -3082,7 +3152,7 @@ namespace gui
 					m_pParent->setScrollLeft(_scrollX);
 
 					int _h = m_pParent->getInnerHeight();
-					int _scrollY = m_pParent->getScrollTop();
+					int _scrollY = (int)m_pParent->getScrollTop();
 					if(_y < _scrollY)
 					{
 						_scrollY = _y - 2;
@@ -3285,7 +3355,7 @@ namespace gui
 				int _w = tex->getWidth();
 				int _h = tex->getHeight();
 
-				mem_release(tex);
+				m_pDoc->getDesktopStack()->getTextureManager()->releaseTexture(tex);
 
 				StringW a = m_pNode->getAttribute(L"width");
 				if(a.length())
@@ -3373,7 +3443,7 @@ namespace gui
 				int _w = tex->getWidth();
 				int _h = tex->getHeight();
 
-				mem_release(tex);
+				m_pDoc->getDesktopStack()->getTextureManager()->releaseTexture(tex);
 
 				StringW a = m_pNode->getAttribute(L"width");
 				if(a.length())
@@ -3465,6 +3535,10 @@ namespace gui
 
 					pFrame->removeChild(pNode->getRenderFrame());
 					pNode->setRenderFrame(aFrames[aFrames.size() - 1]);
+					/*if(aFrames[aFrames.size() - 1])
+					{
+						aFrames[aFrames.size() - 1]->setNode(pNode);
+					}*/
 					aFrames.erase(aFrames.size() - 1);
 				}
 			}
@@ -3477,6 +3551,7 @@ namespace gui
 
 				IRenderSelectOptionsBlock *pFrame;
 
+				CDOMnode *pTempNode = m_pNode;
 				{
 					const IDOMnodeCollection &aNodeChildren = *m_pNode->getChilds();
 					Array<IRenderFrame*> aFrames(aNodeChildren.size());
@@ -3484,16 +3559,17 @@ namespace gui
 					fora(i, aNodeChildren)
 					{
 						StoreFrames((CDOMnode*)aNodeChildren[i], aFrames, c_uOptionNode);
-				}
+					}
 
 					pFrame = new IRenderSelectOptionsBlock(this, m_pRootNode);
 
 					forar(i, aNodeChildren)
-				{
+					{
 						RestoreFrames((CDOMnode*)aNodeChildren[i], pFrame, aFrames, c_uOptionNode);
 					}
 				}
-				getNode()->setRenderFrame(this);
+				m_pNode = pTempNode;
+				m_pNode->setRenderFrame(this);
 
 				CDOMnode *pTextNode = NULL;
 
@@ -3505,7 +3581,7 @@ namespace gui
 				if(!pTextNode || !pTextNode->isTextNode())
 				{
 					pTextNode = (CDOMnode*)CDOMnode::createNode(L"text");
-				pTextNode->setDocument(m_pNode->getDocument());
+					pTextNode->setDocument(m_pNode->getDocument());
 					bAppend = true;
 				}
 

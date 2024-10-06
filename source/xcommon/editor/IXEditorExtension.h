@@ -46,6 +46,7 @@ public:
 //! @todo find more appropriate place for that
 enum XACCEL_FLAG
 {
+	XAF_NONE = 0,
 	XAF_ALT = 0x01, //!< The ALT key must be held down when the accelerator key is pressed.
 	XAF_CTRL = 0x02, //!< The CTRL key must be held down when the accelerator key is pressed.
 	XAF_SHIFT = 0x04, //!< The SHIFT key must be held down when the accelerator key is pressed.

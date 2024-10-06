@@ -24,7 +24,7 @@ gui::dom::IDOMnode* CUISpoiler::createNode(gui::dom::IDOMdocument *pDomDocument)
 	return(m_pNode);
 }
 
-void CUISpoiler::setLabel(const char *szTitle)
+void XMETHODCALLTYPE CUISpoiler::setLabel(const char *szTitle)
 {
 	m_pHeader->setText(StringW(CMB2WC(szTitle)), true);
 }

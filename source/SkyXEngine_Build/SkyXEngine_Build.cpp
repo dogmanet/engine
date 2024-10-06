@@ -56,7 +56,7 @@ public:
 			{
 				return(0);
 			}
-			break;
+			//no break!
 
 		default:
 			return(pWindow->runDefaultCallback(msg, wParam, lParam));

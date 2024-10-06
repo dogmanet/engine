@@ -46,7 +46,7 @@ gui::dom::IDOMnode* CUIColor::createNode(gui::dom::IDOMdocument *pDomDocument)
 	return(m_pNode);
 }
 
-void CUIColor::setLabel(const char *szTitle)
+void XMETHODCALLTYPE CUIColor::setLabel(const char *szTitle)
 {
 	m_pLabel->setText(StringW(CMB2WC(szTitle)), true);
 }

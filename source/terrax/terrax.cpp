@@ -442,7 +442,11 @@ public:
 			}
 		}
 
-		XFrameRun(fDeltaTime);
+		static const bool *terrax_detach_3d = m_pCore->getConsole()->getPCVarBool("terrax_detach_3d");
+		if(!*terrax_detach_3d)
+		{
+			XFrameRun(fDeltaTime);
+		}
 
 		return(true);
 	}
@@ -957,7 +961,11 @@ int main(int argc, char **argv)
 
 			SAFE_CALL(g_pUndoManager, reset);
 
+			g_mObjectsLocation.clear();
+
 			XUpdateWindowTitle();
+
+			g_pEditor->onObjectsetChanged();
 			break;
 
 		case XEventLevel::TYPE_SAVE:
@@ -1201,6 +1209,8 @@ int main(int argc, char **argv)
 					LibReport(REPORT_MSG_LEVEL_ERROR, "Unable to load '%s'\n", szFile);
 				}
 			}
+
+			g_pEditor->onObjectsetChanged();
 
 			EnableWindow(g_hWndMain, TRUE);
 
@@ -1463,7 +1473,8 @@ int main(int argc, char **argv)
 	//SkyXEngine_Kill();
 	mem_delete(g_pUndoManager);
 	mem_release(pEngine);
-	return result;
+	mem_release(g_pEditor);
+	return(result);
 }
 
 void XInitViewports()
@@ -2636,6 +2647,7 @@ CProxyObject* XTakeObject(IXEditorObject *pObject, CProxyObject *pWhere)
 	{
 		g_pLevelObjects.erase(idx);
 		g_mObjectsLocation[pObject] = pWhere;
+		g_pEditor->onObjectRemoved(pObject);
 		return(NULL);
 	}
 
@@ -2652,6 +2664,7 @@ CProxyObject* XTakeObject(IXEditorObject *pObject, CProxyObject *pWhere)
 		{
 			g_mObjectsLocation.erase(pObject);
 			g_pLevelObjects.push_back(pObject);
+			g_pEditor->onObjectAdded(pObject);
 		}
 		return(pProxy);
 	}
@@ -2691,4 +2704,9 @@ void BeginMaterialEdit(const char *szMaterialName)
 	IXMaterial *pMat;
 	((IXMaterialSystem*)pCore->getPluginManager()->getInterface(IXMATERIALSYSTEM_GUID))->loadMaterial(szMaterialName, &pMat);
 	new CMaterialEditor(hInst, g_hWndMain, pCore, pMat);
+}
+
+void XSetCameraRotation(const float3 &vPitchYawRoll)
+{
+	g_pEngineCallback->setCameraRotation(vPitchYawRoll);
 }

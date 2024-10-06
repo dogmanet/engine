@@ -2583,7 +2583,7 @@ void CTexture::setName(const char *szName)
 {
 	m_szName = szName;
 }
-const char* CTexture::getName() const
+const char* XMETHODCALLTYPE CTexture::getName() const
 {
 	return(m_szName);
 }

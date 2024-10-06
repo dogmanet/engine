@@ -144,6 +144,9 @@ private:
 
 	float3_t m_vColor;
 	char m_szColor[48];
+
+	String m_sName;
+	String m_sQuotedName;
 };
 
 #endif

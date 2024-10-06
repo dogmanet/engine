@@ -21,6 +21,7 @@ namespace gui
 		}
 		void getTexture(const StringW &szTexture, IXTexture **ppOut);
 		void bindTexture(IXTexture *tex);
+		void releaseTexture(IXTexture *pTexture);
 		
 		const StringW& getResourceDir()
 		{
@@ -29,9 +30,12 @@ namespace gui
 
 		IXTexture* getWhite();
 
+		void onNewFrame();
+
 	protected:
 		StringW m_wsResourceDir;
 		IXTexture *m_pWhite = NULL;
+		Array<IXTexture*> m_aReleasedTextures;
 	};
 };
 

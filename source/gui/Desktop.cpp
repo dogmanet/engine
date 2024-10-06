@@ -380,7 +380,7 @@ namespace gui
 				{
 					if(pTarget == m_pFocusedNode)
 					{
-						ev.type = GUI_EVENT_TYPE_CLICK;
+						ev.type = ev.key == KEY_RBUTTON ? GUI_EVENT_TYPE_CONTEXTMENU : GUI_EVENT_TYPE_CLICK;
 						pTarget->dispatchEvent(ev);
 					}
 					else
@@ -433,15 +433,16 @@ namespace gui
 				ev.type = GUI_EVENT_TYPE_BLUR;
 				ev.target = m_pFocusedNode;
 				ev.relatedTarget = pNode;
-				m_pFocusedNode->dispatchEvent(ev);
+				m_pFocusedNode = NULL;
+				ev.target->dispatchEvent(ev);
 			}
 
-			ev.type = GUI_EVENT_TYPE_FOCUS;
-			ev.target = pNode;
-			ev.relatedTarget = m_pFocusedNode;
-			pNode->dispatchEvent(ev);
-
 			m_pFocusedNode = pNode;
+
+			ev.type = GUI_EVENT_TYPE_FOCUS;
+			ev.relatedTarget = ev.target;
+			ev.target = pNode;
+			pNode->dispatchEvent(ev);
 		}
 	}
 

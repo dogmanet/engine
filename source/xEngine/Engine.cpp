@@ -414,6 +414,7 @@ bool CEngine::runFrame()
 		
 		//#############################################################################
 
+		SAFE_CALL(m_pXUI, update);
 
 		if(pRenderDevice)
 		{

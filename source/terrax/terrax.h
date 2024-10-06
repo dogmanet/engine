@@ -228,7 +228,6 @@ void XEnumerateObjects(const T &Func, L *pWhere)
 	}
 	else
 	{
-
 		fora(i, g_pLevelObjects)
 		{
 			IXEditorObject *pObj = g_pLevelObjects[i];
@@ -276,6 +275,7 @@ void XSetXformType(X_2DXFORM_TYPE type);
 bool XIsKeyPressed(UINT uKey);
 
 void BeginMaterialEdit(const char *szMaterialName);
+void XSetCameraRotation(const float3 &vPitchYawRoll);
 
 CProxyObject* XTakeObject(IXEditorObject *pObject, CProxyObject *pWhere);
 IXEditorObject* XFindObjectByGUID(const XGUID &guid);

@@ -237,6 +237,14 @@ input:disabled
 	cursor: default;
 }
 
+input.-opague {
+	background-color: #55676d;
+	padding: 0;
+}
+input.-opague:focus {
+	background-color: #8f5400;
+}
+
 checkbox
 {
 	background-image: /dev/checkbox-tristate.png;
@@ -749,6 +757,8 @@ div.grid-cell {
 	line-height: 23px;
 	padding: 4px;
 	
+	overflow: hidden;
+	
 	transition-property: color, background-color;
 	transition-duration: 0.1s, 0.1s;
 	
@@ -790,6 +800,47 @@ div.grid-items {
 	color: #fe9500;
 }
 
+
+div.tree-row {
+	padding: 0;
+}
+div.tree-row.-expandable {
+	//background-color: #ff000033;
+}
+div.tree-row.-expanded {
+	//background-color: #00ff0033;
+}
+
+div.tree-line {
+	display: inline-block;
+	height: 100%;
+	width: 16px;
+}
+div.tree-line.-passthrough {
+	background-image: /dev/tree_lines.png;
+}
+div.tree-line.-last {
+	background-image: /dev/tree_lines.png;
+	background-position-x: -16px;
+}
+div.tree-line.-normal {
+	background-image: /dev/tree_lines.png;
+	background-position-x: -32px;
+}
+
+div.tree-line.-normal.-collapsed {
+	background-position-x: -48px;
+}
+div.tree-line.-normal.-expanded {
+	background-position-x: -64px;
+}
+
+div.tree-line.-last.-collapsed {
+	background-position-x: -80px;
+}
+div.tree-line.-last.-expanded {
+	background-position-x: -96px;
+}
 
 .color-wrapper > label {
 	display: block;
@@ -889,3 +940,55 @@ div.grid-items {
 	border-top-left-method: cut;
 }
 	
+.menu {
+	background-color: #001020D2;
+	border-width: 1px;
+	border-style: solid;
+	border-color: #c6f0fd90;
+	position: absolute;
+	width: 175px;
+	
+	border-top-left-radius: 5px;
+	border-top-left-method: cut;
+}
+
+.menu > div {
+	height: 24px;
+}
+.menu .-text {
+	padding: 3px;
+}
+.menu .-text .-shortcut {
+	color: #ccc;
+}
+
+.menu > div:hover {
+	color: #FFFFFF;
+	background-color: #304050D2;
+}
+
+.menu > div.-sep {
+	height: 1px;
+	background-color: #c6f0fd90;
+}
+
+.menu .-icon {
+	display: inline-block;
+	width: 24px;
+	height: 100%;
+	border-right-color: #c6f0fd90;
+	border-right-width: 1px;
+	border-right-style: solid;
+	background-size-x: 100%;
+	background-size-y: 100%;
+}
+.menu .-text {
+	display: inline-block;
+}
+
+.menu .-has-submenu {
+	background-image: /dev/tree-button-open.png;
+	background-repeat: no-repeat;
+	background-position-x: 100%;
+	background-position-y: 50%;
+}

@@ -253,6 +253,10 @@ void CEditorObject::setKV(const char *szKey, const char *szValue, bool bSkipFixP
 			m_aBrushes[i]->setColor(m_vColor);
 		}
 	}
+	else if(!fstrcmp(szKey, "name"))
+	{
+		m_sName = szValue;
+	}
 	//if(m_pEntity)
 	//{
 	//	m_pEntity->setKV(szKey, szValue);
@@ -314,6 +318,13 @@ void CEditorObject::setKV(const char *szKey, IXJSONItem *pValue, bool bSkipFixPo
 		}
 	}
 	else if(!fstrcmp(szKey, "color"))
+	{
+		if(pValue->getType() == XJI_STRING)
+		{
+			setKV(szKey, pValue->getString());
+		}
+	}
+	else if(!fstrcmp(szKey, "name"))
 	{
 		if(pValue->getType() == XJI_STRING)
 		{
@@ -382,6 +393,15 @@ const char* CEditorObject::getKV(const char *szKey, bool forJSON)
 		}
 		return(m_szColor);
 	}
+	else if(!fstrcmp(szKey, "name"))
+	{
+		if(forJSON)
+		{
+			m_sQuotedName = String("\"") + m_sName + "\"";
+			return(m_sQuotedName.c_str());
+		}
+		return(m_sName.c_str());
+	}
 	//if(!m_pEntity)
 	{
 		return(NULL);
@@ -407,6 +427,7 @@ const X_PROP_FIELD* XMETHODCALLTYPE CEditorObject::getPropertyMeta(UINT uKey)
 	static X_PROP_FIELD s_prop0 = {"brush", "brush", XPET_TEXT, NULL, ""};
 	static X_PROP_FIELD s_prop1 = {"guid", "GUID", XPET_TEXT, NULL, "", true};
 	static X_PROP_FIELD s_prop2 = {"color", "color", XPET_TEXT, NULL, ""};
+	static X_PROP_FIELD s_prop3 = {"name", "Name", XPET_TEXT, NULL, ""};
 	switch(uKey)
 	{
 	case 0:
@@ -415,12 +436,14 @@ const X_PROP_FIELD* XMETHODCALLTYPE CEditorObject::getPropertyMeta(UINT uKey)
 		return(&s_prop1);
 	case 2:
 		return(&s_prop2);
+	case 3:
+		return(&s_prop3);
 	}
 	return(NULL);
 }
 UINT XMETHODCALLTYPE CEditorObject::getProperyCount()
 {
-	return(3);
+	return(4);
 }
 
 const char* XMETHODCALLTYPE CEditorObject::getTypeName()

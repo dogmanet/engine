@@ -4,6 +4,7 @@
 #include <xWindow/IXWindowSystem.h>
 #include "IUIControl.h"
 #include <gui/guimain.h>
+#include "IUIAcceleratorTable.h"
 
 typedef void(*XUIWINDOW_PROC)(void *pCtx, IUIControl *pControl, gui::IEvent *ev);
 
@@ -36,6 +37,8 @@ enum XMESSAGE_BOX_RESULT
 };
 
 typedef void(*XMESSAGEBOXFUNC)(void *pCtx, XMESSAGE_BOX_RESULT result);
+
+typedef void(*XUICOMMAND)(void *pCtx);
 
 class IUIWindow: public IXUnknown
 {
@@ -71,6 +74,16 @@ public:
 	virtual void XMETHODCALLTYPE setCallback(XUIWINDOW_PROC pfnCallback, void *pCtx) = 0;
 
 	virtual void XMETHODCALLTYPE messageBox(const char *szMessage, const char *szTitle, XMESSAGE_BOX_FLAG flags, XMESSAGEBOXFUNC pfnHandler, void *pCtx = NULL) = 0;
+
+	virtual UINT XMETHODCALLTYPE addCommand(const char *szCommand, XUICOMMAND pfnCommand, void *pCtx = NULL) = 0;
+	virtual void XMETHODCALLTYPE execCommand(const char *szCommand) = 0;
+
+	virtual void XMETHODCALLTYPE setAcceleratorTable(IUIAcceleratorTable *pTable) = 0;
+	virtual IUIAcceleratorTable* XMETHODCALLTYPE getAcceleratorTable() = 0;
+
+	virtual IXWindow* XMETHODCALLTYPE getXWindow() = 0;
+
+	virtual void XMETHODCALLTYPE maintainPlacement(const XGUID &guid, bool bVisibilityToo = true) = 0;
 };
 
 #endif

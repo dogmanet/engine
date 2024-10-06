@@ -40,6 +40,14 @@ struct XWINDOW_DESC
 	const char *szTitle = NULL;
 };
 
+typedef WINDOWPLACEMENT XWindowPlacement;
+
+
+/*struct XWindowPlacement
+{
+	byte _private[sizeof(WINDOWPLACEMENT)];
+};*/
+
 //#############################################################################
 
 class IXWindow: public IXUnknown
@@ -71,6 +79,11 @@ public:
 
 	//! 
 	virtual const XWINDOW_DESC* XMETHODCALLTYPE getDesc() = 0;
+
+	virtual IXWindow* XMETHODCALLTYPE getParent() = 0;
+
+	virtual bool XMETHODCALLTYPE getPlacement(XWindowPlacement *pPlacement) = 0;
+	virtual void XMETHODCALLTYPE setPlacement(const XWindowPlacement &placement, bool bSkipVisibility = false) = 0;
 };
 
 class IXWindowCallback: public IXUnknown

@@ -18,6 +18,8 @@
 
 #include <core/sxcore.h>
 
+DECLARE_PROFILER_INTERNAL();
+
 namespace gui
 {
 	CGUI *g_pGUI;
@@ -33,6 +35,8 @@ namespace gui
 		m_pMaterialSystem(pMaterialSystem)
 	{
 		g_pGUI = this;
+		
+		INIT_PROFILER_INTERNAL();
 
 		gui::CKeyMap::init();
 
@@ -224,6 +228,13 @@ namespace gui
 		return(m_pQuadRenderXYZTex16);
 	}
 
+	static void InitEventModKeys(IEvent *pEvent)
+	{
+		pEvent->bCtrlKey = CKeyMap::keyState(KEY_CTRL);
+		pEvent->bShiftKey = CKeyMap::keyState(KEY_SHIFT);
+		pEvent->bAltKey = CKeyMap::keyState(KEY_ALT);
+	}
+
 	BOOL CDesktopStack::putMessage(UINT message, WPARAM wParam, LPARAM lParam)
 	{
 		if(!m_pActiveDesktop)
@@ -279,6 +290,7 @@ namespace gui
 				ev.type = wheelCount > 0 ? GUI_EVENT_TYPE_MOUSEWHEELUP : GUI_EVENT_TYPE_MOUSEWHEELDOWN;
 				ev.clientX = GET_X_LPARAM(lParam);
 				ev.clientY = GET_Y_LPARAM(lParam);
+				InitEventModKeys(&ev);
 
 				for(; wheelCount != 0; wheelCount += (wheelCount > 0 ? -1 : 1))
 				{
@@ -316,12 +328,17 @@ namespace gui
 				ev.type = GUI_EVENT_TYPE_KEYDOWN;
 				ev.clientX = ev.clientY = 0;
 				ev.key = wParam;
+				InitEventModKeys(&ev);
 				m_pActiveDesktop->dispatchEvent(ev);
 
 				if(wParam == KEY_ESCAPE && !ev.preventDefault)
 				{
 					popDesktop();
 				}
+			}
+			else
+			{
+				return(FALSE);
 			}
 			break;
 
@@ -338,6 +355,7 @@ namespace gui
 					ev.type = GUI_EVENT_TYPE_KEYUP;
 					ev.clientX = ev.clientY = 0;
 					ev.key = wParam;
+					InitEventModKeys(&ev);
 					m_pActiveDesktop->dispatchEvent(ev);
 				}
 			}
@@ -347,7 +365,7 @@ namespace gui
 			ev.type = GUI_EVENT_TYPE_KEYPRESS;
 			ev.clientX = ev.clientY = 0;
 
-#ifdef _UNICODE
+#if 1 // def _UNICODE
 			ev.key = wParam;
 #else
 			
@@ -356,6 +374,7 @@ namespace gui
 			ev.key = dst[0];
 #endif
 			ev.syskey = false;
+			InitEventModKeys(&ev);
 
 			m_pActiveDesktop->dispatchEvent(ev);
 
@@ -368,8 +387,8 @@ namespace gui
 			ev.clientY = GET_Y_LPARAM(lParam);
 			ev.key = KEY_LBUTTON;
 			CKeyMap::keyDown(KEY_LBUTTON);
+			InitEventModKeys(&ev);
 			m_pActiveDesktop->dispatchEvent(ev);
-
 			break;
 
 		case WM_LBUTTONUP:
@@ -378,6 +397,7 @@ namespace gui
 			ev.clientY = GET_Y_LPARAM(lParam);
 			ev.key = KEY_LBUTTON;
 			CKeyMap::keyUp(KEY_LBUTTON);
+			InitEventModKeys(&ev);
 			m_pActiveDesktop->dispatchEvent(ev);
 			break;
 
@@ -388,7 +408,9 @@ namespace gui
 			ev.clientY = GET_Y_LPARAM(lParam);
 			ev.key = KEY_RBUTTON;
 			CKeyMap::keyDown(KEY_RBUTTON);
-			m_pActiveDesktop->dispatchEvent(ev); break;
+			InitEventModKeys(&ev);
+			m_pActiveDesktop->dispatchEvent(ev);
+			break;
 
 		case WM_RBUTTONUP:
 			ev.type = GUI_EVENT_TYPE_MOUSEUP;
@@ -396,6 +418,7 @@ namespace gui
 			ev.clientY = GET_Y_LPARAM(lParam);
 			ev.key = KEY_RBUTTON;
 			CKeyMap::keyUp(KEY_RBUTTON);
+			InitEventModKeys(&ev);
 			m_pActiveDesktop->dispatchEvent(ev);
 			break;
 
@@ -408,7 +431,9 @@ namespace gui
 			ev.clientY = GET_Y_LPARAM(lParam);
 			ev.key = KEY_MBUTTON;
 			CKeyMap::keyDown(KEY_MBUTTON);
-			m_pActiveDesktop->dispatchEvent(ev); break;
+			InitEventModKeys(&ev);
+			m_pActiveDesktop->dispatchEvent(ev);
+			break;
 
 		case WM_MBUTTONUP:
 			ev.type = GUI_EVENT_TYPE_MOUSEUP;
@@ -416,6 +441,7 @@ namespace gui
 			ev.clientY = GET_Y_LPARAM(lParam);
 			ev.key = KEY_MBUTTON;
 			CKeyMap::keyUp(KEY_MBUTTON);
+			InitEventModKeys(&ev);
 			m_pActiveDesktop->dispatchEvent(ev);
 			break;
 
@@ -428,7 +454,9 @@ namespace gui
 			ev.clientY = GET_Y_LPARAM(lParam);
 			ev.key = GET_XBUTTON_WPARAM(wParam);
 			CKeyMap::keyDown(GET_XBUTTON_WPARAM(wParam));
-			m_pActiveDesktop->dispatchEvent(ev); break;
+			InitEventModKeys(&ev);
+			m_pActiveDesktop->dispatchEvent(ev);
+			break;
 
 		case WM_XBUTTONUP:
 			ev.type = GUI_EVENT_TYPE_MOUSEUP;
@@ -436,6 +464,7 @@ namespace gui
 			ev.clientY = GET_Y_LPARAM(lParam);
 			ev.key = GET_XBUTTON_WPARAM(wParam);
 			CKeyMap::keyUp(GET_XBUTTON_WPARAM(wParam));
+			InitEventModKeys(&ev);
 			m_pActiveDesktop->dispatchEvent(ev);
 			break;
 
@@ -443,11 +472,12 @@ namespace gui
 			ev.type = GUI_EVENT_TYPE_MOUSEMOVE;
 			ev.clientX = GET_X_LPARAM(lParam);
 			ev.clientY = GET_Y_LPARAM(lParam);
+			InitEventModKeys(&ev);
 			m_pActiveDesktop->dispatchEvent(ev);
 			break;
 		}
 		//OutputDebugStringA("putMessage():return(true);\n");
-		return(TRUE);
+		return(ev.propagate);
 	}
 
 	void CDesktopStack::render()
@@ -536,6 +566,9 @@ namespace gui
 			}
 		}
 		m_pActiveDesktop->render(fTimeDelta);
+
+		m_pTextureManager->onNewFrame();
+
 #if 0
 		struct point
 		{
@@ -906,6 +939,11 @@ namespace gui
 	IFont* CDesktopStack::getFont(const WCHAR *szName, UINT size, IFont::STYLE style, int iBlurRadius)
 	{
 		return(m_pFontManager->getFont(szName, size, style, iBlurRadius));
+	}
+
+	bool CDesktopStack::getKeyState(int iKey)
+	{
+		return(CKeyMap::keyState(iKey));
 	}
 };
 

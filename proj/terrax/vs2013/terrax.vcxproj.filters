@@ -204,6 +204,9 @@
     <ClCompile Include="..\..\..\source\terrax\ColorPicker.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\source\terrax\SceneTreeWindow.cpp">
+      <Filter>Source Files\windows</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\..\..\source\terrax\terrax.rc">
@@ -390,6 +393,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\source\xcommon\editor\IXColorPicker.h">
       <Filter>Header Files\xcommon\editor</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\terrax\SceneTreeWindow.h">
+      <Filter>Header Files\windows</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

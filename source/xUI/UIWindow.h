@@ -59,7 +59,7 @@ public:
 
 	void callEventHandler(const WCHAR *cb_name, gui::IEvent *ev);
 
-	IXWindow* getXWindow();
+	void update();
 	void render(IGXContext *pContext);
 	void present();
 	
@@ -74,14 +74,19 @@ public:
 
 	void XMETHODCALLTYPE messageBox(const char *szMessage, const char *szTitle, XMESSAGE_BOX_FLAG flags, XMESSAGEBOXFUNC pfnHandler, void *pCtx = NULL) override;
 
+	UINT XMETHODCALLTYPE addCommand(const char *szCommand, XUICOMMAND pfnCommand, void *pCtx = NULL) override;
+	void XMETHODCALLTYPE execCommand(const char *szCommand) override;
+
+	void XMETHODCALLTYPE setAcceleratorTable(IUIAcceleratorTable *pTable) override;
+	IUIAcceleratorTable* XMETHODCALLTYPE getAcceleratorTable() override;
+
+	IXWindow* XMETHODCALLTYPE getXWindow() override;
+
+	void registerForUpdate(IUIControl *pControl);
+
+	void XMETHODCALLTYPE maintainPlacement(const XGUID &guid, bool bVisibilityToo = true);
+
 private:
-	void releaseSwapChain();
-	void createSwapChain(UINT uWidth, UINT uHeight);
-
-	void onResize(UINT uWidth, UINT uHeight);
-
-	bool onClose();
-
 	CXUI *m_pXUI = NULL;
 	IXWindow *m_pXWindow = NULL;
 	Array<IUIControl*> m_ChildControls;
@@ -91,6 +96,8 @@ private:
 	IGXDepthStencilSurface *m_pGuiDepthStencilSurface = NULL;
 	CWindowCallback *m_pXWindowCallback = NULL;
 
+	IUIAcceleratorTable *m_pAcceleratorTable = NULL;
+
 	CUIWindowControl *m_pControl;
 
 	XUIWINDOW_PROC m_pfnCallback = NULL;
@@ -99,6 +106,35 @@ private:
 	XMESSAGE_BOX_FLAG m_messageBoxFlags = XMBF_OK;
 	XMESSAGEBOXFUNC m_pfnMessageBoxHandler = NULL;
 	void *m_pMessageBoxHandlerContext = NULL;
+
+	struct Command
+	{
+		String sName;
+		XUICOMMAND pfnCommand = NULL;
+		void *pCtx = NULL;
+	};
+	Array<Command> m_aCommands;
+
+	Array<IUIControl*> m_aUpdateControls;
+
+	XGUID m_guidPlacement;
+	bool m_bMaintainPlacement = false;
+	bool m_bMaintainVisibility = false;
+
+private:
+	void releaseSwapChain();
+	void createSwapChain(UINT uWidth, UINT uHeight);
+
+	void onResize(UINT uWidth, UINT uHeight);
+
+	bool onClose();
+
+	Command* getCommand(const char *szName);
+
+	bool translateAccelerator(UINT msg, WPARAM wParam, LPARAM lParam);
+
+	void storePlacement();
+	void restorePlacement();
 };
 
 #endif

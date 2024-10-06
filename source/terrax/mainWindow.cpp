@@ -1647,6 +1647,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			XUpdateStatusGrid();
 			break;
 
+		case ID_LEVEL_SCENETREE:
+			g_pEditor->showSceneTree();
+			break;
+
 		case ID_EDIT_UNDO:
 			g_pUndoManager->undo();
 			break;
@@ -1711,6 +1715,25 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 					pCamera->setPosition(vCamPos);
 				}
+			}
+			break;
+
+		case ID_VIEW_GOTOSELECTION:
+			if(g_xState.bHasSelection)
+			{
+				float3 vCenterPos = (g_xState.vSelectionBoundMax + g_xState.vSelectionBoundMin) * 0.5f;
+				float fRadius = SMVector3Length(g_xState.vSelectionBoundMax - g_xState.vSelectionBoundMin) * 1.1f;
+
+				IXCamera *pCamera = g_xConfig.m_pViewportCamera[XWP_TOP_LEFT];
+
+				float3 vDir = SMVector3Normalize(float3(1.0f, -1.0f, 1.0f));
+				//pCamera->setOrientation(SMQuaternion(float3(0.0f, 0.0f, 1.0f), vDir));
+				// -0.615, 5.498, 0.000
+				pCamera->setOrientation(SMQuaternion(-SM_PI / 5.0f, 'x') * SMQuaternion(SM_2PI - SM_PIDIV4, 'y'));
+
+				pCamera->setPosition(vCenterPos - vDir * fRadius);
+
+				XSetCameraRotation(pCamera->getRotation());
 			}
 			break;
 
@@ -3809,8 +3832,9 @@ void XFrameRun(float fDeltaTime)
 		}
 	}
 
+	g_pEditor->update(fDeltaTime);
 	g_pMaterialBrowser->update(fDeltaTime);
-
+	
 	XUpdateSelectionBound();
 	XUpdateGizmos();
 }
@@ -4252,6 +4276,8 @@ void XCleanupUnreferencedPropGizmos()
 
 void XUpdatePropWindow()
 {
+	g_pEditor->onSelectionChanged();
+
 	g_propertyCallback.start();
 
 	const char *szFirstType = NULL;

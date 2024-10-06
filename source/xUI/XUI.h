@@ -42,14 +42,24 @@ public:
 
 	IUIMaterialBox* XMETHODCALLTYPE createMaterialBox() override;
 
+	IUITree* XMETHODCALLTYPE createTree() override;
+
+	IUIMenu* XMETHODCALLTYPE createMenu() override;
+
+	void XMETHODCALLTYPE createAcceleratorTable(IUIAcceleratorTable **ppOut) override;
+
 	void onDestroyWindow(CUIWindow *pWindow);
 
 	IXWindowSystem* getWindowSystem();
 	gui::IGUI* getGUI();
 	IGXDevice* getGXDevice();
 
+	void XMETHODCALLTYPE update() override;
 	void XMETHODCALLTYPE render() override;
 	void XMETHODCALLTYPE present() override;
+
+	void storeWindowPlacement(const XGUID &guid, const XWindowPlacement &placement);
+	bool loadWindowPlacement(const XGUID &guid, XWindowPlacement *pPlacement);
 
 private:
 	IXCore *m_pCore = NULL;

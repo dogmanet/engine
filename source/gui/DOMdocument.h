@@ -5,8 +5,8 @@
 #include "IRenderFrame.h"
 #include "IDOMdocument.h"
 
-#define SCROLL_SPEED 3.20f
-#define SCROLL_SPEED_MAX 16.00f
+#define SCROLL_SPEED 500.0f
+#define SCROLL_SPEED_MAX 1500.0f
 
 namespace gui
 {
@@ -151,6 +151,9 @@ namespace gui
 
 			void cleanup();
 
+			void scheduleScrollEvent(CDOMnode *pNode);
+			void triggerScrollEvents();
+
 		protected:
 			CDesktopStack *m_pDesktopStack;
 			IDOMnode *m_pRootNode = NULL;
@@ -185,6 +188,8 @@ namespace gui
 			UINT m_uForceDirty = 0;
 
 			CDOMnode *m_pCapturedNode = NULL;
+
+			Array<IDOMnode*> m_aScrolledNodes;
 		};
 	};
 };

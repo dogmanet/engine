@@ -26,10 +26,15 @@ namespace gui
 
 		CDOMnode::~CDOMnode()
 		{
+			if(m_pRenderFrame)
+			{
+				assert(m_pRenderFrame->getNode() == this);
+				m_pRenderFrame->clearNode();
+			}
 			while(m_vChilds.size())
 			{
 				IDOMnode * pNode = m_vChilds[0];
-				removeChild(pNode);
+				removeChild(pNode, false);
 				//mem_delete(pNode);
 			}
 		}
@@ -169,8 +174,8 @@ namespace gui
 				APPLY_RULE(p_text_decoration_line);
 				APPLY_RULE(p_visibility);
 
-				node->m_css.inheritTransitions(&m_css);
-				node->m_css.setupTransitions(&node->m_css);
+				//node->m_css.inheritTransitions(&m_css);
+				node->m_css.setupTransitions(&/*node->*/m_css);
 				//APPLY_RULE(p_transition_property);
 				//APPLY_RULE(p_transition_duration);
 

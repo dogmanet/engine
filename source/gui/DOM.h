@@ -162,7 +162,7 @@ namespace gui
 			}
 			void setRenderFrame(render::IRenderFrame *prf);
 			void updateStyles(bool forceUpdate = false) override;
-			void updateLayout(bool bForce = false);
+			void updateLayout(bool bForce = false) override;
 
 
 			void dispatchEvent(IEvent &ev) override;
@@ -199,26 +199,47 @@ namespace gui
 
 			bool wantLayoutEvents();
 			void triggerLayoutEvent();
+			void triggerScrollEvent();
 
 			UINT getInnerWidth() override;
 			UINT getInnerHeight() override;
 
-			int getScrollLeft()
+			float getScrollLeft() override
 			{
-				return(m_iScrollLeft);
+				return(m_fScrollLeft);
 			}
-			void setScrollLeft(int x)
+			void setScrollLeft(float x) override
 			{
-				m_iScrollLeft = x;
+				m_fScrollLeft = x;
+				triggerScrollEvent();
 			}
 
-			int getScrollTop()
+			float getScrollTop() override
 			{
-				return(m_iScrollTop);
+				return(m_fScrollTop);
 			}
-			void setScrollTop(int x)
+			void setScrollTop(float x) override
 			{
-				m_iScrollTop = x;
+				m_fScrollTop = x;
+				triggerScrollEvent();
+			}
+
+			float getScrollSpeedLeft()
+			{
+				return(m_fScrollSpeedX);
+			}
+			void setScrollSpeedLeft(float x) 
+			{
+				m_fScrollSpeedX = x;
+			}
+
+			float getScrollSpeedTop()
+			{
+				return(m_fScrollSpeedY);
+			}
+			void setScrollSpeedTop(float x)
+			{
+				m_fScrollSpeedY = x;
 			}
 
 			RECT getClientRect() override;
@@ -259,9 +280,13 @@ namespace gui
 			bool m_bSkipStructureChanges = false;
 
 			bool m_bWantLayoutEvents = false;
+			bool m_bWantScrollEvents = false;
 
-			int m_iScrollTop = 0;
-			int m_iScrollLeft = 0;
+			float m_fScrollTop = 0.0f;
+			float m_fScrollLeft = 0.0f;
+
+			float m_fScrollSpeedX = 0.0f;
+			float m_fScrollSpeedY = 0.0f;
 		};
 
 

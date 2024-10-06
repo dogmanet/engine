@@ -14,6 +14,16 @@ INT_PTR XMETHODCALLTYPE CWindowCallback::onMessage(UINT msg, WPARAM wParam, LPAR
 		return(TRUE);
 	}
 
+	if(m_pUIWindow->translateAccelerator(msg, wParam, lParam))
+	{
+		return(TRUE);
+	}
+
+	if(msg == WM_DESTROY)
+	{
+		m_pUIWindow->storePlacement();
+	}
+
 	switch(msg)
 	{
 	case WM_SIZE:
@@ -65,6 +75,7 @@ void CWindowCallback::dropWindow()
 CUIWindow::CUIWindow(CXUI *pXUI, const XWINDOW_DESC *pWindowDesc, IUIWindow *pParent):
 	m_pXUI(pXUI)
 {
+	add_ref(pXUI);
 	IXWindow *pXParent = NULL;
 	if(pParent)
 	{
@@ -99,16 +110,23 @@ CUIWindow::CUIWindow(CXUI *pXUI, const XWINDOW_DESC *pWindowDesc, IUIWindow *pPa
 }
 CUIWindow::~CUIWindow()
 {
+	fora(i, m_aUpdateControls)
+	{
+		mem_release(m_aUpdateControls[i]);
+	}
 	releaseSwapChain();
 	m_pXWindowCallback->dropWindow();
 	mem_release(m_pXWindow);
 	mem_release(m_pXWindowCallback);
 	mem_release(m_pDefaultDesktop);
 	mem_release(m_pDesktopStack);
+	mem_release(m_pAcceleratorTable);
 
 	mem_release(m_pControl);
 
 	m_pXUI->onDestroyWindow(this);
+
+	mem_release(m_pXUI);
 }
 
 
@@ -260,9 +278,15 @@ void CUIWindow::callEventHandler(const WCHAR *cb_name, gui::IEvent *ev)
 	}
 }
 
-IXWindow* CUIWindow::getXWindow()
+void CUIWindow::update()
 {
-	return(m_pXWindow);
+	gui::IEvent ev;
+	ev.type = gui::GUI_EVENT_TYPE_UPDATE;
+	fora(i, m_aUpdateControls)
+	{
+		m_aUpdateControls[i]->dispatchEvent(&ev);
+	}
+	m_aUpdateControls.clearFast();
 }
 
 void CUIWindow::render(IGXContext *pContext)
@@ -420,4 +444,181 @@ void XMETHODCALLTYPE CUIWindow::messageBox(const char *szMessage, const char *sz
 	}
 
 	mem_release(dp);
+}
+
+UINT XMETHODCALLTYPE CUIWindow::addCommand(const char *szCommand, XUICOMMAND pfnCommand, void *pCtx)
+{
+	if(getCommand(szCommand))
+	{
+		LogError("Command '%s' already defined!\n", szCommand);
+		return(-1);
+	}
+
+	UINT idx = m_aCommands.size();
+	Command &cmd = m_aCommands[idx];
+	cmd.sName = szCommand;
+	cmd.pfnCommand = pfnCommand;
+	cmd.pCtx = pCtx;
+	return(idx);
+}
+
+CUIWindow::Command* CUIWindow::getCommand(const char *szName)
+{
+	int idx = m_aCommands.indexOf(szName, [](const Command &cmd, const char *szName){
+		return(!strcasecmp(szName, cmd.sName.c_str()));
+	});
+	if(idx >= 0)
+	{
+		return(&m_aCommands[idx]);
+	}
+	return(NULL);
+}
+
+void XMETHODCALLTYPE CUIWindow::execCommand(const char *szCommand)
+{
+	Command *pCmd = getCommand(szCommand);
+	if(pCmd)
+	{
+		pCmd->pfnCommand(pCmd->pCtx);
+	}
+	else
+	{
+		LogError("Trying to execute unknown command '%s'\n", szCommand);
+	}
+}
+
+void XMETHODCALLTYPE CUIWindow::setAcceleratorTable(IUIAcceleratorTable *pTable)
+{
+	mem_release(m_pAcceleratorTable);
+	m_pAcceleratorTable = pTable;
+	add_ref(m_pAcceleratorTable);
+}
+IUIAcceleratorTable* XMETHODCALLTYPE CUIWindow::getAcceleratorTable()
+{
+	return(m_pAcceleratorTable);
+}
+
+IXWindow* XMETHODCALLTYPE CUIWindow::getXWindow()
+{
+	return(m_pXWindow);
+}
+
+void CUIWindow::registerForUpdate(IUIControl *pControl)
+{
+	if(m_aUpdateControls.indexOf(pControl) < 0)
+	{
+		add_ref(pControl);
+		m_aUpdateControls.push_back(pControl);
+	}
+}
+
+void XMETHODCALLTYPE CUIWindow::maintainPlacement(const XGUID &guid, bool bVisibilityToo)
+{
+	m_guidPlacement = guid;
+	m_bMaintainPlacement = true;
+	m_bMaintainVisibility = bVisibilityToo;
+
+	restorePlacement();
+}
+
+bool CUIWindow::translateAccelerator(UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	if(
+		msg != WM_KEYDOWN &&
+		msg != WM_SYSKEYDOWN &&
+		msg != WM_CHAR &&
+		msg != WM_SYSCHAR
+	)
+	{
+		return(false);
+	}
+
+	if(!m_pAcceleratorTable)
+	{
+		return(false);
+	}
+	
+	XACCEL_FLAG mask = XAF_NONE;
+	if(m_pDesktopStack->getKeyState(KEY_CTRL))
+	{
+		mask |= XAF_CTRL;
+	}
+	if(m_pDesktopStack->getKeyState(KEY_ALT))
+	{
+		mask |= XAF_ALT;
+	}
+	if(m_pDesktopStack->getKeyState(KEY_SHIFT))
+	{
+		mask |= XAF_SHIFT;
+	}
+
+	const XAccelItem *pAccel;
+	for(UINT i = 0, l = m_pAcceleratorTable->getItemCount(); i < l; ++i)
+	{
+		if((pAccel = m_pAcceleratorTable->getItemInfo(i)))
+		{
+			if(LOWORD(wParam) != pAccel->uKey)
+			{
+				continue;
+			}
+
+			bool isFound = false;
+			if(msg == WM_CHAR || msg == WM_SYSCHAR)
+			{
+				if(!(pAccel->flags & XAF_VIRTKEY) && ((mask & XAF_ALT) == (pAccel->flags & XAF_ALT)))
+				{
+					isFound = true;
+				}
+			}
+			else
+			{
+				if(pAccel->flags & XAF_VIRTKEY)
+				{
+					if(mask == (pAccel->flags & (XAF_SHIFT | XAF_CTRL | XAF_ALT)))
+					{
+						isFound = true;
+					}
+				}
+				else if((pAccel->flags & XAF_ALT) && (lParam & 0x20000000)) /* ALT pressed */
+				{
+					isFound = true;
+				}
+			}
+
+			if(isFound)
+			{
+				execCommand(m_pAcceleratorTable->getItemCommand(i));
+				return(true);
+			}
+		}
+	}
+
+	return(false);
+}
+
+void CUIWindow::storePlacement()
+{
+	if(m_bMaintainPlacement)
+	{
+		// 1. query placement from m_pXWindow;
+		XWindowPlacement placement;
+		if(m_pXWindow->getPlacement(&placement))
+		{
+			// 2. store placement somewhere
+			m_pXUI->storeWindowPlacement(m_guidPlacement, placement);
+		}
+	}
+}
+void CUIWindow::restorePlacement()
+{
+	if(m_bMaintainPlacement)
+	{
+		// 1. query placement from storage;
+		XWindowPlacement placement;
+		if(m_pXUI->loadWindowPlacement(m_guidPlacement, &placement))
+		{
+			// 2. set placement to m_pXWindow
+			m_pXWindow->setPlacement(placement, !m_bMaintainVisibility);
+		}
+	}
 }

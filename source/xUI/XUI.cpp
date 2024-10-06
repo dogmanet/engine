@@ -15,6 +15,10 @@
 #include "UIMultiTrackbar.h"
 #include "UI2ColorGradient.h"
 #include "UIMaterialBox.h"
+#include "UITree.h"
+#include "UIMenu.h"
+
+#include "UIAcceleratorTable.h"
 
 //#include <core/sxcore.h>
 
@@ -103,6 +107,21 @@ IUIMaterialBox* XMETHODCALLTYPE CXUI::createMaterialBox()
 	return(new CUIMaterialBox(m_pCore, m_pRender, ++m_elemendID));
 }
 
+IUITree* XMETHODCALLTYPE CXUI::createTree()
+{
+	return(new CUITree(++m_elemendID));
+}
+
+IUIMenu* XMETHODCALLTYPE CXUI::createMenu()
+{
+	return(new CUIMenu(++m_elemendID));
+}
+
+void XMETHODCALLTYPE CXUI::createAcceleratorTable(IUIAcceleratorTable **ppOut)
+{
+	*ppOut = new CUIAcceleratorTable();
+}
+
 void CXUI::onDestroyWindow(CUIWindow *pWindow)
 {
 	for(UINT i = 0, l = m_pWindows.size(); i < l; ++i)
@@ -126,6 +145,17 @@ gui::IGUI* CXUI::getGUI()
 IGXDevice* CXUI::getGXDevice()
 {
 	return(m_pRender->getDevice());
+}
+
+void XMETHODCALLTYPE CXUI::update()
+{
+	for(UINT i = 0, l = m_pWindows.size(); i < l; ++i)
+	{
+		if(m_pWindows[i]->isVisible())
+		{
+			m_pWindows[i]->update();
+		}
+	}
 }
 
 void XMETHODCALLTYPE CXUI::render()
@@ -159,6 +189,39 @@ void XMETHODCALLTYPE CXUI::present()
 			m_pWindows[i]->present();
 		}
 	}
+}
+
+void CXUI::storeWindowPlacement(const XGUID &guid, const XWindowPlacement &placement)
+{
+	TODO("Use files!");
+	//IFileSystem *pFS = m_pCore->getFileSystem();
+	char szGuid[39];
+	XGUIDToSting(guid, szGuid, sizeof(szGuid));
+
+	char szKey[512];
+	sprintf(szKey, "SOFTWARE\\DogmaNet\\TerraX\\Windows\\%s", szGuid);
+
+	HKEY hKey;
+	if(ERROR_SUCCESS == RegCreateKeyExA(HKEY_CURRENT_USER, szKey, 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE | KEY_QUERY_VALUE, NULL, &hKey, NULL))
+	{
+		RegSetValueExA(hKey, "WinPos", 0, REG_BINARY, (BYTE*)&placement, sizeof(XWindowPlacement));
+	}
+	RegCloseKey(hKey);
+}
+bool CXUI::loadWindowPlacement(const XGUID &guid, XWindowPlacement *pPlacement)
+{
+	char szGuid[39];
+	XGUIDToSting(guid, szGuid, sizeof(szGuid));
+
+	char szKey[512];
+	sprintf(szKey, "SOFTWARE\\DogmaNet\\TerraX\\Windows\\%s", szGuid);
+
+	DWORD dwKeyLen = sizeof(XWindowPlacement);
+	if(ERROR_SUCCESS == RegGetValueA(HKEY_CURRENT_USER, szKey, "WinPos", RRF_RT_REG_BINARY, NULL, (BYTE*)pPlacement, &dwKeyLen) && pPlacement->length == sizeof(XWindowPlacement))
+	{
+		return(true);
+	}
+	return(false);
 }
 
 //##########################################################################

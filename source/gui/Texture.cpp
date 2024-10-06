@@ -13,6 +13,14 @@ namespace gui
 	{
 		GetGUI()->getMaterialSystem()->bindTexture(tex);
 	}
+
+	void CTextureManager::releaseTexture(IXTexture *pTexture)
+	{
+		if(pTexture)
+		{
+			m_aReleasedTextures.push_back(pTexture);
+		}
+	}
 		
 	IXTexture* CTextureManager::getWhite()
 	{
@@ -22,5 +30,14 @@ namespace gui
 		}
 		
 		return(m_pWhite);
+	}
+
+	void CTextureManager::onNewFrame()
+	{
+		fora(i, m_aReleasedTextures)
+		{
+			mem_release(m_aReleasedTextures[i]);
+		}
+		m_aReleasedTextures.clearFast();
 	}
 };

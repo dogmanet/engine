@@ -21,6 +21,7 @@ namespace gui
 		GUI_EVENT_TYPE_MOUSEDOWN,
 		GUI_EVENT_TYPE_MOUSEUP,
 		GUI_EVENT_TYPE_CLICK,
+		GUI_EVENT_TYPE_CONTEXTMENU,
 		GUI_EVENT_TYPE_DBLCLICK,
 		GUI_EVENT_TYPE_MOUSEENTER,
 		GUI_EVENT_TYPE_MOUSELEAVE,
@@ -35,7 +36,9 @@ namespace gui
 		GUI_EVENT_TYPE_CHANGE,
 		GUI_EVENT_TYPE_CLOSE,
 		GUI_EVENT_TYPE_RESIZE,
-		GUI_EVENT_TYPE_LAYOUT
+		GUI_EVENT_TYPE_LAYOUT,
+		GUI_EVENT_TYPE_SCROLL,
+		GUI_EVENT_TYPE_UPDATE
 	};
 
 	class IEvent
@@ -62,6 +65,10 @@ namespace gui
 		int offsetY = 0;
 
 		void *pCallbackData = NULL;
+
+		bool bCtrlKey = false;
+		bool bShiftKey = false;
+		bool bAltKey = false;
 	};
 };
 

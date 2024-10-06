@@ -11,11 +11,13 @@
 #include "IUISpoiler.h"
 #include "IUIViewport.h"
 #include "IUIGrid.h"
+#include "IUITree.h"
 #include "IUIMinMaxCurve.h"
 #include "IUIColor.h"
 #include "IUIMultiTrackbar.h"
 #include "IUI2ColorGradient.h"
 #include "IUIMaterialBox.h"
+#include "IUIMenu.h"
 #include <gui/guimain.h>
 
 // {D3FE7B60-BDE7-4A3F-95D8-2D6A102A42E2}
@@ -54,8 +56,15 @@ public:
 
 	virtual IUIMaterialBox* XMETHODCALLTYPE createMaterialBox() = 0;
 
+	virtual IUITree* XMETHODCALLTYPE createTree() = 0;
+
+	virtual IUIMenu* XMETHODCALLTYPE createMenu() = 0;
+
+	virtual void XMETHODCALLTYPE update() = 0;
 	virtual void XMETHODCALLTYPE render() = 0;
 	virtual void XMETHODCALLTYPE present() = 0;
+	
+	virtual void XMETHODCALLTYPE createAcceleratorTable(IUIAcceleratorTable **ppOut) = 0;
 };
 
 // typedef IXUI*(*PFNXUIINIT)(IXRender*, IXWindowSystem*, gui::IGUI*);

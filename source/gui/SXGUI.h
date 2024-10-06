@@ -114,6 +114,8 @@ namespace gui
 
 		IFont* getFont(const WCHAR * szName, UINT size, IFont::STYLE style, int iBlurRadius) override;
 
+		bool getKeyState(int iKey) override;
+
 	protected:
 		SMMATRIX m_mTransformWorld;
 		SMMATRIX m_mTransformViewProj;

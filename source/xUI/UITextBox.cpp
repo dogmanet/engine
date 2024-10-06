@@ -31,7 +31,7 @@ gui::dom::IDOMnode* CUITextBox::createNode(gui::dom::IDOMdocument *pDomDocument)
 	return(m_pNode);
 }
 
-void CUITextBox::setLabel(const char *szTitle)
+void XMETHODCALLTYPE CUITextBox::setLabel(const char *szTitle)
 {
 	m_pLabel->setText(StringW(CMB2WC(szTitle)), true);
 }

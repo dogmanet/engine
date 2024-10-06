@@ -36,10 +36,13 @@ CEditor::CEditor(IXCore *pCore):
 	pCore->getPluginManager()->registerInterface(IXCURVEEDITOR_GUID, &m_curveEditor);
 	pCore->getPluginManager()->registerInterface(IXCOLORGRADIENTEDITOR_GUID, &m_gradientEditor);
 	pCore->getPluginManager()->registerInterface(IXCOLORPICKER_GUID, &m_colorPicker);
+
+	m_pSceneTreeWindow = new CSceneTreeWindow(this, pCore);
 }
 
 CEditor::~CEditor()
 {
+	mem_release(m_pSceneTreeWindow);
 	mem_release(m_pGizmoRendererBoth);
 	mem_release(m_pGizmoRenderer2D);
 	mem_release(m_pGizmoRenderer3D);
@@ -282,6 +285,11 @@ void CEditor::onMouseUp()
 	}
 }
 
+void CEditor::update(float dt)
+{
+	m_pSceneTreeWindow->update(dt);
+}
+
 const TerraXState* XMETHODCALLTYPE CEditor::getState()
 {
 	return(&g_xState);
@@ -319,6 +327,8 @@ void XMETHODCALLTYPE CEditor::addObject(IXEditorObject *pObject)
 
 	g_pLevelObjects.push_back(pObject);
 	add_ref(pObject);
+
+	onObjectAdded(pObject);
 }
 
 void XMETHODCALLTYPE CEditor::removeObject(IXEditorObject *pObject)
@@ -338,6 +348,7 @@ void XMETHODCALLTYPE CEditor::removeObject(IXEditorObject *pObject)
 	{
 		mem_release(g_pLevelObjects[idx]);
 		g_pLevelObjects.erase(idx);
+		onObjectRemoved(pObject);
 	}
 }
 
@@ -456,3 +467,30 @@ void XMETHODCALLTYPE CEditor::editMaterial(const char *szMatName)
 {
 	BeginMaterialEdit(szMatName);
 }
+
+void CEditor::onObjectsetChanged()
+{
+	m_pSceneTreeWindow->onObjectsetChanged();
+}
+void CEditor::onObjectNameChanged(IXEditorObject *pObject)
+{
+	m_pSceneTreeWindow->onObjectNameChanged(pObject);
+}
+void CEditor::onObjectAdded(IXEditorObject *pObject)
+{
+	m_pSceneTreeWindow->onObjectAdded(pObject);
+}
+void CEditor::onObjectRemoved(IXEditorObject *pObject)
+{
+	m_pSceneTreeWindow->onObjectRemoved(pObject);
+}
+void CEditor::onSelectionChanged()
+{
+	m_pSceneTreeWindow->onSelectionChanged();
+}
+
+void CEditor::showSceneTree()
+{
+	m_pSceneTreeWindow->show();
+}
+

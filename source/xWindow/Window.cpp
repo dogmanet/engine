@@ -22,12 +22,55 @@ struct ACCENTPOLICY
 
 // typedef BOOL (WINAPI *FNPTRSetWindowCompositionAttribute)(HWND hwnd, WINCOMPATTRDATA* pAttrData);
 
-static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK CWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	CWindow *pWindow = (CWindow*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 	
 	if(pWindow)
 	{
+		if(msg == WM_ACTIVATE)
+		{
+			pWindow->AddRef();
+			if(wParam == WA_INACTIVE)
+			{
+				BYTE abKeyboardState[256];
+				if(GetKeyboardState(abKeyboardState))
+				{
+					for(UINT i = 0; i < ARRAYSIZE(abKeyboardState); ++i)
+					{
+						if(abKeyboardState[i] & 0x80)
+						{
+							pWindow->runCallback(WM_KEYUP, (WPARAM)i, 0);
+						}
+					}
+				}
+			}
+			else
+			{
+				for(UINT i = 0; i < 256; ++i)
+				{
+					if(GetAsyncKeyState(i) < 0)
+					{
+						pWindow->runCallback(WM_KEYDOWN, (WPARAM)i, 0);
+					}
+				}
+			}
+			pWindow->Release();
+		}
+
+		if(msg == WM_CHAR || msg == WM_SYSCHAR)
+		{
+			char ch = LOWORD(wParam);
+			WCHAR wch;
+			MultiByteToWideChar(CP_ACP, 0, &ch, 1, &wch, 1);
+			wParam = MAKEWPARAM(wch, HIWORD(wParam));
+		}
+
+		if(msg == WM_SHOWWINDOW)
+		{
+			pWindow->m_isVisible = (bool)wParam;
+		}
+
 		switch(msg)
 		{
 		case WM_MOUSEWHEEL:
@@ -82,7 +125,8 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 CWindow::CWindow(HINSTANCE hInst, UINT uId, const XWINDOW_DESC *pWindowDesc, IXWindowCallback *pCallback, IXWindow *pParent):
 	m_hInst(hInst),
 	m_uId(uId),
-	m_pCallback(pCallback)
+	m_pCallback(pCallback),
+	m_pParent(pParent)
 {
 	//assert(pCallback);
 	add_ref(pCallback);
@@ -378,6 +422,37 @@ INT_PTR XMETHODCALLTYPE CWindow::runDefaultCallback(UINT msg, WPARAM wParam, LPA
 const XWINDOW_DESC* XMETHODCALLTYPE CWindow::getDesc()
 {
 	return(&m_windowDesc);
+}
+
+IXWindow* XMETHODCALLTYPE CWindow::getParent()
+{
+	return(m_pParent);
+}
+
+bool XMETHODCALLTYPE CWindow::getPlacement(XWindowPlacement *pPlacement)
+{
+	pPlacement->length = sizeof(*pPlacement);
+	bool res = GetWindowPlacement(m_hWnd, pPlacement);
+
+	if(res && !m_isVisible)
+	{
+		pPlacement->showCmd = SW_HIDE;
+	}
+
+	return(res);
+}
+void XMETHODCALLTYPE CWindow::setPlacement(const XWindowPlacement &placement, bool bSkipVisibility)
+{
+	if(bSkipVisibility)
+	{
+		XWindowPlacement p = placement;
+		p.showCmd = isVisible() ? SW_SHOWNORMAL : SW_HIDE;
+		SetWindowPlacement(m_hWnd, &p);
+	}
+	else
+	{
+		SetWindowPlacement(m_hWnd, &placement);
+	}
 }
 
 INT_PTR CWindow::runCallback(UINT msg, WPARAM wParam, LPARAM lParam)
