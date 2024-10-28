@@ -194,6 +194,11 @@ bool COutline::isValid()
 		return(true);
 	}
 
+	if(m_isContoursFailed)
+	{
+		return(true);
+	}
+
 	if(!m_isClosed)
 	{
 		float3 va0 = m_vNewPoint;
@@ -473,8 +478,17 @@ bool COutline::checkPoint(const Array<UINT> &aIn, UINT uPoint, UINT uNextPoint)
 	return(true);
 }
 
-void COutline::buildContoursRecursive(const Array<UINT> &aIn)
+void COutline::buildContoursRecursive(const Array<UINT> &aIn, UINT uCurDepth)
 {
+	if(uCurDepth == 0)
+	{
+		m_isContoursFailed = false;
+	}
+	else if(uCurDepth > 32)
+	{
+		m_isContoursFailed = true;
+		return;
+	}
 	Array<UINT> aOut = aIn;
 
 	UINT uStartPt = 0;
@@ -541,6 +555,11 @@ void COutline::buildContoursRecursive(const Array<UINT> &aIn)
 	}
 
 	assert(aOut.size() > 2);
+	if(aOut.size() <= 2)
+	{
+		m_isContoursFailed = true;
+		return;
+	}
 
 	// build the rest
 
@@ -563,7 +582,11 @@ void COutline::buildContoursRecursive(const Array<UINT> &aIn)
 			if(aTemp.size() > 2)
 			{
 				aTemp.quickSort();
-				buildContoursRecursive(aTemp);
+				buildContoursRecursive(aTemp, uCurDepth + 1);
+				if(m_isContoursFailed)
+				{
+					return;
+				}
 				aTemp.clearFast();
 				aTemp.push_back(aIn[i]);
 			}

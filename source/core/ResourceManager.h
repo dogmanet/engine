@@ -67,8 +67,13 @@ protected:
 	
 	Array<XFormatName> m_aModelExts;
 
+	struct TextureLoader
+	{
+		IXTextureLoader *pLoader = NULL;
+		SpinLock slock;
+	};
 
-	Map<AAString, Array<IXTextureLoader*>> m_mapTextureLoaders;
+	Map<AAString, Array<TextureLoader>> m_mapTextureLoaders;
 	Map<String, IXResourceTexture*> m_mpTextures;
 
 	Array<XFormatName> m_aTextureExts;

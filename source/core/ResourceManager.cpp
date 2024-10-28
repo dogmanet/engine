@@ -61,7 +61,9 @@ void CResourceManager::initPlugins()
 					AAString sExt;
 					sExt.setName(pLoader->getExt(i));
 					strlwr(const_cast<char*>(sExt.getName()));
-					m_mapTextureLoaders[sExt].push_back(pLoader);
+					auto &arr = m_mapTextureLoaders[sExt];
+					TextureLoader &loader = arr[arr.size()];
+					loader.pLoader = pLoader;
 					m_aTextureExts.push_back({pLoader->getExtText(i), pLoader->getExt(i)});
 					LibReport(REPORT_MSG_LEVEL_NOTICE, " Ext: " COLOR_LCYAN "%s" COLOR_RESET ": " COLOR_WHITE "%s" COLOR_RESET "\n", pLoader->getExt(i), pLoader->getExtText(i));
 				}
@@ -410,14 +412,18 @@ bool XMETHODCALLTYPE CResourceManager::getTexture(const char *szName, IXResource
 	char *szLowcaseExt = strdupa(szExt);
 	strlwr(szLowcaseExt);
 
-	const Map<AAString, Array<IXTextureLoader*>>::Node *pNode;
+	const Map<AAString, Array<TextureLoader>>::Node *pNode;
 	if(m_mapTextureLoaders.KeyExists(AAString(szLowcaseExt), &pNode))
 	{
 		auto &aLoaders = *pNode->Val;
 		IXResourceTexture *pResource = NULL;
 		for(UINT i = 0, l = aLoaders.size(); i < l; ++i)
 		{
-			IXTextureLoader *pLoader = aLoaders[i];
+			TextureLoader &loader = aLoaders[i];
+			IXTextureLoader *pLoader = loader.pLoader;
+
+			ScopedSpinLock lock(loader.slock);
+
 			if(pLoader->open(szFileName, szArg))
 			{
 				switch(pLoader->getType())
@@ -538,14 +544,18 @@ bool XMETHODCALLTYPE CResourceManager::getTextureInfo(const char *szName, XTextu
 	char *szLowcaseExt = strdupa(szExt);
 	strlwr(szLowcaseExt);
 
-	const Map<AAString, Array<IXTextureLoader*>>::Node *pNode;
+	const Map<AAString, Array<TextureLoader>>::Node *pNode;
 	if(m_mapTextureLoaders.KeyExists(AAString(szLowcaseExt), &pNode))
 	{
 		auto &aLoaders = *pNode->Val;
 		bool isSuccess = false;
 		for(UINT i = 0, l = aLoaders.size(); i < l; ++i)
 		{
-			IXTextureLoader *pLoader = aLoaders[i];
+			TextureLoader &loader = aLoaders[i];
+			IXTextureLoader *pLoader = loader.pLoader;
+
+			ScopedSpinLock lock(loader.slock);
+
 			if(pLoader->open(szFileName, szArg))
 			{
 				pLoader->getInfo(pInfo);

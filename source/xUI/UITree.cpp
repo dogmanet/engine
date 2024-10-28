@@ -1128,16 +1128,16 @@ UINT CUITree::countSelection(TreeNode *pParentNode)
 
 	fora(i, pParentNode->aChildren)
 	{
-		GridRow &row = m_aRows[i];
+		TreeNode *pNode = &pParentNode->aChildren[i];
 
-		if(m_pAdapter->isNodeSelected(row.pTreeNode->hNode))
+		if(m_pAdapter->isNodeSelected(pNode->hNode))
 		{
 			++uCount;
 		}
 
-		if(row.pTreeNode->isExpanded)
+		if(pNode->isExpanded)
 		{
-			uCount += countSelection(row.pTreeNode);
+			uCount += countSelection(pNode);
 		}
 	}
 

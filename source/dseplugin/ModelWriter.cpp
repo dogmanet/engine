@@ -94,7 +94,7 @@ bool XMETHODCALLTYPE CModelWriter::writeModel(IXResourceModel *pResource, IFile 
 		physData.iPhyspartCount = pResource->getPhysboxCount();
 		if(physData.iPhyspartCount)
 		{
-			ModelPhyspart *pPhysparts = (ModelPhyspart*)alloca(sizeof(ModelPhyspart) * physData.iPhyspartCount);
+			ModelPhyspart *pPhysparts = (ModelPhyspart*)_malloca(sizeof(ModelPhyspart) * physData.iPhyspartCount);
 			memset(pPhysparts, 0, sizeof(ModelPhyspart) * physData.iPhyspartCount);
 
 
@@ -158,6 +158,8 @@ bool XMETHODCALLTYPE CModelWriter::writeModel(IXResourceModel *pResource, IFile 
 			{
 				pFile->writeBin(&pPhysparts[i], MODEL_PHYSPART_STRUCT_SIZE);
 			}
+
+			_freea(pPhysparts);
 
 			size_t pos = pFile->getPos();
 			pFile->setPos(m_hdr2.iPhysicsDataOffset);
