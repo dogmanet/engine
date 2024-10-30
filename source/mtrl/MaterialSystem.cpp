@@ -152,7 +152,10 @@ CMaterialSystem::CMaterialSystem(IXCore *pCore)
 				AAString sExt;
 				sExt.setName(pLoader->getExt(i));
 				strlwr(const_cast<char*>(sExt.getName()));
-				m_mapMaterialLoaders[sExt].push_back({pLoader, pLoader->canSave(i)});
+				auto &arr = m_mapMaterialLoaders[sExt];
+				MaterialLoader &ldr = arr[arr.size()];
+				ldr.pLoader = pLoader;
+				ldr.canSave = pLoader->canSave(i);
 				m_aMaterialExts.push_back({pLoader->getExtText(i), pLoader->getExt(i)});
 				LibReport(REPORT_MSG_LEVEL_NOTICE, " Ext: " COLOR_LCYAN "%s" COLOR_RESET ": " COLOR_WHITE "%s" COLOR_RESET "\n", pLoader->getExt(i), pLoader->getExtText(i));
 			}
@@ -314,6 +317,7 @@ bool CMaterialSystem::loadMaterialFromFile(const char *szName, CMaterial *pMater
 		for(UINT i = 0, l = aLoaders.size(); i < l; ++i)
 		{
 			IXMaterialLoader *pLoader = aLoaders[i].pLoader;
+			ScopedSpinLock lock(aLoaders[i].slock);
 			if(pLoader->open(szFileName, szArg))
 			{
 				if(pLoader->load(pMaterial))
@@ -2021,6 +2025,9 @@ bool CMaterialSystem::saveMaterial(CMaterial *pMaterial)
 						{
 							IXMaterialLoader *pLoader = aLoaders[i].pLoader;
 							//! @fixme open::arg is not persists!
+
+							ScopedSpinLock lock(aLoaders[i].slock);
+
 							if(pLoader->open(szFileName, "", true))
 							{
 								isSuccess = pLoader->save(pMaterial);
@@ -2073,6 +2080,9 @@ bool CMaterialSystem::saveMaterial(CMaterial *pMaterial)
 						if(aLoaders[i].canSave)
 						{
 							IXMaterialLoader *pLoader = aLoaders[i].pLoader;
+
+							ScopedSpinLock lock(aLoaders[i].slock);
+
 							//! @fixme open::arg is not persists!
 							if(pLoader->open(szFileName, "", true))
 							{

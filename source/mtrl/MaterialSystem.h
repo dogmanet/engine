@@ -450,6 +450,7 @@ protected:
 	{
 		IXMaterialLoader *pLoader;
 		bool canSave;
+		SpinLock slock;
 	};
 
 	Array<IXMaterialProxy*> m_aMaterialProxies;
