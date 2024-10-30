@@ -709,7 +709,7 @@ bool CModelLoader::loadGeneric(IXResourceModel *pResource)
 
 		m_pCurrentFile->setPos((size_t)physData.iPartsOffset);
 
-		ModelPhyspart *pPhysparts = (ModelPhyspart*)alloca(sizeof(ModelPhyspart) * physData.iPhyspartCount);
+		ModelPhyspart *pPhysparts = (ModelPhyspart*)_malloca(sizeof(ModelPhyspart) * physData.iPhyspartCount);
 		memset(pPhysparts, 0, sizeof(ModelPhyspart) * physData.iPhyspartCount);
 		for(UINT i = 0; i < physData.iPhyspartCount; ++i)
 		{
@@ -762,6 +762,8 @@ bool CModelLoader::loadGeneric(IXResourceModel *pResource)
 				mem_release(pPhysbox);
 			}
 		}
+
+		_freea(pPhysparts);
 	}
 	
 	if(m_hdr.iMaterialsOffset)
