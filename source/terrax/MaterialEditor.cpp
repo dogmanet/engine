@@ -11,6 +11,7 @@
 WNDPROC g_pfnTrackbarOldWndproc = NULL;
 
 void GetChildRect(HWND hWnd, LPRECT lpRect);
+UINT GetWindowDPI(HWND hWnd);
 
 CMaterialEditor::CMaterialEditor(HINSTANCE hInstance, HWND hMainWnd, IXCore *pCore, IXMaterial *pMaterial):
 	m_hInstance(hInstance),
@@ -58,6 +59,11 @@ CMaterialEditor::~CMaterialEditor()
 	DestroyMenu(m_hTextureMenu);
 	DestroyMenu(m_hTextureOptMenu);
 	mem_release(m_pMaterial);
+
+	if(m_hFont != GetStockObject(DEFAULT_GUI_FONT))
+	{
+		DeleteObject(m_hFont);
+	}
 }
 
 INT_PTR CALLBACK CMaterialEditor::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -87,6 +93,9 @@ INT_PTR CALLBACK CMaterialEditor::dlgProc(HWND hWnd, UINT msg, WPARAM wParam, LP
 	{
 	case WM_INITDIALOG:
 		{
+			m_fScale = ((float)GetWindowDPI(hWnd) / (float)USER_DEFAULT_SCREEN_DPI);
+			initFont();
+
 			m_hPropsWnd = GetDlgItem(hWnd, IDC_PROPS);
 			SetWindowLongPtr(m_hPropsWnd, GWLP_USERDATA, (LONG_PTR)this);
 			
@@ -106,8 +115,8 @@ INT_PTR CALLBACK CMaterialEditor::dlgProc(HWND hWnd, UINT msg, WPARAM wParam, LP
 			m_uPanelDeltaY = rc.bottom - rcChild.bottom;
 
 			GetWindowRect(hWnd, &rc);
-			m_uMinHeight = rc.bottom - rc.top;
-			m_uFixedWidth = rc.right - rc.left;
+			m_uMinHeight = (UINT)((float)(rc.bottom - rc.top) / m_fScale);
+			m_uFixedWidth = (UINT)((float)(rc.right - rc.left) / m_fScale);
 
 			SetWindowLongPtr(m_hPropsWnd, DWLP_DLGPROC, (LONG_PTR)InnerDlgProc);
 
@@ -272,6 +281,13 @@ INT_PTR CALLBACK CMaterialEditor::dlgProc(HWND hWnd, UINT msg, WPARAM wParam, LP
 		DestroyWindow(m_hDlgWnd);
 		break;
 
+
+	case WM_DPICHANGED:
+		m_fScale = ((float)LOWORD(wParam) / (float)USER_DEFAULT_SCREEN_DPI);
+		initFont();
+		initFields();
+
+		__fallthrough;
 	case WM_SIZE:
 		{
 			RECT rc, rcChild;
@@ -318,9 +334,9 @@ INT_PTR CALLBACK CMaterialEditor::dlgProc(HWND hWnd, UINT msg, WPARAM wParam, LP
 	case WM_GETMINMAXINFO:
 		{
 			MINMAXINFO *mmi = (MINMAXINFO*)lParam;
-			mmi->ptMinTrackSize.y = m_uMinHeight;
-			mmi->ptMinTrackSize.x = m_uFixedWidth;
-			mmi->ptMaxTrackSize.x = m_uFixedWidth;
+			mmi->ptMinTrackSize.y = mulDpi(m_uMinHeight);
+			mmi->ptMinTrackSize.x = mulDpi(m_uFixedWidth);
+			mmi->ptMaxTrackSize.x = mulDpi(m_uFixedWidth);
 			SetWindowLongPtr(hWnd, DWLP_MSGRESULT, 0);
 		}
 		break;
@@ -989,7 +1005,7 @@ void CMaterialEditor::initFields()
 	{
 		RECT rect;
 		GetChildRect(m_ahChildren[0], &rect);
-		iTopOffset = rect.top - uVPadding;
+		iTopOffset = divDpi(rect.top) - uVPadding;
 	}
 
 	fora(i, m_ahChildren)
@@ -1025,6 +1041,10 @@ void CMaterialEditor::initFields()
 
 	RECT rc;
 	GetClientRect(m_hPropsWnd, &rc);
+	rc.top = divDpi(rc.top);
+	rc.bottom = divDpi(rc.bottom);
+	rc.left = divDpi(rc.left);
+	rc.right = divDpi(rc.right);
 	Array<HWND> aGropBoxes;
 	UINT uControlWidth;
 	int iTop = iTopOffset;
@@ -1048,11 +1068,11 @@ void CMaterialEditor::initFields()
 			// caption, textfield, picker(?)
 
 			iTop += uVPadding;
-			hControl = CreateWindowExA(0, WC_STATIC, pProp->szTitle, WS_VISIBLE | WS_CHILD, rc.left + uHPadding, iTop, uControlWidth, 15, m_hPropsWnd, NULL, m_hInstance, NULL);
+			hControl = CreateWindowExA(0, WC_STATIC, pProp->szTitle, WS_VISIBLE | WS_CHILD, mulDpi(rc.left + uHPadding), mulDpi(iTop), mulDpi(uControlWidth), mulDpi(15), m_hPropsWnd, NULL, m_hInstance, NULL);
 			m_ahChildren.push_back(hControl);
 			iTop += 15;
 
-			hControl = CreateWindowExA(WS_EX_CLIENTEDGE | WS_EX_NOPARENTNOTIFY, WC_EDIT, "", WS_VISIBLE | WS_CHILD | WS_TABSTOP | ES_AUTOHSCROLL, rc.left + uHPadding, iTop, uControlWidth - uBrowseWidth - 2, 20, m_hPropsWnd, (HMENU)(1000 + i), m_hInstance, NULL);
+			hControl = CreateWindowExA(WS_EX_CLIENTEDGE | WS_EX_NOPARENTNOTIFY, WC_EDIT, "", WS_VISIBLE | WS_CHILD | WS_TABSTOP | ES_AUTOHSCROLL, mulDpi(rc.left + uHPadding), mulDpi(iTop), mulDpi(uControlWidth - uBrowseWidth - 2), mulDpi(20), m_hPropsWnd, (HMENU)(1000 + i), m_hInstance, NULL);
 			m_ahChildren.push_back(hControl);
 
 			if(pProp->type == XMPT_PARAM_COLOR)
@@ -1067,7 +1087,7 @@ void CMaterialEditor::initFields()
 				SetWindowTextW(hControl, szTexture ? CMB2WC(szTexture) : L"");
 			}
 
-			hControl = CreateWindowExA(0, WC_BUTTON, "...", WS_VISIBLE | WS_CHILD | WS_TABSTOP, rc.left + uHPadding + uControlWidth - uBrowseWidth, iTop, uBrowseWidth, 20, m_hPropsWnd, (HMENU)(2000 + i), m_hInstance, NULL);
+			hControl = CreateWindowExA(0, WC_BUTTON, "...", WS_VISIBLE | WS_CHILD | WS_TABSTOP, mulDpi(rc.left + uHPadding + uControlWidth - uBrowseWidth), mulDpi(iTop), mulDpi(uBrowseWidth), mulDpi(20), m_hPropsWnd, (HMENU)(2000 + i), m_hInstance, NULL);
 			m_ahChildren.push_back(hControl);
 
 			iTop += 20;
@@ -1079,7 +1099,7 @@ void CMaterialEditor::initFields()
 		case XMPT_PARAM_FLAG:
 			// checkbox
 			{
-				hControl = CreateWindowExA(0, WC_BUTTON, pProp->szTitle, WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX | WS_TABSTOP, rc.left + uHPadding, iTop + uVPadding, uControlWidth, 15, m_hPropsWnd, (HMENU)(1000 + i), m_hInstance, NULL);
+				hControl = CreateWindowExA(0, WC_BUTTON, pProp->szTitle, WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX | WS_TABSTOP, mulDpi(rc.left + uHPadding), mulDpi(iTop + uVPadding), mulDpi(uControlWidth), mulDpi(15), m_hPropsWnd, (HMENU)(1000 + i), m_hInstance, NULL);
 				m_ahChildren.push_back(hControl);
 
 				IMaterialFlag *pFlagHandler = m_pMaterial->getFlagHandler(pProp->szKey);
@@ -1092,7 +1112,7 @@ void CMaterialEditor::initFields()
 			break;
 
 		case XMPT_PARAM_GROUP:
-			hControl = CreateWindowExA(0, WC_BUTTON, pProp->szTitle ? pProp->szTitle : "", WS_VISIBLE | WS_CHILD | BS_GROUPBOX, rc.left + uHPadding, iTop + uVPadding, uControlWidth, 15, m_hPropsWnd, NULL, m_hInstance, NULL);
+			hControl = CreateWindowExA(0, WC_BUTTON, pProp->szTitle ? pProp->szTitle : "", WS_VISIBLE | WS_CHILD | BS_GROUPBOX, mulDpi(rc.left + uHPadding), mulDpi(iTop + uVPadding), mulDpi(uControlWidth), mulDpi(15), m_hPropsWnd, NULL, m_hInstance, NULL);
 			m_ahChildren.push_back(hControl);
 			iTop += 15 + uVPadding;
 			uHPadding += 10;
@@ -1121,7 +1141,7 @@ void CMaterialEditor::initFields()
 				{
 					RECT rect;
 					GetChildRect(hControl, &rect);
-					MoveWindow(hControl, rect.left, rect.top, rect.right - rect.left, iTop - rect.top, TRUE);
+					MoveWindow(hControl, rect.left, rect.top, rect.right - rect.left, mulDpi(iTop) - rect.top, TRUE);
 					iTop += uVPadding;
 				}
 				uHPadding -= 10;
@@ -1131,11 +1151,11 @@ void CMaterialEditor::initFields()
 		case XMPT_PARAM_RANGE:
 			// caption, rangebar, textfield(with spinner?)
 			iTop += uVPadding;
-			hControl = CreateWindowExA(0, WC_STATIC, pProp->szTitle, WS_VISIBLE | WS_CHILD, rc.left + uHPadding, iTop, uControlWidth, 15, m_hPropsWnd, NULL, m_hInstance, NULL);
+			hControl = CreateWindowExA(0, WC_STATIC, pProp->szTitle, WS_VISIBLE | WS_CHILD, mulDpi(rc.left + uHPadding), mulDpi(iTop), mulDpi(uControlWidth), mulDpi(15), m_hPropsWnd, NULL, m_hInstance, NULL);
 			m_ahChildren.push_back(hControl);
 			iTop += 15;
 
-			hControl = CreateWindowExA(WS_EX_CLIENTEDGE | WS_EX_NOPARENTNOTIFY, WC_EDIT, "", WS_VISIBLE | WS_CHILD | WS_TABSTOP | ES_AUTOHSCROLL, rc.left + uHPadding, iTop, c_uRangeEditWidth, 20, m_hPropsWnd, (HMENU)(1000 + i), m_hInstance, NULL);
+			hControl = CreateWindowExA(WS_EX_CLIENTEDGE | WS_EX_NOPARENTNOTIFY, WC_EDIT, "", WS_VISIBLE | WS_CHILD | WS_TABSTOP | ES_AUTOHSCROLL, mulDpi(rc.left + uHPadding), mulDpi(iTop), mulDpi(c_uRangeEditWidth), mulDpi(20), m_hPropsWnd, (HMENU)(1000 + i), m_hInstance, NULL);
 			m_ahChildren.push_back(hControl);
 
 
@@ -1145,7 +1165,7 @@ void CMaterialEditor::initFields()
 			sprintf(tmp, "%f", fVal);
 			SetWindowTextA(hControl, tmp);
 
-			hControl = CreateWindowExA(WS_EX_NOPARENTNOTIFY, TRACKBAR_CLASS, "", WS_VISIBLE | WS_CHILD | WS_TABSTOP | PBS_MARQUEE | PBS_SMOOTHREVERSE, rc.left + uHPadding + c_uRangeEditWidth, iTop, uControlWidth - c_uRangeEditWidth, 20, m_hPropsWnd, (HMENU)(2000 + i), m_hInstance, NULL);
+			hControl = CreateWindowExA(WS_EX_NOPARENTNOTIFY, TRACKBAR_CLASS, "", WS_VISIBLE | WS_CHILD | WS_TABSTOP | PBS_MARQUEE | PBS_SMOOTHREVERSE, mulDpi(rc.left + uHPadding + c_uRangeEditWidth), mulDpi(iTop), mulDpi(uControlWidth - c_uRangeEditWidth), mulDpi(20), m_hPropsWnd, (HMENU)(2000 + i), m_hInstance, NULL);
 			m_ahChildren.push_back(hControl);
 			SendMessage(hControl, TBM_SETRANGEMIN, FALSE, 0);
 			SendMessage(hControl, TBM_SETRANGEMAX, FALSE, 65535);
@@ -1164,13 +1184,12 @@ void CMaterialEditor::initFields()
 		}
 	}
 
-	HGDIOBJ hDefaultFont = GetStockObject(DEFAULT_GUI_FONT);
 	fora(i, m_ahChildren)
 	{
-		SetWindowFont(m_ahChildren[i], hDefaultFont, FALSE);
+		SetWindowFont(m_ahChildren[i], m_hFont, FALSE);
 	}
 
-	m_iTotalHeight = iTop - iTopOffset;
+	m_iTotalHeight = mulDpi(iTop - iTopOffset);
 
 	if(iTopOffset < 0 && iTop < rc.bottom)
 	{
@@ -1670,6 +1689,30 @@ void CMaterialEditor::undo()
 	}
 
 	m_isDirty = false;
+}
+
+void CMaterialEditor::initFont()
+{
+	if(m_hFont != GetStockObject(DEFAULT_GUI_FONT))
+	{
+		DeleteObject(m_hFont);
+	}
+
+	NONCLIENTMETRICSW nonClientMetrics = {sizeof(nonClientMetrics)};
+	if(SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, sizeof(nonClientMetrics), &nonClientMetrics, 0))
+	{
+		HDC hScreenDC = GetDC(0);
+		int iDpiX = GetDeviceCaps(hScreenDC, LOGPIXELSX);
+		ReleaseDC(0, hScreenDC);
+
+		nonClientMetrics.lfMenuFont.lfHeight = MulDiv(nonClientMetrics.lfMenuFont.lfHeight, mulDpi(USER_DEFAULT_SCREEN_DPI), iDpiX);
+		m_hFont = CreateFontIndirectW(&nonClientMetrics.lfMenuFont);
+	}
+
+	if(!m_hFont)
+	{
+		m_hFont = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+	}
 }
 
 //#############################################################################

@@ -233,7 +233,7 @@ void CScrollBar::setSize(UINT uSize)
 {
 	m_uSize = uSize;
 
-	m_frameState.fSize = (float)uSize - 115.5912f;
+	m_frameState.fSize = (float)uSize - 115.5912f * m_fScale;
 
 	updateScroll();
 }
@@ -259,12 +259,12 @@ void CScrollBar::setPageSize(UINT uSize)
 void CScrollBar::updateScroll()
 {
 	//printf("%f\n", ((float)m_uPageSize / (float)(m_iScrollMax + m_uPageSize)));
-	m_frameState.fHandlerSize = ((float)m_uPageSize / (float)(m_iScrollMax + m_uPageSize)) * ((float)m_uSize - 37.2416f);
+	m_frameState.fHandlerSize = ((float)m_uPageSize / (float)(m_iScrollMax + m_uPageSize)) * ((float)m_uSize - 37.2416f * m_fScale);
 	m_uHandlerSize = (UINT)m_frameState.fHandlerSize;
-	m_frameState.fHandlerSize -= 78.4096f;
+	m_frameState.fHandlerSize -= 78.4096f * m_fScale;
 
-	m_frameState.fHandlerPos = ((float)m_iScrollPos / (float)(m_iScrollMax + m_uPageSize)) * ((float)m_uSize - 37.2416f);
-	m_uHandlerPos = (UINT)m_frameState.fHandlerPos + 18;
+	m_frameState.fHandlerPos = ((float)m_iScrollPos / (float)(m_iScrollMax + m_uPageSize)) * ((float)m_uSize - 37.2416f * m_fScale);
+	m_uHandlerPos = (UINT)m_frameState.fHandlerPos + (UINT)(18.0f * m_fScale);
 
 	const float c_fDisabled = 0.5f;
 	const float c_fNormal = 0.75f;
@@ -317,6 +317,11 @@ void CScrollBar::updateScroll()
 	m_isDirty = true;
 }
 
+UINT CScrollBar::getWidth() const
+{
+	return((UINT)(18.0f * m_fScale));
+}
+
 void CScrollBar::onMouseDown(int y)
 {
 	onMouseMove(y);
@@ -353,15 +358,15 @@ void CScrollBar::onMouseMove(int y)
 {
 	if(m_activeEl == HEL_NONE)
 	{
-		if(y < 16)
+		if(y < (UINT)(16.0f * m_fScale))
 		{
 			m_hoverEl = HEL_UP;
 		}
-		else if(y > m_uSize - 18)
+		else if(y > m_uSize - (UINT)(18.0f * m_fScale))
 		{
 			m_hoverEl = HEL_DOWN;
 		}
-		else if(y > m_uHandlerPos && y < m_uHandlerPos + max(m_uHandlerSize, 16))
+		else if(y > m_uHandlerPos && y < m_uHandlerPos + max(m_uHandlerSize, (UINT)(16.0f * m_fScale)))
 		{
 			m_hoverEl = HEL_HANDLER;
 		}
@@ -372,9 +377,9 @@ void CScrollBar::onMouseMove(int y)
 	}
 	else if(m_activeEl == HEL_HANDLER)
 	{
-		int iNewPos = m_iDragStartPos + (y - m_iDragStartY) - 18;
+		int iNewPos = m_iDragStartPos + (y - m_iDragStartY) - (int)(18.0f * m_fScale);
 
-		iNewPos = (float)iNewPos / ((float)m_uSize - 37.2416f) * (float)(m_iScrollMax + m_uPageSize);
+		iNewPos = (float)iNewPos / ((float)m_uSize - 37.2416f * m_fScale) * (float)(m_iScrollMax + m_uPageSize);
 
 		if(iNewPos < 0)
 		{
@@ -420,4 +425,11 @@ void CScrollBar::update(float fDT)
 		}
 		
 	}
+}
+
+void CScrollBar::setScale(float fScale)
+{
+	m_frameState.fScale = fScale;
+	m_fScale = fScale;
+	m_isDirty = true;
 }

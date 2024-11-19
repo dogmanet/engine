@@ -106,7 +106,8 @@ private:
 		float fHighlight;
 
 		float2_t vPosition;
-		float2_t _dummy;
+		float fScale;
+		float _dummy;
 	};
 
 	FrameState m_frameState;
@@ -186,6 +187,9 @@ private:
 
 	IMaterialBrowserCallback *m_pCallback = NULL;
 
+	//UINT m_uCurrentDpi = USER_DEFAULT_SCREEN_DPI;
+	float m_fScale = 1.0f;
+
 private:
 	void registerClass();
 
@@ -204,6 +208,9 @@ private:
 	void preload();
 
 	void scheduleFilterIn(float fSeconds);
+
+	void initFont();
+	void invalidateTexts();
 };
 
 #endif

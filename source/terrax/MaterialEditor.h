@@ -96,6 +96,9 @@ private:
 
 	bool m_isDirty = false;
 
+	float m_fScale = 1.0f;
+	HFONT m_hFont = NULL;
+
 private:
 	//void registerClass();
 
@@ -114,6 +117,20 @@ private:
 
 	void backup();
 	void undo();
+
+	template<typename T>
+	T mulDpi(T tVal)
+	{
+		return((T)((float)tVal * m_fScale));
+	}
+
+	template<typename T>
+	T divDpi(T tVal)
+	{
+		return((T)((float)tVal / m_fScale));
+	}
+
+	void initFont();
 
 private:
 	struct BackupRecordFlag
