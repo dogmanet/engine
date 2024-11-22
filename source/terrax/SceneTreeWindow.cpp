@@ -382,6 +382,7 @@ const char* CSceneTreeAdapter::getColumnHeader(UINT uCol)
 		return("Vis");
 	}
 	assert(!"Invalid col index");
+	return("");
 }
 
 UINT CSceneTreeAdapter::getColumnHeaderWidth(UINT uCol, UINT uControlWidth)

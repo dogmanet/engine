@@ -84,6 +84,11 @@ namespace gui
 			m_mTransformViewProj = mat;
 		}
 
+		void setTransformScaling(float fScale)
+		{
+			m_fCurrentScale = fScale;
+		}
+
 		CTextureManager* getTextureManager()
 		{
 			return(m_pTextureManager);
@@ -105,7 +110,14 @@ namespace gui
 
 		void updateTransformShader()
 		{
-			m_pVSTransformConstant->update(&SMMatrixTranspose(m_mTransformWorld * m_mTransformViewProj));
+			if(m_fCurrentScale == 1.0f)
+			{
+				m_pVSTransformConstant->update(&SMMatrixTranspose(m_mTransformWorld * m_mTransformViewProj));
+			}
+			else
+			{
+				m_pVSTransformConstant->update(&SMMatrixTranspose(m_mTransformWorld * SMMatrixScaling(m_fCurrentScale) * m_mTransformViewProj));
+			}
 			m_pDevice->getThreadContext()->setVSConstant(m_pVSTransformConstant, 0);
 		}
 
@@ -116,9 +128,17 @@ namespace gui
 
 		bool getKeyState(int iKey) override;
 
+		void setScale(float fScale) override;
+
+		float getScale()
+		{
+			return(m_fScale);
+		};
+
 	protected:
 		SMMATRIX m_mTransformWorld;
 		SMMATRIX m_mTransformViewProj;
+		float m_fCurrentScale = 1.0f;
 
 		IXTexture *m_pDefaultWhite;
 
@@ -170,6 +190,7 @@ namespace gui
 
 		IGXConstantBuffer *m_pVSTransformConstant = NULL;
 
+		float m_fScale = 1.0f;
 
 
 		SimpleCallback* getFullCallbackByName(const char *cbName);

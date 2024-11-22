@@ -82,6 +82,8 @@ namespace gui
 		virtual IFont* getFont(const WCHAR *szName, UINT size, IFont::STYLE style, int iBlurRadius) = 0;
 
 		virtual bool getKeyState(int iKey) = 0;
+
+		virtual void setScale(float fScale) = 0;
 	};
 
 	class IGUI: public IXUnknown

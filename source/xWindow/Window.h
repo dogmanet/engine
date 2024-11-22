@@ -3,7 +3,7 @@
 
 #include "IXWindowSystem.h"
 
-class CWindow: public IXUnknownImplementation<IXWindow>
+class CWindow final: public IXUnknownImplementation<IXWindow>
 {
 public:
 	CWindow(HINSTANCE hInst, UINT uId, const XWINDOW_DESC *pWindowDesc, IXWindowCallback *pCallback = NULL, IXWindow *pParent = NULL);
@@ -29,13 +29,16 @@ public:
 
 	INT_PTR runCallback(UINT msg, WPARAM wParam, LPARAM lParam);
 
-protected:
+	float XMETHODCALLTYPE getScale() override;
+private:
 	HWND m_hWnd = NULL;
 	HINSTANCE m_hInst;
 	XWINDOW_DESC m_windowDesc;
 	UINT m_uId;
 	IXWindowCallback *m_pCallback;
 	IXWindow *m_pParent;
+
+	float m_fScale = 1.0f;
 
 	bool m_isVisible = false;
 

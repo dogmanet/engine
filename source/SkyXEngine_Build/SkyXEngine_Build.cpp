@@ -90,7 +90,7 @@ public:
 		//}
 		wdesc.iSizeX = (int)uWidth;
 		wdesc.iSizeY = (int)uHeight;
-		wdesc.flags = XWF_BUTTON_CLOSE | XWF_BUTTON_MINIMIZE | XWF_NORESIZE;
+		wdesc.flags = XWF_BUTTON_CLOSE | XWF_BUTTON_MINIMIZE | XWF_NORESIZE | XWF_NOAUTOSCALE;
 
 		if(isFullscreen || isBorderless)
 		{

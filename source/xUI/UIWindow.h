@@ -5,7 +5,7 @@
 #include "UIControl.h"
 
 class CUIWindow;
-class CWindowCallback: public IXUnknownImplementation<IXWindowCallback>
+class CWindowCallback final: public IXUnknownImplementation<IXWindowCallback>
 {
 public:
 	CWindowCallback(CUIWindow *pUIWindow, gui::IDesktopStack *pDesktopStack):
@@ -18,7 +18,7 @@ public:
 
 	void dropWindow();
 
-protected:
+private:
 	CUIWindow *m_pUIWindow = NULL;
 	gui::IDesktopStack *m_pDesktopStack = NULL;
 	bool m_isScreenSizeChanged = false;
@@ -120,6 +120,9 @@ private:
 	XGUID m_guidPlacement;
 	bool m_bMaintainPlacement = false;
 	bool m_bMaintainVisibility = false;
+
+	//! Used only for scaled windows
+	XWINDOW_DESC m_descCached;
 
 private:
 	void releaseSwapChain();

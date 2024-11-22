@@ -139,7 +139,12 @@ namespace gui
 		//	GetGUI()->getDevice()->SetRenderState(D3DRS_BLENDOPALPHA, D3DBLENDOP_MAX);
 			pCtx->setBlendState(GetGUI()->getBlendStates()->m_pDesktop);
 			
+
+			m_pDesktopStack->setTransformScaling(m_pDesktopStack->getScale());
+
 			m_pDoc->render(fTimeDelta);
+
+			m_pDesktopStack->setTransformScaling(1.0f);
 
 			pCtx->setBlendState(GetGUI()->getBlendStates()->m_pDefault);
 		//	GetGUI()->getDevice()->SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, FALSE);

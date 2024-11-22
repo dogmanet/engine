@@ -248,6 +248,9 @@ namespace gui
 		wchar_t dst[] = {0, 0};
 #endif
 
+#define _GET_X_LPARAM(x) ((int)((float)(GET_X_LPARAM(x)) / m_fScale))
+#define _GET_Y_LPARAM(x) ((int)((float)(GET_Y_LPARAM(x)) / m_fScale))
+
 		static int wheelDelta = 0;
 		static int wheelCount = 0;
 		static POINT mc;
@@ -288,8 +291,8 @@ namespace gui
 			if(wheelCount)
 			{
 				ev.type = wheelCount > 0 ? GUI_EVENT_TYPE_MOUSEWHEELUP : GUI_EVENT_TYPE_MOUSEWHEELDOWN;
-				ev.clientX = GET_X_LPARAM(lParam);
-				ev.clientY = GET_Y_LPARAM(lParam);
+				ev.clientX = _GET_X_LPARAM(lParam);
+				ev.clientY = _GET_Y_LPARAM(lParam);
 				InitEventModKeys(&ev);
 
 				for(; wheelCount != 0; wheelCount += (wheelCount > 0 ? -1 : 1))
@@ -383,8 +386,8 @@ namespace gui
 		case WM_LBUTTONDBLCLK:
 		case WM_LBUTTONDOWN:
 			ev.type = GUI_EVENT_TYPE_MOUSEDOWN;
-			ev.clientX = GET_X_LPARAM(lParam);
-			ev.clientY = GET_Y_LPARAM(lParam);
+			ev.clientX = _GET_X_LPARAM(lParam);
+			ev.clientY = _GET_Y_LPARAM(lParam);
 			ev.key = KEY_LBUTTON;
 			CKeyMap::keyDown(KEY_LBUTTON);
 			InitEventModKeys(&ev);
@@ -393,8 +396,8 @@ namespace gui
 
 		case WM_LBUTTONUP:
 			ev.type = GUI_EVENT_TYPE_MOUSEUP;
-			ev.clientX = GET_X_LPARAM(lParam);
-			ev.clientY = GET_Y_LPARAM(lParam);
+			ev.clientX = _GET_X_LPARAM(lParam);
+			ev.clientY = _GET_Y_LPARAM(lParam);
 			ev.key = KEY_LBUTTON;
 			CKeyMap::keyUp(KEY_LBUTTON);
 			InitEventModKeys(&ev);
@@ -404,8 +407,8 @@ namespace gui
 		case WM_RBUTTONDBLCLK:
 		case WM_RBUTTONDOWN:
 			ev.type = GUI_EVENT_TYPE_MOUSEDOWN;
-			ev.clientX = GET_X_LPARAM(lParam);
-			ev.clientY = GET_Y_LPARAM(lParam);
+			ev.clientX = _GET_X_LPARAM(lParam);
+			ev.clientY = _GET_Y_LPARAM(lParam);
 			ev.key = KEY_RBUTTON;
 			CKeyMap::keyDown(KEY_RBUTTON);
 			InitEventModKeys(&ev);
@@ -414,8 +417,8 @@ namespace gui
 
 		case WM_RBUTTONUP:
 			ev.type = GUI_EVENT_TYPE_MOUSEUP;
-			ev.clientX = GET_X_LPARAM(lParam);
-			ev.clientY = GET_Y_LPARAM(lParam);
+			ev.clientX = _GET_X_LPARAM(lParam);
+			ev.clientY = _GET_Y_LPARAM(lParam);
 			ev.key = KEY_RBUTTON;
 			CKeyMap::keyUp(KEY_RBUTTON);
 			InitEventModKeys(&ev);
@@ -427,8 +430,8 @@ namespace gui
 		case WM_MBUTTONDBLCLK:
 		case WM_MBUTTONDOWN:
 			ev.type = GUI_EVENT_TYPE_MOUSEDOWN;
-			ev.clientX = GET_X_LPARAM(lParam);
-			ev.clientY = GET_Y_LPARAM(lParam);
+			ev.clientX = _GET_X_LPARAM(lParam);
+			ev.clientY = _GET_Y_LPARAM(lParam);
 			ev.key = KEY_MBUTTON;
 			CKeyMap::keyDown(KEY_MBUTTON);
 			InitEventModKeys(&ev);
@@ -437,8 +440,8 @@ namespace gui
 
 		case WM_MBUTTONUP:
 			ev.type = GUI_EVENT_TYPE_MOUSEUP;
-			ev.clientX = GET_X_LPARAM(lParam);
-			ev.clientY = GET_Y_LPARAM(lParam);
+			ev.clientX = _GET_X_LPARAM(lParam);
+			ev.clientY = _GET_Y_LPARAM(lParam);
 			ev.key = KEY_MBUTTON;
 			CKeyMap::keyUp(KEY_MBUTTON);
 			InitEventModKeys(&ev);
@@ -450,8 +453,8 @@ namespace gui
 		case WM_XBUTTONDBLCLK:
 		case WM_XBUTTONDOWN:
 			ev.type = GUI_EVENT_TYPE_MOUSEDOWN;
-			ev.clientX = GET_X_LPARAM(lParam);
-			ev.clientY = GET_Y_LPARAM(lParam);
+			ev.clientX = _GET_X_LPARAM(lParam);
+			ev.clientY = _GET_Y_LPARAM(lParam);
 			ev.key = GET_XBUTTON_WPARAM(wParam);
 			CKeyMap::keyDown(GET_XBUTTON_WPARAM(wParam));
 			InitEventModKeys(&ev);
@@ -460,8 +463,8 @@ namespace gui
 
 		case WM_XBUTTONUP:
 			ev.type = GUI_EVENT_TYPE_MOUSEUP;
-			ev.clientX = GET_X_LPARAM(lParam);
-			ev.clientY = GET_Y_LPARAM(lParam);
+			ev.clientX = _GET_X_LPARAM(lParam);
+			ev.clientY = _GET_Y_LPARAM(lParam);
 			ev.key = GET_XBUTTON_WPARAM(wParam);
 			CKeyMap::keyUp(GET_XBUTTON_WPARAM(wParam));
 			InitEventModKeys(&ev);
@@ -470,8 +473,8 @@ namespace gui
 
 		case WM_MOUSEMOVE:
 			ev.type = GUI_EVENT_TYPE_MOUSEMOVE;
-			ev.clientX = GET_X_LPARAM(lParam);
-			ev.clientY = GET_Y_LPARAM(lParam);
+			ev.clientX = _GET_X_LPARAM(lParam);
+			ev.clientY = _GET_Y_LPARAM(lParam);
 			InitEventModKeys(&ev);
 			m_pActiveDesktop->dispatchEvent(ev);
 			break;
@@ -796,11 +799,11 @@ namespace gui
 
 	UINT CDesktopStack::getScreenWidth()
 	{
-		return(m_iScreenWidth);
+		return((UINT)((float)m_iScreenWidth / m_fScale));
 	}
 	UINT CDesktopStack::getScreenHeight()
 	{
-		return(m_iScreenHeight);
+		return((UINT)((float)m_iScreenHeight / m_fScale));
 	}
 
 	void CDesktopStack::destroyDesktop(IDesktop *dp)
@@ -944,6 +947,11 @@ namespace gui
 	bool CDesktopStack::getKeyState(int iKey)
 	{
 		return(CKeyMap::keyState(iKey));
+	}
+
+	void CDesktopStack::setScale(float fScale)
+	{
+		m_fScale = fScale;
 	}
 };
 

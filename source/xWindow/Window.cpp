@@ -5,6 +5,8 @@
 #pragma comment(lib, "Dwmapi.lib")
 #endif
 
+UINT GetWindowDPI(HWND hWnd);
+
 struct WINCOMPATTRDATA
 {
 	DWORD attribute; // the attribute to query, see below
@@ -71,6 +73,11 @@ LRESULT CALLBACK CWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
 			pWindow->m_isVisible = (bool)wParam;
 		}
 
+		if(msg == WM_DPICHANGED)
+		{
+			pWindow->m_fScale = ((float)LOWORD(wParam) / (float)USER_DEFAULT_SCREEN_DPI);
+		}
+
 		switch(msg)
 		{
 		case WM_MOUSEWHEEL:
@@ -112,6 +119,7 @@ LRESULT CALLBACK CWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
 		case WM_MOUSEMOVE:
 		case WM_ENTERSIZEMOVE:
 		case WM_EXITSIZEMOVE:
+		case WM_DPICHANGED:
 			add_ref(pWindow);
 			LRESULT res = pWindow->runCallback(msg, wParam, lParam);
 			mem_release(pWindow);
@@ -233,6 +241,8 @@ CWindow::CWindow(HINSTANCE hInst, UINT uId, const XWINDOW_DESC *pWindowDesc, IXW
 	{
 		LibReport(REPORT_MSG_LEVEL_FATAL, "Unable to create window!\n");
 	}
+
+	m_fScale = ((float)GetWindowDPI(m_hWnd) / (float)USER_DEFAULT_SCREEN_DPI);
 
 	if(pWindowDesc->flags & XWF_TRANSPARENT)
 	{
@@ -422,6 +432,14 @@ INT_PTR XMETHODCALLTYPE CWindow::runDefaultCallback(UINT msg, WPARAM wParam, LPA
 	case WM_CLOSE:
 		ShowWindow(m_hWnd, SW_HIDE);
 		return(TRUE);
+
+	case WM_DPICHANGED:
+		if(!(m_windowDesc.flags & XWF_NOAUTOSCALE))
+		{
+			LPRECT lpRect = (LPRECT)lParam;
+			SetWindowPos(m_hWnd, nullptr, lpRect->left, lpRect->top, lpRect->right - lpRect->left, lpRect->bottom - lpRect->top, SWP_NOZORDER | SWP_NOACTIVATE);
+		}
+		break;
 	}
 	return(DefWindowProcA(m_hWnd, msg, wParam, lParam));
 }
@@ -485,4 +503,41 @@ INT_PTR CWindow::runCallback(UINT msg, WPARAM wParam, LPARAM lParam)
 		return(m_pCallback->onMessage(msg, wParam, lParam, this));
 	}
 	return(runDefaultCallback(msg, wParam, lParam));
+}
+
+float XMETHODCALLTYPE CWindow::getScale()
+{
+	return(m_fScale);
+}
+
+UINT GetWindowDPI(HWND hWnd)
+{
+	typedef HRESULT(WINAPI *PGetDpiForMonitor)(HMONITOR hmonitor, int dpiType, UINT* dpiX, UINT* dpiY);
+
+	// Try to get the DPI setting for the monitor where the given window is located.
+	// This API is Windows 8.1+.
+	HMODULE hSHcore = LoadLibraryW(L"shcore");
+	if(hSHcore)
+	{
+		PGetDpiForMonitor pGetDpiForMonitor = (PGetDpiForMonitor)GetProcAddress(hSHcore, "GetDpiForMonitor");
+		if(pGetDpiForMonitor)
+		{
+			HMONITOR hMonitor = MonitorFromWindow(hWnd, MONITOR_DEFAULTTOPRIMARY);
+			UINT uDpiX;
+			UINT uDpiY;
+			HRESULT hr = pGetDpiForMonitor(hMonitor, /*MDT_EFFECTIVE_DPI*/ 0, &uDpiX, &uDpiY);
+			if(SUCCEEDED(hr))
+			{
+				return(uDpiX);
+			}
+		}
+	}
+
+	// We couldn't get the window's DPI above, so get the DPI of the primary monitor
+	// using an API that is available in all Windows versions.
+	HDC hScreenDC = GetDC(0);
+	int iDpiX = GetDeviceCaps(hScreenDC, LOGPIXELSX);
+	ReleaseDC(0, hScreenDC);
+
+	return((UINT)iDpiX);
 }

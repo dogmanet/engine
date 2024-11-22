@@ -23,7 +23,8 @@ enum XWINDOW_FLAG
 	XWF_BUTTON_MAXIMIZE = 0x0008,
 	XWF_TRANSPARENT = 0x0010,
 	XWF_NORESIZE = 0x0020,
-	XWF_INIT_HIDDEN = 0x0040
+	XWF_INIT_HIDDEN = 0x0040,
+	XWF_NOAUTOSCALE = 0x0080
 };
 DEFINE_ENUM_FLAG_OPERATORS(XWINDOW_FLAG);
 
@@ -84,6 +85,8 @@ public:
 
 	virtual bool XMETHODCALLTYPE getPlacement(XWindowPlacement *pPlacement) = 0;
 	virtual void XMETHODCALLTYPE setPlacement(const XWindowPlacement &placement, bool bSkipVisibility = false) = 0;
+
+	virtual float XMETHODCALLTYPE getScale() = 0;
 };
 
 class IXWindowCallback: public IXUnknown

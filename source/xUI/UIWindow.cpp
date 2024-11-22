@@ -50,6 +50,10 @@ INT_PTR XMETHODCALLTYPE CWindowCallback::onMessage(UINT msg, WPARAM wParam, LPAR
 		}
 		break;
 
+	case WM_DPICHANGED:
+		m_pUIWindow->m_pDesktopStack->setScale(m_pUIWindow->m_pXWindow->getScale());
+		return(pWindow->runDefaultCallback(msg, wParam, lParam));
+
 	case WM_CLOSE:
 		if(!m_pUIWindow->onClose())
 		{
@@ -105,6 +109,8 @@ CUIWindow::CUIWindow(CXUI *pXUI, const XWINDOW_DESC *pWindowDesc, IUIWindow *pPa
 	m_pXWindow = pXUI->getWindowSystem()->createWindow(pWindowDesc, m_pXWindowCallback, pXParent);
 
 	createSwapChain((UINT)pWindowDesc->iSizeX, (UINT)pWindowDesc->iSizeY);
+
+	m_pDesktopStack->setScale(m_pXWindow->getScale());
 
 	m_pControl = new CUIWindowControl(this, 0);
 }
@@ -185,12 +191,34 @@ void XMETHODCALLTYPE CUIWindow::setTitle(const char *szTitle)
 
 void XMETHODCALLTYPE CUIWindow::update(const XWINDOW_DESC *pWindowDesc)
 {
-	m_pXWindow->update(pWindowDesc);
+	float fScale = m_pXWindow->getScale();
+
+	if(fScale == 1.0f)
+	{
+		m_pXWindow->update(pWindowDesc);
+	}
+	else
+	{
+		XWINDOW_DESC desc = *pWindowDesc;
+		desc.iSizeX = (int)((float)desc.iSizeX * fScale);
+		desc.iSizeY = (int)((float)desc.iSizeY * fScale);
+		m_pXWindow->update(&desc);
+	}
 }
 
 const XWINDOW_DESC* XMETHODCALLTYPE CUIWindow::getDesc()
 {
-	return(m_pXWindow->getDesc());
+	float fScale = m_pXWindow->getScale();
+
+	if(fScale == 1.0f)
+	{
+		return(m_pXWindow->getDesc());
+	}
+
+	m_descCached = *m_pXWindow->getDesc();
+	m_descCached.iSizeX = (int)((float)m_descCached.iSizeX / fScale);
+	m_descCached.iSizeY = (int)((float)m_descCached.iSizeY / fScale);
+	return(&m_descCached);
 }
 
 gui::IDesktop* XMETHODCALLTYPE CUIWindow::getDesktop() const

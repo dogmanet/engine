@@ -8,7 +8,7 @@
 #include "ScrollBarSimple.h"
 
 
-namespace gui
+namespace gui	
 {
 	void CTranslationManager::pushMatrix(const SMMATRIX &m)
 	{
@@ -2789,7 +2789,7 @@ namespace gui
 
 				CFont::STYLE style = (CFont::STYLE)((fontStyle == css::ICSSproperty::FONT_STYLE_ITALIC ? CFont::STYLE_ITALIC : 0) | (fontWeight == css::ICSSproperty::FONT_WEIGHT_BOLD ? CFont::STYLE_BOLD : 0));
 
-				pFont = m_pDoc->getDesktopStack()->getFontManager()->getFont(szFontName, iTextSize, style);
+				pFont = m_pDoc->getDesktopStack()->getFontManager()->getFont(szFontName, iTextSize, style, 0, m_pDoc->getDesktopStack()->getScale());
 
 				int iShadowX = 0;
 				int iShadowY = 0;
@@ -2807,7 +2807,7 @@ namespace gui
 						iShadowRadius = pStyle->text_shadow_blur_radius->getPX(pBlock->getContentWidth(), m_pDoc->getDesktopStack()->getScreenWidth(), m_pDoc->getDesktopStack()->getScreenHeight());
 					}
 
-					pShadowFont = m_pDoc->getDesktopStack()->getFontManager()->getFont(szFontName, iTextSize, style, iShadowRadius);
+					pShadowFont = m_pDoc->getDesktopStack()->getFontManager()->getFont(szFontName, iTextSize, style, iShadowRadius, m_pDoc->getDesktopStack()->getScale());
 				}
 
 				struct word
@@ -3130,7 +3130,7 @@ namespace gui
 
 				//	SGCore_ShaderSetVRF(SHADER_TYPE_PIXEL, shader.m_idPS, "g_vColor", (float*)&color, 1);
 				//	DX_CALL(GetGUI()->getDevice()->SetPixelShaderConstantF(0, (float*)&color, 1));
-					m_pDoc->getTranslationManager()->pushMatrix(SMMatrixTranslation(_x - 1.0f, _y, 0.0f));
+					m_pDoc->getTranslationManager()->pushMatrix(SMMatrixTranslation(_x - 1.0f, _y + 2, 0.0f));
 				//	DX_CALL(GetGUI()->getDevice()->SetFVF(D3DFVF_XYZ));
 					IGXRenderBuffer *pRB = m_pDoc->getDesktopStack()->getQuadRenderBufferXYZ((float3_t*)a);
 					pCtx->setRenderBuffer(pRB);

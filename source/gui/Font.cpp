@@ -124,12 +124,13 @@ namespace gui
 		}
 	}
 
-	void CFont::load(IFontManager *pFontManager, CTextureManager *pTextureManager, const WCHAR * szFont, UINT size, STYLE style, int iBlurRadius)
+	void CFont::load(IFontManager *pFontManager, CTextureManager *pTextureManager, const WCHAR * szFont, UINT size, STYLE style, int iBlurRadius, float fScale)
 	{
 		if(size > 160)
 		{
 			size = 160;
 		}
+		m_fScale = fScale;
 		m_pFontManager = pFontManager;
 		m_pTextureManager = pTextureManager;
 		m_style = style;
@@ -153,10 +154,25 @@ namespace gui
 		}
 
 		fread(&m_header, sizeof(SXFheader), 1, pF);
+
+		if(m_header.magick != SXF_MAGICK || m_header.version != SXF_VERSION)
+		{
+			m_header = SXFheader();
+			fclose(pF);
+
+			printf(COLOR_YELLOW "[Warning]: Invalid magick or version \"%s\"\nRegenerating font\n" COLOR_RESET, String(file).c_str());
+			generateBase();
+			m_header.size = size;
+			return;
+		}
+
 		CharDesc cd;
 		for(int i = 0; i < m_header.charCount; i++)
 		{
 			fread(&cd, sizeof(CharDesc), 1, pF);
+
+			applyScale(&cd);
+
 			m_chars[cd.id] = cd;
 		}
 		UINT w, h;
@@ -471,6 +487,7 @@ namespace gui
 			cd.xoffset = list[i].xo;
 			//cd.yoffset = m_iFontSize - list[i].yo - 15.0f / 72.0f * (float)m_iFontSize;
 			cd.yoffset = m_iFontSize - list[i].yo;
+
 			m_chars[cd.id] = cd;
 		}
 
@@ -573,6 +590,11 @@ namespace gui
 		save(); // TODO: Find better place to call that
 
 		// TODO: Add rebuild handler to call Layout on the document
+
+		for(UINT i = 0; i < list.size(); i++)
+		{
+			applyScale(&m_chars[list[i].c]);
+		}
 
 
 		//printf("_heapchk() = %d\n", _heapchk());
@@ -976,10 +998,18 @@ namespace gui
 		return(NULL);
 	}
 
+	void CFont::applyScale(CharDesc *pCd)
+	{
+		pCd->width = pCd->width / m_fScale;
+		pCd->height = pCd->height / m_fScale;
+		pCd->xoffset = pCd->xoffset / m_fScale;
+		pCd->yoffset = pCd->yoffset / m_fScale;
+		pCd->xadvantage = pCd->xadvantage / m_fScale;
+	}
 	void CFont::getStringMetrics(const StringW & str, UINT * width, UINT * height, UINT * vertexCount, UINT * indexCount, UINT * strCount, char_rects * pcr)
 	{
-		UINT w = 0;
-		UINT _w = 0;
+		float w = 0;
+		float _w = 0;
 		UINT h = m_iFontSize;
 		UINT vc = 0;
 		UINT ic = 0;
@@ -1304,12 +1334,13 @@ namespace gui
 		mem_release(m_pFontIB);
 	}
 
-	CFont* IFontManager::getFont(const WCHAR *szName, UINT size, CFont::STYLE style, int iBlurRadius)
+	CFont* IFontManager::getFont(const WCHAR *szName, UINT size, CFont::STYLE style, int iBlurRadius, float fScale)
 	{
-		StringW n = StringW(szName) + L"_" + StringW((int)size) + L"+" + StringW((int)style) + L"-" + StringW(iBlurRadius);
+		size = (UINT)((float)size * fScale);
+		StringW n = StringW(szName) + L"_" + StringW((int)size) + L"+" + StringW((int)style) + L"-" + StringW(iBlurRadius) + L"~" + StringW(fScale);
 		if(!m_mFonts.KeyExists(n))
 		{
-			m_mFonts[n].load(this, m_pTextureManager, szName, size, style, iBlurRadius);
+			m_mFonts[n].load(this, m_pTextureManager, szName, size, style, iBlurRadius, fScale);
 		}
 		return(&m_mFonts[n]);
 	}
