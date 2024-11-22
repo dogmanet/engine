@@ -110,7 +110,7 @@ namespace gui
 			void updateStyleSubtree(IDOMnode *pStartNode);
 			void updateStyles(float fTimeDelta);
 
-			IDOMnodeCollection querySelectorSimple(const css::ICSSrule::ICSSselectorItem *sel);
+			void querySelectorSimple(const css::ICSSrule::ICSSselectorItem *sel, IDOMnodeCollection *pResult);
 
 			void buildRenderThree();
 

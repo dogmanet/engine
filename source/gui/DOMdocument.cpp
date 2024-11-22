@@ -368,9 +368,9 @@ namespace gui
 			m_IndexByTagName[pNode->m_iNodeId].push_back(pNode);
 		}
 
-		IDOMnodeCollection CDOMdocument::querySelectorSimple(const css::ICSSrule::ICSSselectorItem * sel)
+		void CDOMdocument::querySelectorSimple(const css::ICSSrule::ICSSselectorItem *sel, IDOMnodeCollection *pResult)
 		{
-			IDOMnodeCollection current;
+			IDOMnodeCollection &current = *pResult;
 			if(sel->dom_id > 0)
 			{
 				current.push_back(getElementById(sel->dom_id));
@@ -383,19 +383,11 @@ namespace gui
 					const IDOMnodeCollection * c = getElementsByClass(cid);
 					if(c)
 					{
+						current.reserve(current.size() + c->size());
 						for(UINT l = 0; l < c->size(); l++)
 						{
 							IDOMnode * n = (*c)[l];
-							bool bFound = false;
-							for(UINT m = 0; m < current.size(); m++)
-							{
-								if(current[m] == n)
-								{
-									bFound = true;
-									break;
-								}
-							}
-							if(!bFound)
+							if(current.indexOf(n) < 0)
 							{
 								current.push_back(n);
 							}
@@ -408,19 +400,12 @@ namespace gui
 				const IDOMnodeCollection * c = getElementsByTag(sel->dom_tag);
 				if(c)
 				{
+					current.reserve(current.size() + c->size());
+
 					for(UINT l = 0; l < c->size(); l++)
 					{
 						IDOMnode * n = (*c)[l];
-						bool bFound = false;
-						for(UINT m = 0; m < current.size(); m++)
-						{
-							if(current[m] == n)
-							{
-								bFound = true;
-								break;
-							}
-						}
-						if(!bFound)
+						if(current.indexOf(n) < 0)
 						{
 							current.push_back(n);
 						}
@@ -438,19 +423,12 @@ namespace gui
 						const IDOMnodeCollection * c = getElementsByPseudoClass(cid);
 						if(c)
 						{
+							current.reserve(current.size() + c->size());
+
 							for(UINT l = 0; l < c->size(); l++)
 							{
 								IDOMnode * n = (*c)[l];
-								bool bFound = false;
-								for(UINT m = 0; m < current.size(); m++)
-								{
-									if(current[m] == n)
-									{
-										bFound = true;
-										break;
-									}
-								}
-								if(!bFound)
+								if(current.indexOf(n) < 0)
 								{
 									current.push_back(n);
 								}
@@ -468,7 +446,8 @@ namespace gui
 				{
 					if(!current[k] || ((CDOMnode*)current[k])->m_iDOMid != sel->dom_id)
 					{
-						current.erase(k);
+						current[k] = current[current.size() - 1];
+						current.erase(current.size() - 1);
 						k--;
 					}
 				}
@@ -493,7 +472,8 @@ namespace gui
 					}
 					if(matches != sel->dom_class.size())
 					{
-						current.erase(k);
+						current[k] = current[current.size() - 1];
+						current.erase(current.size() - 1);
 						k--;
 					}
 				}
@@ -505,7 +485,8 @@ namespace gui
 				{
 					if((((CDOMnode*)current[k])->m_pseudoclasses & sel->pseudoclass) != sel->pseudoclass)
 					{
-						current.erase(k);
+						current[k] = current[current.size() - 1];
+						current.erase(current.size() - 1);
 						k--;
 					}
 				}
@@ -518,30 +499,37 @@ namespace gui
 				{
 					if(((CDOMnode*)current[k])->m_iNodeId != sel->dom_tag)
 					{
-						current.erase(k);
+						current[k] = current[current.size() - 1];
+						current.erase(current.size() - 1);
 						k--;
 					}
 				}
 			}
-			return(current);
 		}
 
 		IDOMnodeCollection CDOMdocument::querySelectorAll(const css::ICSSRuleSet * rules)
 		{
+			XPROFILE_FUNCTION();
+
 			IDOMnodeCollection result;
+			IDOMnodeCollection current, prev;
 
 			for(UINT i = 0; i < rules->size(); i++)
 			{
 				const css::ICSSrule * rule = &(*rules)[i];
 
-				IDOMnodeCollection current, prev;
+				prev.clearFast();
+
 				css::ICSSrule::CONNECTOR connector = css::ICSSrule::CONNECTOR_NONE;
 				for(UINT j = 0; j < rule->m_selectors.size(); j++)
 				{
 					const css::ICSSrule::ICSSselectorItem * sel = &rule->m_selectors[j];
+
+					current.clearFast();
+
 					if(connector == css::ICSSrule::CONNECTOR_NONE)
 					{
-						current = querySelectorSimple(sel);
+						querySelectorSimple(sel, &current);
 					}
 					else
 					{
@@ -549,7 +537,7 @@ namespace gui
 						{
 							return(prev);
 						}
-						current = querySelectorSimple(sel);
+						querySelectorSimple(sel, &current);
 						for(UINT k = 0; k < current.size(); k++)
 						{
 							bool bFound = false;
@@ -566,7 +554,8 @@ namespace gui
 								}
 								if(!bFound)
 								{
-									current.erase(k);
+									current[k] = current[current.size() - 1];
+									current.erase(current.size() - 1);
 									k--;
 								}
 								break;
@@ -581,7 +570,8 @@ namespace gui
 								}
 								if(!bFound)
 								{
-									current.erase(k);
+									current[k] = current[current.size() - 1];
+									current.erase(current.size() - 1);
 									k--;
 								}
 								break;
@@ -597,7 +587,8 @@ namespace gui
 								}
 								if(!bFound)
 								{
-									current.erase(k);
+									current[k] = current[current.size() - 1];
+									current.erase(current.size() - 1);
 									k--;
 								}
 								break;
@@ -612,7 +603,8 @@ namespace gui
 								}
 								if(!bFound)
 								{
-									current.erase(k);
+									current[k] = current[current.size() - 1];
+									current.erase(current.size() - 1);
 									k--;
 								}
 								break;
@@ -620,12 +612,9 @@ namespace gui
 						}
 					}
 					connector = sel->connector;
-					prev = current;
+					prev.swap(current);
 				}
-				for(UINT k = 0; k < current.size(); k++)
-				{
-					result.push_back(current[k]);
-				}
+				result.append(prev);
 			}
 
 			return(result);
@@ -676,61 +665,71 @@ namespace gui
 				return;
 			}
 			bool IsIncremental = m_UpdateStyleQueue[0] != m_pRootNode; // incremental update
-			for(int i = 0, l = m_UpdateStyleQueue.size(); i < l; ++i)
 			{
-				if(IsIncremental)
+				XPROFILE_SECTION("StoreStyles");
+				for(int i = 0, l = m_UpdateStyleQueue.size(); i < l; ++i)
 				{
-					((CDOMnode*)m_UpdateStyleQueue[i])->storeStyles();
+					if(IsIncremental)
+					{
+						((CDOMnode*)m_UpdateStyleQueue[i])->storeStyles();
+					}
+					((CDOMnode*)m_UpdateStyleQueue[i])->resetStyles();
 				}
-				((CDOMnode*)m_UpdateStyleQueue[i])->resetStyles();
 			}
 
 			UINT icount = m_pCSS->m_styleOrder.size();
 			css::ICSSstyleSet * css;
-			for(UINT i = 0; i < icount; i++)
 			{
-				css = m_pCSS->m_styleOrder[i];
-				if(css->isEnabledForWidth(m_pDesktopStack->getScreenWidth()))
+				XPROFILE_SECTION("ApplyRules");
+				for(UINT i = 0; i < icount; i++)
 				{
-					UINT iRuleCount = css->m_pRules.size();
-					css::ICSSstyle * pStyle;
-					for(UINT j = 0; j < iRuleCount; j++)
+					css = m_pCSS->m_styleOrder[i];
+					if(css->isEnabledForWidth(m_pDesktopStack->getScreenWidth()))
 					{
-						pStyle = &css->m_pRules[j];
-						IDOMnodeCollection els = querySelectorAll(&((css::CCSSstyle*)pStyle)->m_pRules);
-						UINT iNodeCount = els.size();
-						for(UINT k = 0; k < iNodeCount; k++)
+						UINT iRuleCount = css->m_pRules.size();
+						css::ICSSstyle * pStyle;
+						for(UINT j = 0; j < iRuleCount; j++)
 						{
-							bool cf = false;
-							for(int ii = 0, l = m_UpdateStyleQueue.size(); ii < l && !cf; ++ii)
+							pStyle = &css->m_pRules[j];
+							IDOMnodeCollection els = querySelectorAll(&((css::CCSSstyle*)pStyle)->m_pRules);
+							UINT iNodeCount = els.size();
+							for(UINT k = 0; k < iNodeCount; k++)
 							{
-								if(!IsIncremental || els[k] == m_UpdateStyleQueue[ii] || els[k]->isChildOf(m_UpdateStyleQueue[ii]))
+								bool cf = false;
+								for(int ii = 0, l = m_UpdateStyleQueue.size(); ii < l && !cf; ++ii)
 								{
-									CDOMnode::applyCSSrules(pStyle, (CDOMnode*)els[k]);
-									cf = true;
+									if(!IsIncremental || els[k] == m_UpdateStyleQueue[ii] || els[k]->isChildOf(m_UpdateStyleQueue[ii]))
+									{
+										CDOMnode::applyCSSrules(pStyle, (CDOMnode*)els[k]);
+										cf = true;
+									}
 								}
 							}
 						}
 					}
 				}
 			}
-			for(int i = 0, l = m_UpdateStyleQueue.size(); i < l; ++i)
 			{
-				if(m_UpdateStyleQueue[i]->parentNode())
+				XPROFILE_SECTION("ApplyChildStyles");
+				for(int i = 0, l = m_UpdateStyleQueue.size(); i < l; ++i)
 				{
-					((CDOMnode*)m_UpdateStyleQueue[i]->parentNode())->applyChildStyle(true);
-				}
-				else
-				{
-					((CDOMnode*)m_UpdateStyleQueue[i])->applyChildStyle();
+					if(m_UpdateStyleQueue[i]->parentNode())
+					{
+						((CDOMnode*)m_UpdateStyleQueue[i]->parentNode())->applyChildStyle(true);
+					}
+					else
+					{
+						((CDOMnode*)m_UpdateStyleQueue[i])->applyChildStyle();
+					}
 				}
 			}
-
 
 			if(IsIncremental) // incremental update
 			{
 				if(m_pRTroot)
 				{
+					XPROFILE_SECTION("UpdateTransition");
+
 					for(int i = 0, l = m_UpdateStyleQueue.size(); i < l; ++i)
 					{
 						((CDOMnode*)m_UpdateStyleQueue[i])->captureStyleChanges(this);
@@ -888,6 +887,8 @@ namespace gui
 
 		bool CDOMdocument::updateTransitions(float fTimeDelta)
 		{
+			XPROFILE_FUNCTION();
+
 			bool ret = false;
 			for(int i = 0, l = m_aTransitionUpdateList.size(); i < l; ++i)
 			{
@@ -1880,7 +1881,18 @@ namespace gui
 				m_bWantScrollEvents = value.length() != 0;
 			}
 
-			m_mAttributes[name] = value;
+			int idx = m_aAttributes.indexOf(name, [](const Attribute &a, const StringW &b){
+				return(a.wsName == b);
+			});
+			if(idx >= 0)
+			{
+				m_aAttributes[idx].wsValue = value;
+			}
+			else
+			{
+				m_aAttributes.push_back({name, value});
+			}
+			//m_mAttributes[name] = value;
 		}
 
 		void CDOMnode::appendHTML(const StringW &wsHTML, bool regen, IDOMnode *pInsertBefore)
@@ -1928,9 +1940,11 @@ namespace gui
 							pEl->m_pPrevSibling = NULL;
 						}
 
+						IDOMnode *pTmpNode;
 						for(int j = l - 1; j >= i; --j)
 						{
-							m_vChilds[j + 1] = m_vChilds[j];
+							pTmpNode = m_vChilds[j]; // realloc could happend and link will be destroyed, so no direct assign
+							m_vChilds[j + 1] = pTmpNode;
 						}
 
 						m_vChilds[i] = pEl;

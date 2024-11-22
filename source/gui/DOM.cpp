@@ -85,9 +85,13 @@ namespace gui
 				wprintf(L"  ");
 			}
 			wprintf(L"<%s", CDOMnode::getNodeNameById(m_iNodeId).c_str());
-			for(AssotiativeArray<StringW, StringW>::Iterator i = m_mAttributes.begin(); i; ++i)
+			/*for(AssotiativeArray<StringW, StringW>::Iterator i = m_mAttributes.begin(); i; ++i)
 			{
 				wprintf(L" %s=\"%s\"", i.first->c_str(), i.second->c_str());
+			}*/
+			fora(i, m_aAttributes)
+			{
+				wprintf(L" %s=\"%s\"", m_aAttributes[i].wsName.c_str(), m_aAttributes[i].wsValue.c_str());
 			}
 			wprintf(L">\n");
 			for(int i = 0, s = m_vChilds.size(); i < s; i++)
@@ -141,10 +145,17 @@ namespace gui
 		
 		const StringW & CDOMnode::getAttribute(const StringW & name)
 		{
-			if(m_mAttributes.KeyExists(name))
+			int idx = m_aAttributes.indexOf(name, [](const Attribute &a, const StringW &b){
+				return(a.wsName == b); 
+			});
+			if(idx >= 0)
+			{
+				return(m_aAttributes[idx].wsValue);
+			}
+			/*if(m_mAttributes.KeyExists(name))
 			{
 				return(m_mAttributes[name]);
-			}
+			}*/
 			static StringW empt(L"");
 			return(empt);
 		}

@@ -256,7 +256,13 @@ namespace gui
 
 			UINT m_pseudoclasses = 0;
 
-			AssotiativeArray<StringW, StringW> m_mAttributes;
+			//AssotiativeArray<StringW, StringW> m_mAttributes;
+			struct Attribute
+			{
+				StringW wsName;
+				StringW wsValue;
+			};
+			Array<Attribute> m_aAttributes;
 
 			css::CCSSstyle m_css;
 			css::CCSSstyle m_cssOld;
