@@ -2229,6 +2229,19 @@ namespace gui
 					{
 						m_iScrollTopMax = hNew - m_iHeight;
 						m_bNeedCut = true;
+						if(m_pNode->getStyle()->overflow_y->isSet())
+						{
+							switch(m_pNode->getStyle()->overflow_y->getInt())
+							{
+							case css::ICSSproperty::OVERFLOW_HIDDEN:
+								m_iScrollTopMax = 0;
+								break;
+							case css::ICSSproperty::OVERFLOW_VISIBLE:
+								m_bNeedCut = false;
+								m_iScrollTopMax = 0;
+								break;
+							}
+						}
 					}
 				}
 				if(bChanged)

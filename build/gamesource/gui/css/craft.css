@@ -97,14 +97,6 @@
 	font-size: 0.58vw;
 }
 
-.item_count {
-	font-size: 0.6vw;
-	top: 4vw;
-	right: 0;
-	text-align: right;
-	position: absolute;
-}
-
 .cell {
     display: inline-block;
 	width: 5vw; 
@@ -138,6 +130,7 @@
 	padding: 0.5vw;
 	height: 6vw;
 	width: 6vw;
+	overflow-y: hidden;
 }
 
 #main_cell {

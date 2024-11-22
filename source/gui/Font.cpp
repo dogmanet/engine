@@ -148,21 +148,21 @@ namespace gui
 		if(!pF)
 		{
 			printf(COLOR_YELLOW "[Warning]: Unable to open \"%s\" file to reading\nGenerating font\n" COLOR_RESET, String(file).c_str());
-			generateBase();
 			m_header.size = size;
+			generateBase();
 			return;
 		}
 
 		fread(&m_header, sizeof(SXFheader), 1, pF);
 
-		if(m_header.magick != SXF_MAGICK || m_header.version != SXF_VERSION)
+		if(m_header.magick != SXF_MAGICK || m_header.version != SXF_VERSION || m_header.size != size)
 		{
 			m_header = SXFheader();
 			fclose(pF);
 
+			m_header.size = size;
 			printf(COLOR_YELLOW "[Warning]: Invalid magick or version \"%s\"\nRegenerating font\n" COLOR_RESET, String(file).c_str());
 			generateBase();
-			m_header.size = size;
 			return;
 		}
 
@@ -486,7 +486,7 @@ namespace gui
 			cd.xadvantage = list[i].xa >> 6;
 			cd.xoffset = list[i].xo;
 			//cd.yoffset = m_iFontSize - list[i].yo - 15.0f / 72.0f * (float)m_iFontSize;
-			cd.yoffset = m_iFontSize - list[i].yo;
+			cd.yoffset = (float)m_iFontSize - (float)list[i].yo;
 
 			m_chars[cd.id] = cd;
 		}
@@ -1000,11 +1000,14 @@ namespace gui
 
 	void CFont::applyScale(CharDesc *pCd)
 	{
-		pCd->width = pCd->width / m_fScale;
-		pCd->height = pCd->height / m_fScale;
-		pCd->xoffset = pCd->xoffset / m_fScale;
-		pCd->yoffset = pCd->yoffset / m_fScale;
-		pCd->xadvantage = pCd->xadvantage / m_fScale;
+		if(m_fScale != 1.0f)
+		{
+			pCd->width = pCd->width / m_fScale;
+			pCd->height = pCd->height / m_fScale;
+			pCd->xoffset = pCd->xoffset / m_fScale;
+			pCd->yoffset = pCd->yoffset / m_fScale;
+			pCd->xadvantage = pCd->xadvantage / m_fScale;
+		}
 	}
 	void CFont::getStringMetrics(const StringW & str, UINT * width, UINT * height, UINT * vertexCount, UINT * indexCount, UINT * strCount, char_rects * pcr)
 	{
