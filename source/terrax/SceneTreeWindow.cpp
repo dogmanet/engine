@@ -298,6 +298,13 @@ void CSceneTreeWindow::onObjectRemoved(IXEditorObject *pObject)
 		(m_isFilterActive ? m_treeAdapterFiltered : m_treeAdapter).onObjectRemoved(pObject);
 	}
 }
+void CSceneTreeWindow::onObjectSelected(IXEditorObject *pObject)
+{
+	if(m_pWindow->isVisible())
+	{
+		(m_isFilterActive ? m_treeAdapterFiltered : m_treeAdapter).onObjectSelected(pObject);
+	}
+}
 void CSceneTreeWindow::onSelectionChanged()
 {
 	if(m_pWindow->isVisible())
@@ -737,6 +744,18 @@ void CSceneTreeAdapter::onNodeEdited(UITreeNodeHandle hNode, const char *szNewTe
 	XExecCommand(pCmd);
 }
 
+void CSceneTreeAdapter::ensureExpanded(UITreeNodeHandle hNode)
+{
+	IXEditorObject *pObj = (IXEditorObject*)hNode;
+	
+	if((pObj = XGetObjectParent(pObj)))
+	{
+		ensureExpanded((UITreeNodeHandle)pObj);
+
+		onNodeExpanded((UITreeNodeHandle)pObj, true, false);
+	}
+}
+
 void CSceneTreeAdapter::onObjectsetChanged()
 {
 	m_rootNode.aChildren.clearFast();
@@ -809,10 +828,19 @@ void CSceneTreeAdapter::onObjectRemoved(IXEditorObject *pObject)
 		m_pTree->notifyDatasetChanged();
 	}
 }
-
+void CSceneTreeAdapter::onObjectSelected(IXEditorObject *pObject)
+{
+	m_pScrollTo = pObject;
+}
 void CSceneTreeAdapter::onSelectionChanged()
 {
 	m_pTree->notifySelectionChanged();
+
+	if(m_pScrollTo)
+	{
+		m_pTree->scrollIntoView((UITreeNodeHandle)m_pScrollTo);
+		m_pScrollTo = NULL;
+	}
 }
 
 bool CSceneTreeAdapter::hasSelection()

@@ -266,6 +266,7 @@ void XUpdateSelectionBound();
 
 bool XRayCast(X_WINDOW_POS wnd);
 bool XIsMouseInSelection(X_WINDOW_POS wnd);
+bool XIsMouseInBound(X_WINDOW_POS wnd, const float3_t &vBoundMin, const float3_t &vBoundMax);
 
 void XUpdatePropWindow();
 void XUpdateGizmos();

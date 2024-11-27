@@ -545,6 +545,37 @@ void XMETHODCALLTYPE CUITree::setScroll(UINT uScroll)
 	m_pItems->setScrollTop((float)uScroll);
 }
 
+void XMETHODCALLTYPE CUITree::scrollIntoView(UITreeNodeHandle hNode)
+{
+	int idx = m_aRows.indexOf(hNode, [](const GridRow &row, UITreeNodeHandle hNode){
+		return(row.pTreeNode->hNode == hNode);
+	});
+	if(idx >= 0 && m_aRows[idx].pTreeNode->isVisible)
+	{
+		return;
+	}
+
+	bool bFirstStep = true;
+	while(true)
+	{
+		UINT uPos = 0;
+		if(findNodePos(&m_topLevelNode, hNode, &uPos))
+		{
+			UINT uRowHeight = 23; TODO("Query actual value");
+			setScroll(uPos * uRowHeight);
+			return;
+		}
+
+		if(!bFirstStep)
+		{
+			return;
+		}
+		m_pAdapter->ensureExpanded(hNode);
+		syncNodes();
+		bFirstStep = false;
+	}
+}
+
 void CUITree::syncNodes()
 {
 	TreeNode copy = m_topLevelNode;
@@ -570,7 +601,12 @@ void CUITree::syncNodes()
 		m_topLevelNode = copy;
 	}
 
-	if(uOldAnchorPos)
+	if(m_hEditNode)
+	{
+		scrollIntoView(m_hEditNode);
+		m_hEditNode = NULL;
+	}
+	else if(uOldAnchorPos)
 	{
 		UINT uAnchorPos = 0;
 		if(hAnchor && !findNodePos(&m_topLevelNode, hAnchor, &uAnchorPos))
@@ -682,6 +718,30 @@ void CUITree::updateVisibleNodes(bool bIncremental)
 
 	UINT uCounter = 0;
 	Array<bool> aLines;
+	{
+		XPROFILE_SECTION("cleanRows");
+		fora(i, m_aRows)
+		{
+			GridRow &row = m_aRows[i];
+			
+			while(row.pPrefixNode->getChilds()->size())
+			{
+				row.pPrefixNode->removeChild(row.pPrefixNode->getChilds()[0][0]);
+			}
+
+			Array<GridCell> &aCells = row.aCells;
+			fora(j, aCells)
+			{
+				if(aCells[j].pNode->getChilds()->size() > 1 || (aCells[j].pNode->getChilds()->size() == 1 && !aCells[j].pNode->getChilds()[0][0]->isTextNode()))
+				{
+					while(aCells[j].pNode->getChilds()->size())
+					{
+						aCells[j].pNode->removeChild(aCells[j].pNode->getChilds()[0][0], false);
+					}
+				}
+			}
+		}
+	}
 	{
 		XPROFILE_SECTION("bindRows");
 		bindRows(&m_topLevelNode, uBindFirst, uBindLast, uVisFirst, uVisLast, &uCounter, aLines, bIncremental);
@@ -952,10 +1012,12 @@ void CUITree::bindRows(TreeNode *pParentNode, UINT uBindFirst, UINT uBindLast, U
 				//row.pPrefixNode->classToggle(L"-expandable", pNode->hasChildren);
 				//row.pPrefixNode->classToggle(L"-expanded", pNode->isExpanded);
 
+#if 0
 				while(row.pPrefixNode->getChilds()->size())
 				{
 					row.pPrefixNode->removeChild(row.pPrefixNode->getChilds()[0][0]);
 				}
+#endif
 
 				gui::dom::IDOMnode *pLineNode;
 				for(UINT i = 0; i < uDepth - 1; ++i)
@@ -1019,10 +1081,11 @@ void CUITree::bindRows(TreeNode *pParentNode, UINT uBindFirst, UINT uBindLast, U
 
 					if(isRichView)
 					{
-						aCells[i].pNode->setHTML(wsCell/*, false*/);
+						aCells[i].pNode->setHTML(wsCell, false);
 					}
 					else
 					{
+#if 0
 						if(aCells[i].pNode->getChilds()->size() > 1 || (aCells[i].pNode->getChilds()->size() == 1 && !aCells[i].pNode->getChilds()[0][0]->isTextNode()))
 						{
 							while(aCells[i].pNode->getChilds()->size())
@@ -1030,6 +1093,7 @@ void CUITree::bindRows(TreeNode *pParentNode, UINT uBindFirst, UINT uBindLast, U
 								aCells[i].pNode->removeChild(aCells[i].pNode->getChilds()[0][0], false);
 							}
 						}
+#endif
 						aCells[i].pNode->setText(wsCell);
 					}
 				}

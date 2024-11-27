@@ -81,3 +81,14 @@ void CCommandMove::setCurrentPos(const float3 &vPos)
 	}
 	//XUpdatePropWindow();
 }
+
+void CCommandMove::setReferenceBound(const float3_t &vBoundMin, const float3_t &vBoundMax)
+{
+	m_vRefBoundMin = vBoundMin;
+	m_vRefBoundMax = vBoundMax;
+}
+void CCommandMove::getReferenceBound(float3_t *pvBoundMin, float3_t *pvBoundMax)
+{
+	*pvBoundMin = m_vRefBoundMin;
+	*pvBoundMax = m_vRefBoundMax;
+}

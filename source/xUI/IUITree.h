@@ -27,6 +27,8 @@ public:
 	virtual bool onMultiSelected(UITreeNodeHandle *aNodes, UINT uNodeCount, bool isAdditive) = 0;
 
 	virtual void onNodeEdited(UITreeNodeHandle hNode, const char *szNewText) = 0;
+
+	virtual void ensureExpanded(UITreeNodeHandle hNode) = 0; // Check all node's parents is expanded
 };
 
 //#############################################################################
@@ -44,6 +46,8 @@ public:
 
 	virtual UINT XMETHODCALLTYPE getScroll() = 0;
 	virtual void XMETHODCALLTYPE setScroll(UINT uScroll) = 0;
+
+	virtual void XMETHODCALLTYPE scrollIntoView(UITreeNodeHandle hNode) = 0;
 };
 
 #endif

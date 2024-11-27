@@ -759,8 +759,8 @@ div.grid-cell {
 	
 	overflow: hidden;
 	
-	transition-property: color, background-color;
-	transition-duration: 0.1s, 0.1s;
+	//transition-property: color, background-color;
+	//transition-duration: 0.1s, 0.1s;
 	
 	//border-width: 2px;
 	//border-style: solid;

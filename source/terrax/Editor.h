@@ -86,6 +86,7 @@ public:
 	void onObjectNameChanged(IXEditorObject *pObject = NULL);
 	void onObjectAdded(IXEditorObject *pObject);
 	void onObjectRemoved(IXEditorObject *pObject);
+	void onObjectSelected(IXEditorObject *pObject);
 	void onSelectionChanged();
 
 	void showSceneTree();

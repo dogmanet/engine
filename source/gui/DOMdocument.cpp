@@ -728,15 +728,24 @@ namespace gui
 			{
 				if(m_pRTroot)
 				{
-					XPROFILE_SECTION("UpdateTransition");
 
-					for(int i = 0, l = m_UpdateStyleQueue.size(); i < l; ++i)
 					{
-						((CDOMnode*)m_UpdateStyleQueue[i])->captureStyleChanges(this);
+						XPROFILE_SECTION("IncCaptureChanges");
+						for(int i = 0, l = m_UpdateStyleQueue.size(); i < l; ++i)
+						{
+							((CDOMnode*)m_UpdateStyleQueue[i])->captureStyleChanges(this);
+						}
 					}
 					// update transitions
-					updateTransitions(fTimeDelta);
-					m_pRTroot->updateStyles();
+					{
+						XPROFILE_SECTION("IncUpdateTransition");
+						updateTransitions(fTimeDelta);
+					}
+
+					{
+						XPROFILE_SECTION("IncUpdateStyles");
+						m_pRTroot->updateStyles();
+					}
 
 					//					m_pRTroot->DebugPrint();
 				}

@@ -484,6 +484,10 @@ void CEditor::onObjectRemoved(IXEditorObject *pObject)
 {
 	m_pSceneTreeWindow->onObjectRemoved(pObject);
 }
+void CEditor::onObjectSelected(IXEditorObject *pObject)
+{
+	m_pSceneTreeWindow->onObjectSelected(pObject);
+}
 void CEditor::onSelectionChanged()
 {
 	m_pSceneTreeWindow->onSelectionChanged();

@@ -31,10 +31,13 @@ public:
 
 	void onNodeEdited(UITreeNodeHandle hNode, const char *szNewText) override;
 
+	void ensureExpanded(UITreeNodeHandle hNode) override;
+
 	void onObjectsetChanged();
 	void onObjectNameChanged(IXEditorObject *pObject = NULL);
 	void onObjectAdded(IXEditorObject *pObject);
 	void onObjectRemoved(IXEditorObject *pObject);
+	void onObjectSelected(IXEditorObject *pObject);
 	void onSelectionChanged();
 
 	bool hasSelection();
@@ -58,6 +61,8 @@ private:
 	//Array<bool> m_aSelected;
 
 	TreeNode m_rootNode;
+
+	IXEditorObject *m_pScrollTo = NULL; // object to scroll to when selection done
 
 	String m_sFilter;
 	bool m_hasFilter = false;
@@ -91,6 +96,7 @@ public:
 	void onObjectNameChanged(IXEditorObject *pObject = NULL);
 	void onObjectAdded(IXEditorObject *pObject);
 	void onObjectRemoved(IXEditorObject *pObject);
+	void onObjectSelected(IXEditorObject *pObject);
 	void onSelectionChanged();
 
 	void update(float dt);

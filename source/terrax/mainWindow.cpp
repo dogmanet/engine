@@ -2876,6 +2876,7 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 								//pObj->setSelected(true);
 								bUse = true;
 								pCmd->addSelected(pObj);
+								g_pEditor->onObjectSelected(pObj);
 							}
 						}
 						else
@@ -2884,6 +2885,7 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 							{
 								bUse = true;
 								pCmd->addSelected(pObj);
+								g_pEditor->onObjectSelected(pObj);
 								//pObj->setSelected(sel);
 							}
 							else if(pObj->isSelected() && !sel)
@@ -3298,7 +3300,7 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 				{
 					break;
 				}
-
+				
 				if(!XIsMouseInSelection(g_xState.activeWindow) || (wParam & MK_CONTROL))
 				{
 					CCommandSelect *pCmd = new CCommandSelect();
@@ -3331,6 +3333,7 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 									else
 									{
 										pCmd->addSelected(pObj);
+										g_pEditor->onObjectSelected(pObj);
 									}
 									bUse = true;
 									wasSel = true;
@@ -3346,6 +3349,7 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 								else if(!pObj->isSelected() && sel && !wasSel)
 								{
 									pCmd->addSelected(pObj);
+									g_pEditor->onObjectSelected(pObj);
 									bUse = true;
 									wasSel = true;
 								}
@@ -3381,12 +3385,37 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 					}
 					s_pMoveCmd->setStartPos(XSnapToGrid(vStartPos));
 
+					bool bReferenceFound = false;
+
+					float3 vBoundMin, vBoundMax;
 					XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
-						if(pObj->isSelected() && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent))
+						if(pObj->isSelected())
 						{
-							s_pMoveCmd->addObject(pObj);
+							if(g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent)
+							{
+								s_pMoveCmd->addObject(pObj);
+							}
+							if(!bReferenceFound && g_xConfig.m_bSnapGrid)
+							{
+								pObj->getBound(&vBoundMin, &vBoundMax);
+								if(XIsMouseInBound(g_xState.activeWindow, vBoundMin, vBoundMax))
+								{
+									bReferenceFound = true;
+								}
+							}
 						}
 					});
+
+					if(!bReferenceFound)
+					{
+						vBoundMin = g_xState.vSelectionBoundMin;
+						vBoundMax = g_xState.vSelectionBoundMax;
+					}
+
+					s_pMoveCmd->setReferenceBound(vBoundMin, vBoundMax);
+
+					
+
 					// if mouse in selected object
 					// start move
 				}
@@ -3579,7 +3608,108 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 
 					if(s_pMoveCmd)
 					{
-						s_pMoveCmd->setCurrentPos(XSnapToGrid(vCurPos));
+						if(g_xConfig.m_bSnapGrid)
+						{
+							float3_t vBoundMin, vBoundMax;
+							s_pMoveCmd->getReferenceBound(&vBoundMin, &vBoundMax);
+							
+							float3_t vCenterPoint = (vBoundMin + vBoundMax) * 0.5f;
+							float3_t vBoundSize = (vBoundMax - vBoundMin);
+							switch(xCurView)
+							{
+							case X2D_TOP:
+								vBoundSize.y = 0.0f;
+								vCenterPoint.y = 0.0f;
+								break;
+							case X2D_FRONT:
+								vBoundSize.z = 0.0f;
+								vCenterPoint.z = 0.0f;
+								break;
+							case X2D_SIDE:
+								vBoundSize.x = 0.0f;
+								vCenterPoint.x = 0.0f;
+								break;
+							}
+
+							float3_t vSnapDelta = XSnapToGrid(vCenterPoint) - vCenterPoint;
+
+							float fGridStep = XGetGridStep();
+							float3 vSnappedPos = XSnapToGrid(vCurPos);
+							float3 vDeltaPos = vCurPos - vSnappedPos;
+
+							float fThreshold = fGridStep * (1.0f / 6.0f);
+							float fX = 0.0f;
+							float fY = 0.0f;
+							float fZ = 0.0f;
+							switch(xCurView)
+							{
+							case X2D_TOP: // x/z
+								if(fabsf(vDeltaPos.x) > fThreshold)
+								{
+									fX = vDeltaPos.x > 0.0f ? 1.0f : -1.0f;
+								}
+								if(fabsf(vDeltaPos.z) > fThreshold)
+								{
+									fZ = vDeltaPos.z > 0.0f ? 1.0f : -1.0f;
+								}
+								break;
+							case X2D_FRONT: // x/y
+								if(fabsf(vDeltaPos.x) > fThreshold)
+								{
+									fX = vDeltaPos.x > 0.0f ? 1.0f : -1.0f;
+								}
+								if(fabsf(vDeltaPos.y) > fThreshold)
+								{
+									fY = vDeltaPos.y > 0.0f ? 1.0f : -1.0f;
+								}
+								break;
+							case X2D_SIDE: // z/y
+								if(fabsf(vDeltaPos.z) > fThreshold)
+								{
+									fZ = vDeltaPos.z > 0.0f ? 1.0f : -1.0f;
+								}
+								if(fabsf(vDeltaPos.y) > fThreshold)
+								{
+									fY = vDeltaPos.y > 0.0f ? 1.0f : -1.0f;
+								}
+								break;
+							}
+							if(fX != 0.0f || fY != 0.0f || fZ != 0.0f)
+							{
+								if(fmodf(vBoundSize.x, fGridStep * 2.0f) > fGridStep)
+								{
+									vSnapDelta.x += (fGridStep - fmodf(vBoundSize.x * 0.5f, fGridStep)) * fX;
+								}
+								else
+								{
+									vSnapDelta.x += fmodf(vBoundSize.x * 0.5f, fGridStep) * fX;
+								}
+
+								if(fmodf(vBoundSize.y, fGridStep * 2.0f) > fGridStep)
+								{
+									vSnapDelta.y += (fGridStep - fmodf(vBoundSize.y * 0.5f, fGridStep)) * fY;
+								}
+								else
+								{
+									vSnapDelta.y += fmodf(vBoundSize.y * 0.5f, fGridStep) * fY;
+								}
+
+								if(fmodf(vBoundSize.z, fGridStep * 2.0f) > fGridStep)
+								{
+									vSnapDelta.z += (fGridStep - fmodf(vBoundSize.z * 0.5f, fGridStep)) * fZ;
+								}
+								else
+								{
+									vSnapDelta.z += fmodf(vBoundSize.z * 0.5f, fGridStep) * fZ;
+								}
+							}
+
+							s_pMoveCmd->setCurrentPos(vSnappedPos + vSnapDelta);
+						}
+						else
+						{
+							s_pMoveCmd->setCurrentPos(vCurPos);
+						}
 					}
 					if(s_pScaleCmd)
 					{
@@ -3778,6 +3908,7 @@ void XFrameRun(float fDeltaTime)
 	if(g_pSelectCmd)
 	{
 		g_fSelectDeltaTime += fDeltaTime;
+		IXEditorObject *pSelectedObject = NULL;
 
 		if(g_fSelectDeltaTime >= XSELECT_STEP_DELAY)
 		{
@@ -3807,6 +3938,7 @@ void XFrameRun(float fDeltaTime)
 					{
 						g_aRaytracedItems[g_uSelectedIndex].pObj->setSelected(true);
 						g_pSelectCmd->addSelected(g_aRaytracedItems[g_uSelectedIndex].pObj);
+						pSelectedObject = g_aRaytracedItems[g_uSelectedIndex].pObj;
 					}
 				}
 
@@ -3822,8 +3954,14 @@ void XFrameRun(float fDeltaTime)
 				{
 					g_aRaytracedItems[g_uSelectedIndex].pObj->setSelected(true);
 					g_pSelectCmd->addSelected(g_aRaytracedItems[g_uSelectedIndex].pObj);
+					pSelectedObject = g_aRaytracedItems[g_uSelectedIndex].pObj;
 				}
 			}
+		}
+
+		if(pSelectedObject)
+		{
+			g_pEditor->onObjectSelected(pSelectedObject);
 		}
 	}
 

@@ -27,6 +27,8 @@ public:
 	UINT XMETHODCALLTYPE getScroll() override;
 	void XMETHODCALLTYPE setScroll(UINT uScroll) override;
 
+	void XMETHODCALLTYPE scrollIntoView(UITreeNodeHandle hNode) override;
+
 private:
 	struct GridColumn
 	{

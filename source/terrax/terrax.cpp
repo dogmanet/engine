@@ -2491,9 +2491,9 @@ bool XRayCast(X_WINDOW_POS wnd)
 	return(false);
 }
 
-bool XIsMouseInSelection(X_WINDOW_POS wnd)
+bool XIsMouseInBound(X_WINDOW_POS wnd, const float3_t &vBoundMin, const float3_t &vBoundMax)
 {
-	if(!g_xConfig.m_pViewportCamera[wnd] || !g_xState.bHasSelection)
+	if(!g_xConfig.m_pViewportCamera[wnd])
 	{
 		return(false);
 	}
@@ -2502,18 +2502,27 @@ bool XIsMouseInSelection(X_WINDOW_POS wnd)
 	switch(g_xConfig.m_x2DView[wnd])
 	{
 	case X2D_TOP:
-		return(fMPos.x >= g_xState.vSelectionBoundMin.x - fMargin && fMPos.x <= g_xState.vSelectionBoundMax.x + fMargin &&
-			fMPos.y >= g_xState.vSelectionBoundMin.z - fMargin && fMPos.y <= g_xState.vSelectionBoundMax.z + fMargin);
+		return(fMPos.x >= vBoundMin.x - fMargin && fMPos.x <= vBoundMax.x + fMargin &&
+			fMPos.y >= vBoundMin.z - fMargin && fMPos.y <= vBoundMax.z + fMargin);
 
 	case X2D_FRONT:
-		return(fMPos.x >= g_xState.vSelectionBoundMin.x - fMargin && fMPos.x <= g_xState.vSelectionBoundMax.x + fMargin &&
-			fMPos.y >= g_xState.vSelectionBoundMin.y - fMargin && fMPos.y <= g_xState.vSelectionBoundMax.y + fMargin);
+		return(fMPos.x >= vBoundMin.x - fMargin && fMPos.x <= vBoundMax.x + fMargin &&
+			fMPos.y >= vBoundMin.y - fMargin && fMPos.y <= vBoundMax.y + fMargin);
 
 	case X2D_SIDE:
-		return(fMPos.x >= g_xState.vSelectionBoundMin.z - fMargin && fMPos.x <= g_xState.vSelectionBoundMax.z + fMargin &&
-			fMPos.y >= g_xState.vSelectionBoundMin.y - fMargin && fMPos.y <= g_xState.vSelectionBoundMax.y + fMargin);
+		return(fMPos.x >= vBoundMin.z - fMargin && fMPos.x <= vBoundMax.z + fMargin &&
+			fMPos.y >= vBoundMin.y - fMargin && fMPos.y <= vBoundMax.y + fMargin);
 	}
 	return(false);
+}
+
+bool XIsMouseInSelection(X_WINDOW_POS wnd)
+{
+	if(!g_xState.bHasSelection)
+	{
+		return(false);
+	}
+	return(XIsMouseInBound(wnd, g_xState.vSelectionBoundMin, g_xState.vSelectionBoundMax));
 }
 
 void XUpdateWindowTitle()
