@@ -397,6 +397,9 @@
     <ClInclude Include="..\..\..\source\terrax\SceneTreeWindow.h">
       <Filter>Header Files\windows</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\source\terrax\ICompoundObject.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\..\..\source\terrax\resource\new.bmp">

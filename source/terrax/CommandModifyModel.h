@@ -33,7 +33,7 @@ private:
 	struct ObjLocation
 	{
 		IXEditorObject *pObj;
-		CProxyObject *pLocation;
+		ICompoundObject *pLocation;
 	};
 	Array<ObjLocation> m_aObjLocations;
 	bool m_isLocationsSaved = false;

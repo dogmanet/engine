@@ -6,7 +6,7 @@
 #include <xcommon/IXCore.h>
 #include <xcommon/editor/IXEditorObject.h>
 
-class CProxyObject;
+class ICompoundObject;
 class CSceneTreeAdapter final: public IUITreeAdapter
 {
 public:
@@ -74,7 +74,7 @@ private:
 	void loadChildren(TreeNode *pNode);
 	void sortChildren(TreeNode *pNode);
 
-	void loadFiltered(TreeNode *pRoot, CProxyObject *pParent, bool *pHasItems);
+	void loadFiltered(TreeNode *pRoot, ICompoundObject *pParent, bool *pHasItems);
 
 	bool isFilterPassed(IXEditorObject *pObject);
 };

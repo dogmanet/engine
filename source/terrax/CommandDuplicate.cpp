@@ -70,11 +70,11 @@ void CCommandDuplicate::processObject(IXEditorObject *pObj)
 	}
 
 	void *isProxy = NULL;
-	pObj->getInternalData(&X_IS_PROXY_GUID, &isProxy);
+	pObj->getInternalData(&X_IS_COMPOUND_GUID, &isProxy);
 	if(isProxy)
 	{
 		// export nested objects
-		CProxyObject *pProxy = (CProxyObject*)pObj;
+		ICompoundObject *pProxy = (ICompoundObject*)pObj;
 		for(UINT i = 0, l = pProxy->getObjectCount(); i < l; ++i)
 		{
 			processObject(pProxy->getObject(i));

@@ -214,7 +214,7 @@ struct XBorderVertex
 
 extern Array<IXEditorObject*> g_pLevelObjects;
 extern Map<XGUID, IXEditorModel*> g_apLevelModels;
-extern Map<IXEditorObject*, CProxyObject*> g_mObjectsLocation;
+extern Map<IXEditorObject*, ICompoundObject*> g_mObjectsLocation;
 extern Array<CProxyObject*> g_apProxies;
 
 template<typename T, class L>
@@ -227,11 +227,11 @@ void XEnumerateObjects(const T &Func, L *pWhere)
 		{
 			IXEditorObject *pObj = pWhere->getObject(i);
 			isProxy = NULL;
-			pObj->getInternalData(&X_IS_PROXY_GUID, &isProxy);
+			pObj->getInternalData(&X_IS_COMPOUND_GUID, &isProxy);
 			Func(pObj, isProxy ? true : false, pWhere);
 			if(isProxy)
 			{
-				XEnumerateObjects(Func, (CProxyObject*)pObj);
+				XEnumerateObjects(Func, (ICompoundObject*)pObj);
 			}
 		}
 	}
@@ -241,11 +241,11 @@ void XEnumerateObjects(const T &Func, L *pWhere)
 		{
 			IXEditorObject *pObj = g_pLevelObjects[i];
 			isProxy = NULL;
-			pObj->getInternalData(&X_IS_PROXY_GUID, &isProxy);
+			pObj->getInternalData(&X_IS_COMPOUND_GUID, &isProxy);
 			Func(pObj, isProxy ? true : false, pWhere);
 			if(isProxy)
 			{
-				XEnumerateObjects(Func, (CProxyObject*)pObj);
+				XEnumerateObjects(Func, (ICompoundObject*)pObj);
 			}
 		}
 	}
@@ -254,7 +254,7 @@ void XEnumerateObjects(const T &Func, L *pWhere)
 template<typename T>
 void XEnumerateObjects(const T &Func)
 {
-	XEnumerateObjects(Func, (CProxyObject*)NULL);
+	XEnumerateObjects(Func, (ICompoundObject*)NULL);
 }
 
 void XDrawBorder(GXCOLOR color, const float3_t &vA, const float3_t &vB, const float3_t &vC, const float3_t &vD, float fViewportScale = 0.01f);
@@ -287,9 +287,9 @@ bool XIsKeyPressed(UINT uKey);
 void BeginMaterialEdit(const char *szMaterialName);
 void XSetCameraRotation(const float3 &vPitchYawRoll);
 
-CProxyObject* XTakeObject(IXEditorObject *pObject, CProxyObject *pWhere);
+ICompoundObject* XTakeObject(IXEditorObject *pObject, ICompoundObject *pWhere);
 IXEditorObject* XFindObjectByGUID(const XGUID &guid);
-CProxyObject* XGetObjectParent(IXEditorObject *pObject);
+ICompoundObject* XGetObjectParent(IXEditorObject *pObject);
 
 void CheckToolbarButton(int iCmd, BOOL isChecked);
 

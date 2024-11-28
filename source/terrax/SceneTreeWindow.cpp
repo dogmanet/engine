@@ -422,11 +422,11 @@ UINT CSceneTreeAdapter::getChildrenCount(UITreeNodeHandle hNode)
 	}
 
 	void *isProxy = NULL;
-	((IXEditorObject*)hNode)->getInternalData(&X_IS_PROXY_GUID, &isProxy);
+	((IXEditorObject*)hNode)->getInternalData(&X_IS_COMPOUND_GUID, &isProxy);
 
 	if(isProxy)
 	{
-		return(((CProxyObject*)hNode)->getObjectCount());
+		return(((ICompoundObject*)hNode)->getObjectCount());
 	}
 	return(0);
 }
@@ -638,7 +638,7 @@ bool CSceneTreeAdapter::onNodeSelected(UITreeNodeHandle hNode, bool isSelected, 
 
 	if(!g_xConfig.m_bIgnoreGroups)
 	{
-		CProxyObject *pCur;
+		ICompoundObject *pCur;
 		while((pCur = XGetObjectParent(pSelectedObject)))
 		{
 			pSelectedObject = pCur;
@@ -647,13 +647,13 @@ bool CSceneTreeAdapter::onNodeSelected(UITreeNodeHandle hNode, bool isSelected, 
 
 	if(!isAdditive)
 	{
-		XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+		XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 			//if(!(g_xConfig.m_bIgnoreGroups && isProxy))
 			{
 				bool sel = false;
 				if(!g_xConfig.m_bIgnoreGroups && pParent)
 				{
-					CProxyObject *pCur;
+					ICompoundObject *pCur;
 					while((pCur = XGetObjectParent(pParent)))
 					{
 						pParent = pCur;
@@ -687,13 +687,13 @@ bool CSceneTreeAdapter::onMultiSelected(UITreeNodeHandle *aNodes, UINT uNodeCoun
 	CCommandSelect *pCmd = new CCommandSelect();
 	if(!isAdditive)
 	{
-		XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+		XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 			//if(!(g_xConfig.m_bIgnoreGroups && isProxy))
 			{
 				bool sel = false;
 				if(!g_xConfig.m_bIgnoreGroups && pParent)
 				{
-					CProxyObject *pCur;
+					ICompoundObject *pCur;
 					while((pCur = XGetObjectParent(pParent)))
 					{
 						pParent = pCur;
@@ -714,7 +714,7 @@ bool CSceneTreeAdapter::onMultiSelected(UITreeNodeHandle *aNodes, UINT uNodeCoun
 
 		if(!g_xConfig.m_bIgnoreGroups)
 		{
-			CProxyObject *pCur;
+			ICompoundObject *pCur;
 			while((pCur = XGetObjectParent(pSelectedObject)))
 			{
 				pSelectedObject = pCur;
@@ -733,7 +733,7 @@ bool CSceneTreeAdapter::onMultiSelected(UITreeNodeHandle *aNodes, UINT uNodeCoun
 void CSceneTreeAdapter::onNodeEdited(UITreeNodeHandle hNode, const char *szNewText)
 {
 	CCommandProperties *pCmd = new CCommandProperties();
-	XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+	XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 		if(pObj->isSelected() && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent))
 		{
 			pCmd->addObject(pObj);
@@ -846,7 +846,7 @@ void CSceneTreeAdapter::onSelectionChanged()
 bool CSceneTreeAdapter::hasSelection()
 {
 	bool hasSelection = false;
-	XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+	XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 		if(!hasSelection && pObj->isSelected())
 		{
 			hasSelection = true;
@@ -870,7 +870,7 @@ bool CSceneTreeAdapter::isFilterPassed(IXEditorObject *pObject)
 	return((szName && strcasestr(szName, m_sFilter.c_str())) || strcasestr(pObject->getClassName(), m_sFilter.c_str()));
 }
 
-void CSceneTreeAdapter::loadFiltered(TreeNode *pRoot, CProxyObject *pParent, bool *pHasItems)
+void CSceneTreeAdapter::loadFiltered(TreeNode *pRoot, ICompoundObject *pParent, bool *pHasItems)
 {
 	void *isProxy;
 	TreeNode tmp;
@@ -882,7 +882,7 @@ void CSceneTreeAdapter::loadFiltered(TreeNode *pRoot, CProxyObject *pParent, boo
 		{
 			IXEditorObject *pObj = pParent->getObject(i);
 			isProxy = NULL;
-			pObj->getInternalData(&X_IS_PROXY_GUID, &isProxy);
+			pObj->getInternalData(&X_IS_COMPOUND_GUID, &isProxy);
 
 			tmp.pObject = pObj;
 			pRoot->aChildren.push_back(tmp);
@@ -890,7 +890,7 @@ void CSceneTreeAdapter::loadFiltered(TreeNode *pRoot, CProxyObject *pParent, boo
 
 			if(isProxy)
 			{
-				loadFiltered(&pRoot->aChildren[pRoot->aChildren.size() - 1], (CProxyObject*)pObj, &hasItems);
+				loadFiltered(&pRoot->aChildren[pRoot->aChildren.size() - 1], (ICompoundObject*)pObj, &hasItems);
 			}
 			if(hasItems)
 			{
@@ -908,7 +908,7 @@ void CSceneTreeAdapter::loadFiltered(TreeNode *pRoot, CProxyObject *pParent, boo
 		{
 			IXEditorObject *pObj = g_pLevelObjects[i];
 			isProxy = NULL;
-			pObj->getInternalData(&X_IS_PROXY_GUID, &isProxy);
+			pObj->getInternalData(&X_IS_COMPOUND_GUID, &isProxy);
 
 			tmp.pObject = pObj;
 			pRoot->aChildren.push_back(tmp);
@@ -916,7 +916,7 @@ void CSceneTreeAdapter::loadFiltered(TreeNode *pRoot, CProxyObject *pParent, boo
 
 			if(isProxy)
 			{
-				loadFiltered(&pRoot->aChildren[pRoot->aChildren.size() - 1], (CProxyObject*)pObj, &hasItems);
+				loadFiltered(&pRoot->aChildren[pRoot->aChildren.size() - 1], (ICompoundObject*)pObj, &hasItems);
 			}
 			if(hasItems)
 			{
@@ -997,12 +997,12 @@ void CSceneTreeAdapter::loadChildren(TreeNode *pNode)
 	}
 
 	void *isProxy = NULL;
-	pNode->pObject->getInternalData(&X_IS_PROXY_GUID, &isProxy);
+	pNode->pObject->getInternalData(&X_IS_COMPOUND_GUID, &isProxy);
 	assert(isProxy);
 
 	if(isProxy)
 	{
-		CProxyObject *pProxy = (CProxyObject*)pNode->pObject;
+		ICompoundObject *pProxy = (ICompoundObject*)pNode->pObject;
 
 		TreeNode tmp;
 		for(UINT i = 0, l = pProxy->getObjectCount(); i < l; ++i)

@@ -196,7 +196,7 @@ public:
 		onApply();
 		
 		m_pPropsCmd = new CCommandProperties();
-		XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+		XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 			if(pObj->isSelected() && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent))
 			{
 				m_pPropsCmd->addObject(pObj);
@@ -541,7 +541,7 @@ LRESULT CALLBACK StatusBarWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 static void DeleteSelection()
 {
 	CCommandDelete *pDelCmd = new CCommandDelete();
-	XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+	XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 		if(pObj->isSelected() && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent))
 		{
 			pDelCmd->addObject(pObj);
@@ -602,11 +602,11 @@ static void ExportObject(IXConfig *pConfig, IXEditorObject *pObj, UINT &uCount)
 	++uCount;
 
 	void *isProxy = NULL;
-	pObj->getInternalData(&X_IS_PROXY_GUID, &isProxy);
+	pObj->getInternalData(&X_IS_COMPOUND_GUID, &isProxy);
 	if(isProxy)
 	{
 		// export nested objects
-		CProxyObject *pProxy = (CProxyObject*)pObj;
+		ICompoundObject *pProxy = (ICompoundObject*)pObj;
 		for(UINT i = 0, l = pProxy->getObjectCount(); i < l; ++i)
 		{
 			ExportObject(pConfig, pProxy->getObject(i), uCount);
@@ -1923,7 +1923,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			if(g_pUndoManager)
 			{
 				CCommandSelect *pCmdUnselect = new CCommandSelect();
-				XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+				XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 					if(pObj->isSelected() && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent))
 					{
 						pCmdUnselect->addDeselected(pObj);
@@ -1936,7 +1936,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case ID_EDIT_SELECTALL:
 			{
 				CCommandSelect *pCmdSelect = new CCommandSelect();
-				XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+				XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 					if(!pObj->isSelected() && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent))
 					{
 						pCmdSelect->addSelected(pObj);
@@ -2068,7 +2068,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case ID_ROTATE_M90:
 			{
 				CCommandRotate *pCmd = new CCommandRotate(GetKeyState(VK_SHIFT) < 0);
-				XEnumerateObjects([pCmd](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+				XEnumerateObjects([pCmd](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 					if(pObj->isSelected() && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent))
 					{
 						pCmd->addObject(pObj);
@@ -2111,12 +2111,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			if(!g_xConfig.m_bIgnoreGroups)
 			{
 				//! Deselect partially selected groups
-				XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+				XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 					if(isProxy && !pParent)
 					{
 						bool hasUnselectedChild = false;
 						bool hasUnselectedProxies = false;
-						XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+						XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 							if(!pObj->isSelected())
 							{
 								if(isProxy)
@@ -2128,14 +2128,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 									hasUnselectedChild = true;
 								}
 							}
-						}, (CProxyObject*)pObj);
+						}, (ICompoundObject*)pObj);
 						if(hasUnselectedChild)
 						{
-							XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+							XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 								if(!isProxy)
 								{
 									bool hasSelectedParent = pParent->isSelected();
-									CProxyObject *pCur = pParent;
+									ICompoundObject *pCur = pParent;
 									while(!hasSelectedParent && (pCur = XGetObjectParent(pCur)))
 									{
 										hasSelectedParent = pCur->isSelected();
@@ -2152,18 +2152,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 										pCmdUnselect->addDeselected(pObj);
 									}
 								}
-							}, (CProxyObject*)pObj);
+							}, (ICompoundObject*)pObj);
 							if(pObj->isSelected())
 							{
 								pCmdUnselect->addDeselected(pObj);
 							}
 							else
 							{
-								XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+								XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 									if(isProxy)
 									{
 										bool hasSelectedParent = pParent->isSelected();
-										CProxyObject *pCur = pParent;
+										ICompoundObject *pCur = pParent;
 										while((pCur = XGetObjectParent(pCur)))
 										{
 											if(pCur->isSelected())
@@ -2177,7 +2177,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 											pCmdUnselect->addDeselected(pParent);
 										}
 									}
-								}, (CProxyObject*)pObj);
+								}, (ICompoundObject*)pObj);
 							}
 						}
 						else
@@ -2185,12 +2185,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 							if(!pObj->isSelected() || hasUnselectedProxies)
 							{
 								// deselect leaves, select root
-								XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+								XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 									if(!isProxy)
 									{
 										pCmdUnselect->addDeselected(pObj);
 									}
-								}, (CProxyObject*)pObj);
+								}, (ICompoundObject*)pObj);
 								pCmdUnselect->addSelected(pObj);
 							}
 							
@@ -2855,14 +2855,14 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 			{
 				CCommandSelect *pCmd = new CCommandSelect();
 				bool bUse = false;
-				XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+				XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 					if(!(g_xConfig.m_bIgnoreGroups && isProxy))
 					{
 						float3_t vPos = pObj->getPos();
 						bool sel = g_pEditor->isPointInFrame(vPos, vSelectStartPos, vSelectEndPos, xCurView);
 						if(!g_xConfig.m_bIgnoreGroups && pParent)
 						{
-							CProxyObject *pCur;
+							ICompoundObject *pCur;
 							while((pCur = XGetObjectParent(pParent)))
 							{
 								pParent = pCur;
@@ -3051,7 +3051,7 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 				}
 
 				g_aRaytracedItems.clearFast();
-				XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+				XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 					if(g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent)
 					{
 						float fDist2 = -1.0f;
@@ -3076,7 +3076,7 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 						{
 							if(!g_xConfig.m_bIgnoreGroups && pParent)
 							{
-								CProxyObject *pCur;
+								ICompoundObject *pCur;
 								while((pCur = XGetObjectParent(pParent)))
 								{
 									pParent = pCur;
@@ -3112,7 +3112,7 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 				static Array<SelectItem2> s_aRaytracedItems;
 
 				float3 vPos, vNorm;
-				XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+				XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 					if(g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent)
 					{
 						if(pObj->hasVisualModel())
@@ -3266,7 +3266,7 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 								s_pScaleCmd->setStartAABB(g_xState.vSelectionBoundMin, g_xState.vSelectionBoundMax);
 								s_pScaleCmd->setTransformDir(dirs[g_xConfig.m_x2DView[g_xState.activeWindow]][i]);
 								s_pScaleCmd->setStartPos(vStartPos);
-								XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+								XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 									if(pObj->isSelected() && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent))
 									{
 										s_pScaleCmd->addObject(pObj);
@@ -3279,7 +3279,7 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 								s_pRotateCmd = new CCommandRotate(GetKeyState(VK_SHIFT) < 0);
 								s_pRotateCmd->setStartOrigin((g_xState.vSelectionBoundMax + g_xState.vSelectionBoundMin) * 0.5f * vMask, float3(1.0f) - vMask);
 								s_pRotateCmd->setStartPos(vStartPos);
-								XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+								XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 									if(pObj->isSelected() && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent))
 									{
 										s_pRotateCmd->addObject(pObj);
@@ -3307,14 +3307,14 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 					bool bUse = false;
 					bool wasSel = false;
 
-					XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+					XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 						if(!(g_xConfig.m_bIgnoreGroups && isProxy))
 						{
 							bool sel = XIsClicked(pObj->getPos());
 
 							if(!g_xConfig.m_bIgnoreGroups && pParent)
 							{
-								CProxyObject *pCur;
+								ICompoundObject *pCur;
 								while((pCur = XGetObjectParent(pParent)))
 								{
 									pParent = pCur;
@@ -3388,7 +3388,7 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 					bool bReferenceFound = false;
 
 					float3 vBoundMin, vBoundMax;
-					XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+					XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 						if(pObj->isSelected())
 						{
 							if(g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent)
@@ -3916,7 +3916,7 @@ void XFrameRun(float fDeltaTime)
 
 			if(g_uSelectedIndex == ~0 && !g_isSelectionCtrl)
 			{
-				XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+				XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 					if(pObj->isSelected() && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent))
 					{
 						pObj->setSelected(false);
@@ -4429,7 +4429,7 @@ void XUpdatePropWindow()
 
 	UINT uSelectedCount = 0;
 
-	XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+	XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 		if(pObj->isSelected() && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent))
 		{
 			++uSelectedCount;
@@ -4589,7 +4589,7 @@ void XMETHODCALLTYPE CGizmoMoveCallback::onStart(IXEditorGizmoMove *pGizmo)
 {
 	m_pCmd = new CCommandMove(GetKeyState(VK_SHIFT) < 0);
 	m_pCmd->setStartPos(pGizmo->getPos());
-	XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+	XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 		if(pObj->isSelected() && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent))
 		{
 			m_pCmd->addObject(pObj);
@@ -4625,7 +4625,7 @@ void XMETHODCALLTYPE CGizmoRotateCallback::onStart(const float3_t &vAxis, IXEdit
 	m_pCmd = new CCommandRotate(GetKeyState(VK_SHIFT) < 0);
 	m_pCmd->setStartOrigin(pGizmo->getPos(), vAxis);
 	m_pCmd->setStartPos(pGizmo->getPos() + vStartOffset);
-	XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+	XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 		if(pObj->isSelected() && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent))
 		{
 			m_pCmd->addObject(pObj);

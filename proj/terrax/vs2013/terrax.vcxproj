@@ -290,6 +290,7 @@
     <ClInclude Include="..\..\..\source\terrax\GizmoScale.h" />
     <ClInclude Include="..\..\..\source\terrax\GradientPreviewGraphNode.h" />
     <ClInclude Include="..\..\..\source\terrax\GradientPreviewGraphNodeData.h" />
+    <ClInclude Include="..\..\..\source\terrax\ICompoundObject.h" />
     <ClInclude Include="..\..\..\source\terrax\LevelOpenDialog.h" />
     <ClInclude Include="..\..\..\source\terrax\MaterialBrowser.h" />
     <ClInclude Include="..\..\..\source\terrax\MaterialBrowserGraphNode.h" />

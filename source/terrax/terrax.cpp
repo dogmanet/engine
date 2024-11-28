@@ -73,7 +73,7 @@ Array<IXEditable*> g_pEditableSystems;
 Array<IXEditorObject*> g_pLevelObjects;
 Map<AAString, IXEditable*> g_mEditableSystems;
 Map<XGUID, IXEditorModel*> g_apLevelModels;
-Map<IXEditorObject*, CProxyObject*> g_mObjectsLocation;
+Map<IXEditorObject*, ICompoundObject*> g_mObjectsLocation;
 Array<CProxyObject*> g_apProxies;
 //SGeom_GetCountModels()
 Array<IXEditorImporter*> g_pEditorImporters;
@@ -1572,7 +1572,7 @@ void XRender3D()
 	{
 		g_pSelectionRenderer->reset();
 
-		XEnumerateObjects([](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+		XEnumerateObjects([](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 			if(pObj->isSelected() && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent))
 			{
 				pObj->render(true, true, g_pSelectionRenderer);
@@ -1585,7 +1585,7 @@ void XRender3D()
 	{
 		g_pUnselectedRenderer->reset();
 
-		XEnumerateObjects([](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+		XEnumerateObjects([](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 			if(!pObj->isSelected() && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent))
 			{
 				pObj->render(true, false, g_pUnselectedRenderer);
@@ -1768,7 +1768,7 @@ void XRender3D()
 			};
 			Array<Icon> aIcons;
 			Icon icon;
-			XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+			XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 				if((icon.pTexture = pObj->getIcon()))
 				{
 					icon.vPos = pObj->getPos();
@@ -1877,7 +1877,7 @@ void XRender2D(IXCamera *pCamera, X_2D_VIEW view, float fScale, bool preScene, b
 				{
 					g_pSelectionRenderer->reset();
 
-					XEnumerateObjects([](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+					XEnumerateObjects([](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 						if(pObj->isSelected() && !(g_xConfig.m_bIgnoreGroups && isProxy))
 						{
 							pObj->render(false, true, g_pSelectionRenderer);
@@ -1895,7 +1895,7 @@ void XRender2D(IXCamera *pCamera, X_2D_VIEW view, float fScale, bool preScene, b
 		{
 			g_pUnselectedRenderer->reset();
 
-			XEnumerateObjects([](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+			XEnumerateObjects([](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 				if(!pObj->isSelected() && !(g_xConfig.m_bIgnoreGroups && isProxy))
 				{
 					pObj->render(false, false, g_pUnselectedRenderer);
@@ -1941,7 +1941,7 @@ void XRender2D(IXCamera *pCamera, X_2D_VIEW view, float fScale, bool preScene, b
 			{
 				UINT uHandlerCount = 0;
 				pvData = NULL;
-				XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+				XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 					float3_t vPos = pObj->getPos();
 					//@TODO: Add visibility check
 					/*if(fViewportBorders.x > vPos.x || fViewportBorders.z < vPos.x || fViewportBorders.y < vPos.z) // not visible
@@ -2435,7 +2435,7 @@ void XUpdateSelectionBound()
 	g_xState.bHasSelection = false;
 	float3 vMin, vMax;
 
-	XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+	XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 		if(pObj->isSelected() && !(g_xConfig.m_bIgnoreGroups && isProxy))
 		{
 			pObj->getBound(&vMin, &vMax);
@@ -2482,7 +2482,7 @@ bool XRayCast(X_WINDOW_POS wnd)
 	vEnd += vStart;
 
 	bool res = false;
-	XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+	XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 		if(!res && pObj->isSelected() && !(g_xConfig.m_bIgnoreGroups && isProxy) && pObj->rayTest(vStart, vEnd, &vPos, NULL))
 		{
 			res = true;
@@ -2701,7 +2701,7 @@ void XExportToDSE(const char *szMdl)
 	LibReport(REPORT_MSG_LEVEL_NOTICE, "%s was written\n", buf);
 }
 
-CProxyObject* XTakeObject(IXEditorObject *pObject, CProxyObject *pWhere)
+ICompoundObject* XTakeObject(IXEditorObject *pObject, ICompoundObject *pWhere)
 {
 	int idx = g_pLevelObjects.indexOf(pObject);
 	assert((idx >= 0) != (pWhere == NULL));
@@ -2713,10 +2713,10 @@ CProxyObject* XTakeObject(IXEditorObject *pObject, CProxyObject *pWhere)
 		return(NULL);
 	}
 
-	const Map<IXEditorObject*, CProxyObject*>::Node *pNode;
+	const Map<IXEditorObject*, ICompoundObject*>::Node *pNode;
 	if(g_mObjectsLocation.KeyExists(pObject, &pNode))
 	{
-		CProxyObject *pProxy = *pNode->Val;
+		ICompoundObject *pProxy = *pNode->Val;
 		//pProxy->removeChildObject(pObject);
 		if(pWhere)
 		{
@@ -2734,9 +2734,9 @@ CProxyObject* XTakeObject(IXEditorObject *pObject, CProxyObject *pWhere)
 	return(NULL);
 }
 
-CProxyObject* XGetObjectParent(IXEditorObject *pObject)
+ICompoundObject* XGetObjectParent(IXEditorObject *pObject)
 {
-	const Map<IXEditorObject*, CProxyObject*>::Node *pNode;
+	const Map<IXEditorObject*, ICompoundObject*>::Node *pNode;
 	if(g_mObjectsLocation.KeyExists(pObject, &pNode))
 	{
 		return(*pNode->Val);

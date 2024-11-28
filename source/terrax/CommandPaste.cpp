@@ -9,7 +9,7 @@ bool XMETHODCALLTYPE CCommandPaste::exec()
 	{
 		m_pCommandSelect = new CCommandSelect();
 		
-		XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+		XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 			if(pObj->isSelected() && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent))
 			{
 				m_pCommandSelect->addDeselected(pObj);

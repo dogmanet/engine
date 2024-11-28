@@ -603,8 +603,9 @@ void CUITree::syncNodes()
 
 	if(m_hEditNode)
 	{
-		scrollIntoView(m_hEditNode);
+		UITreeNodeHandle hEditNode = m_hEditNode;
 		m_hEditNode = NULL;
+		scrollIntoView(hEditNode);
 	}
 	else if(uOldAnchorPos)
 	{
