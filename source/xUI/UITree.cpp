@@ -294,13 +294,10 @@ void CUITree::dispatchEvent(gui::IEvent *ev)
 
 			if(m_pAdapter)
 			{
-				UINT uCols = m_pAdapter->getColumnCount();
-				for(UINT i = 0; i < uCols; ++i)
-				{
-					setColumnWidth(i, m_pAdapter->getColumnHeaderWidth(i, m_uWidth));
-				}
+				abortEdit();
 
-				updateVisibleNodes();
+				m_bScheduledResize = true;
+				m_pUIWindow->registerForUpdate(this);
 			}
 		}
 	}
@@ -427,7 +424,21 @@ void CUITree::dispatchEvent(gui::IEvent *ev)
 	}
 	else if(ev->type == gui::GUI_EVENT_TYPE_UPDATE)
 	{
-		updateDataset();
+		if(m_bScheduledDatasetChange)
+		{
+			m_bScheduledDatasetChange = false;
+			updateDataset();
+		}
+		if(m_bScheduledResize)
+		{
+			m_bScheduledResize = false;
+			UINT uCols = m_pAdapter->getColumnCount();
+			for(UINT i = 0; i < uCols; ++i)
+			{
+				setColumnWidth(i, m_pAdapter->getColumnHeaderWidth(i, m_uWidth));
+			}
+			updateVisibleNodes();
+		}
 	}
 }
 
@@ -455,7 +466,11 @@ void XMETHODCALLTYPE CUITree::notifyDatasetChanged()
 
 	abortEdit();
 
-	m_pUIWindow->registerForUpdate(this);
+	if(!m_bScheduledDatasetChange)
+	{
+		m_bScheduledDatasetChange = true;
+		m_pUIWindow->registerForUpdate(this);
+	}
 }
 
 void XMETHODCALLTYPE CUITree::notifySelectionChanged()

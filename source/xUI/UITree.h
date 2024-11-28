@@ -104,6 +104,9 @@ private:
 
 	UITreeNodeHandle m_hFocusNode = NULL;
 
+	bool m_bScheduledResize = false;
+	bool m_bScheduledDatasetChange = false;
+
 private:
 	void setColumnCount(UINT uCount);
 	UINT getColumnCount();
