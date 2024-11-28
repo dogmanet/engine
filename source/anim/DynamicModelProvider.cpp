@@ -541,9 +541,10 @@ void CDynamicModelProvider::computeVisibility(const IXFrustum *pFrustum, const f
 {
 	XPROFILE_FUNCTION();
 
-	if(pCamera)
+	if(pCamera && pCamera->getProjectionMode() == XCPM_PERSPECTIVE)
 	{
 		FIXME("Use actual target width!");
+		FIXME("Support for ortogonal camera too!");
 		static const int *r_win_width = GET_PCVAR_INT("r_win_width");
 		//static const float *r_default_fov = GET_PCVAR_FLOAT("r_default_fov");
 		m_pOpaqueQuery->setScreenSizeCulling(pCamera->getPosition(), pCamera->getEffectiveFOV(), *r_win_width, 4.0f);
