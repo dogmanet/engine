@@ -79,8 +79,12 @@ public:
 
 	UINT XMETHODCALLTYPE getHitboxCount() const override;
 	void XMETHODCALLTYPE setHitboxCount(UINT uCount) override;
-	XResourceModelHitbox * XMETHODCALLTYPE getHitbox(UINT uIndex) override;
-	const XResourceModelHitbox * XMETHODCALLTYPE getHitbox(UINT uIndex) const override;
+	void XMETHODCALLTYPE setHitbox(UINT uIndex, IModelPhysbox *pPhysbox, int iBone, const char *szName, XHITBOXBODYPART part) override;
+	IModelPhysbox* XMETHODCALLTYPE getHitbox(UINT uIndex) override;
+	const IModelPhysbox* XMETHODCALLTYPE getHitbox(UINT uIndex) const override;
+	const char* XMETHODCALLTYPE getHitboxName(UINT uIndex) const override;
+	int XMETHODCALLTYPE getHitboxBone(UINT uIndex) const override;
+	XHITBOXBODYPART XMETHODCALLTYPE getHitboxBodyPart(UINT uIndex) const override;
 
 	bool XMETHODCALLTYPE validate() const;
 
@@ -120,8 +124,14 @@ protected:
 	XResourceModelController *m_pControllers = NULL;
 	UINT m_uControllersCount = 0;
 
-	XResourceModelHitbox *m_pHitboxes = NULL;
-	UINT m_uHitboxCount = 0;
+	struct Hitbox
+	{
+		IModelPhysbox *pPhysbox = NULL;
+		int iBone = -1;
+		String sName;
+		XHITBOXBODYPART part = XHBP_DEFAULT;
+	};
+	Array<Hitbox> m_aHitBoxes;
 	
 	struct _import
 	{

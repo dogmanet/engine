@@ -3,10 +3,12 @@
 
 #include <xcommon/editor/IXEditorExtension.h>
 #include "terrax.h"
+#include "CommandDuplicate.h"
 
 class CCommandRotate final: public IXUnknownImplementation<IXEditorCommand>
 {
 public:
+	CCommandRotate(bool bClone = false);
 	~CCommandRotate();
 
 	bool XMETHODCALLTYPE exec() override;
@@ -41,6 +43,8 @@ protected:
 	float3_t m_vOrigin;
 	float3_t m_vStartPos;
 	float3_t m_vAxis;
+
+	CCommandDuplicate *m_pDuplicateCommand = NULL;
 };
 
 #endif

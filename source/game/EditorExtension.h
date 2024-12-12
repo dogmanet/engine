@@ -25,6 +25,18 @@ public:
 	{
 	}
 
+	UINT XMETHODCALLTYPE getResourceBrowserCount() override;
+	bool XMETHODCALLTYPE getResourceBrowser(UINT uId, IXEditorResourceBrowser **ppOut) override;
+
+	UINT XMETHODCALLTYPE getMenuCount() override
+	{
+		return(0);
+	}
+	const XEditorMenuItem* XMETHODCALLTYPE getMenu(UINT uId) override
+	{
+		return(NULL);
+	}
+
 private:
 	CEditorOutputsTab *m_pOutputsTab = NULL;
 

@@ -1,7 +1,7 @@
 #ifndef __PLUGIN_H
 #define __PLUGIN_H
 
-#include "stdafx.h"
+#include <exporter_base/stdafx.h>
 
 #include <msLib/msPlugIn.h>
 #include <msLib/msLib.h>
@@ -12,7 +12,7 @@
 
 class CPlugin: public cMsPlugIn
 {
-	friend INT_PTR CALLBACK ExportDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+	//friend INT_PTR CALLBACK ExportDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 public:
 	CPlugin();

@@ -60,10 +60,12 @@ void CPlayer::onPostLoad()
 
 	m_idQuadCurr = -1;
 
-	m_pCrosshair = new CCrosshair();
+	m_pCrosshair = new CCrosshair(GetRender());
 
 	IXResourceManager *pResourceManager = Core_GetIXCore()->getResourceManager();
 	pResourceManager->getModelAnimated("models/weapons/hands.dse", &m_pHandsModelResource);
+
+	m_pCraftSystem = new CCraftSystem(getInventory());
 
 	//m_pGhostObject->setCollisionFlags(m_pGhostObject->getCollisionFlags() | btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT);
 }
@@ -73,8 +75,10 @@ CPlayer::~CPlayer()
 	mem_delete(m_pCrosshair);
 	CLEAR_INTERVAL(m_iUpdIval);
 	REMOVE_ENTITY(m_pCamera);
+	mem_delete(m_pCraftSystem);
 }
 
+// TODO: убрать блять, что б я этого не видел
 static float GetAngleBetweenVectors(const float3 &v1, const float3 &v2, const float3 &vRotationAxis)
 {
 	float fAngle = SMVector3Dot(v1, v2);
@@ -96,7 +100,7 @@ void CPlayer::setOrient(const SMQuaternion &q)
 	if(SMIsZero(1.0f - fabsf(fAng)))
 	{
 		m_vPitchYawRoll.x = SM_PIDIV2 * fAng;
-		m_vPitchYawRoll.y = GetAngleBetweenVectors(q * -vUp, vBase, vUp);
+		m_vPitchYawRoll.y = SMRightAngleBetweenVectors(q * -vUp, vBase, vUp);
 	}
 	else
 	{
@@ -115,11 +119,18 @@ void CPlayer::setOrient(const SMQuaternion &q)
 	//m_vPitchYawRoll = SMMatrixToEuler(q.GetMatrix());
 	BaseClass::setOrient(SMQuaternion(m_vPitchYawRoll.y, 'y'));
 	m_pHeadEnt->setOffsetOrient(SMQuaternion(m_vPitchYawRoll.x, 'x') * SMQuaternion(m_vPitchYawRoll.z, 'z'));
+
+	SAFE_CALL(m_pModel, setOrientation, q * SMQuaternion(SM_PI, 'y'));
 }
 
 SMQuaternion CPlayer::getOrient()
 {
-	return(m_pHeadEnt->getOrient());
+	return(m_pHeadEnt ? m_pHeadEnt->getOrient() : BaseClass::getOrient());
+}
+
+CCraftSystem* CPlayer::getCraftSystem()
+{
+	return(m_pCraftSystem);
 }
 
 void CPlayer::updateInput(float dt)
@@ -184,6 +195,8 @@ void CPlayer::updateInput(float dt)
 			//	* SMQuaternion(m_vPitchYawRoll.y, 'y')
 			//	* SMQuaternion(m_vPitchYawRoll.z, 'z');
 			BaseClass::setOrient(SMQuaternion(m_vPitchYawRoll.y, 'y'));
+			SAFE_CALL(m_pModel, setOrientation, SMQuaternion(m_vPitchYawRoll.y + SM_PI, 'y'));
+
 			m_pHeadEnt->setOffsetOrient(SMQuaternion(m_vPitchYawRoll.x, 'x') * SMQuaternion(m_vPitchYawRoll.z, 'z'));
 			
 			GameData::m_pHUDcontroller->setPlayerRot(m_vPitchYawRoll);
@@ -234,7 +247,7 @@ void CPlayer::updateInput(float dt)
 		}
 		else
 		{
-			m_fCurrentHeight += dt* 10.0f;
+			m_fCurrentHeight += dt * 10.0f;
 			if(m_fCurrentHeight > 1.0f)
 			{
 				m_fCurrentHeight = 1.0f;
@@ -324,22 +337,11 @@ void CPlayer::updateInput(float dt)
 
 			if(onGround())
 			{
-				const float c_fSpeedThreshold = 0.01f; // 1cm/s
-				float fAccel = *cl_acceleration;
+				float fAccel = *cl_acceleration * dt * 10.0f;
 				float3 fAccelDir = m_vTargetSpeed - m_vCurrentSpeed;
-				if(SMVector3Length2(fAccelDir) < (c_fSpeedThreshold * c_fSpeedThreshold))
-				{
-					m_vCurrentSpeed = m_vTargetSpeed;
-				}
-				else
-				{
-					m_vCurrentSpeed = (float3)(m_vCurrentSpeed + SMVector3Normalize(fAccelDir) * fAccel * dt * 10.0f);
+				float fMaxAccel = SMVector3Length(fAccelDir);
 
-					if(SMVector3Dot(m_vCurrentSpeed, m_vTargetSpeed) > SM_PIDIV2 && SMVector3Length2(m_vCurrentSpeed) > SMVector3Length2(m_vTargetSpeed))
-					{
-						m_vCurrentSpeed = m_vTargetSpeed;
-					}
-				}
+				m_vCurrentSpeed = (float3)(m_vCurrentSpeed + SMVector3Normalize(fAccelDir) * min(fAccel, fMaxAccel));
 			}
 
 			m_pCharacter->setVelocityForTimeInterval(m_vCurrentSpeed, dt);

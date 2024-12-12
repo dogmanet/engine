@@ -55,6 +55,11 @@ public:
 	const char* XMETHODCALLTYPE getClassAt(UINT idx) override;
 	bool XMETHODCALLTYPE useClass(const char *szClassName) override;
 
+	bool XMETHODCALLTYPE allowUseCamera() override
+	{
+		return(false);
+	}
+
 	void registerCreator(IBrushCreator *pCreator);
 
 private:

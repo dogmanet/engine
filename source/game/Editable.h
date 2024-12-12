@@ -75,6 +75,11 @@ public:
 
 	bool XMETHODCALLTYPE canUseModel(const char *szClass) override;
 
+	IGXDevice* getDevice()
+	{
+		return(m_pDevice);
+	}
+
 protected:
 	IGXDevice *m_pDevice = NULL;
 	IXCore *m_pCore = NULL;

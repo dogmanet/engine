@@ -32,7 +32,7 @@ namespace gui
 		int getPos();
 		void setPos(int pos);
 
-		CPITexture getTexture();
+		IXTexture *getTexture();
 
 		void update();
 
@@ -50,7 +50,7 @@ namespace gui
 		bool isLoaded();
 
 	protected:
-		CTexture m_texture;
+		IXTexture *m_texture;
 		UINT m_iWidth;
 		UINT m_iHeight;
 

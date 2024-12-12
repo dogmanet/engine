@@ -3,7 +3,7 @@
 
 #include <windowsx.h>
 #include <commctrl.h>
-#include <gcore/sxgcore.h>
+#include <xcommon/IXCamera.h>
 
 #include "Editable.h"
 #include "EditorObject.h"
@@ -18,8 +18,6 @@ CFaceEdit::CFaceEdit(CEditable *pEditable, IXEditor *pEditor, HINSTANCE hInstanc
 	m_matBrowserCallback(this),
 	m_pEditor(pEditor)
 {
-	registerClass();
-
 	memset(&m_currentSettings, 0, sizeof(m_currentSettings));
 
 	m_currentSettings.fSScale = 1.0f;
@@ -34,16 +32,7 @@ CFaceEdit::CFaceEdit(CEditable *pEditable, IXEditor *pEditor, HINSTANCE hInstanc
 
 CFaceEdit::~CFaceEdit()
 {
-	mem_release(m_pMat);
-	mem_release(m_pTex);
-	mem_release(m_pBlendAlpha);
-	//mem_release(m_pSurface);
-	//mem_release(m_pSwapChain);
 	DestroyWindow(m_hDlgWnd);
-
-
-	//mem_release(m_pFrameIB);
-	//mem_release(m_pFrameRB);
 }
 
 INT_PTR CALLBACK CFaceEdit::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -77,7 +66,6 @@ INT_PTR CFaceEdit::dlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	case WM_INITDIALOG:
 		{
 			m_hViewportWnd = GetDlgItem(hWnd, IDC_CUR_MAT_VP);
-			SetWindowLongPtr(m_hViewportWnd, GWLP_USERDATA, (LONG_PTR)this);
 
 			HWND hCombo = GetDlgItem(hWnd, IDC_MODE);
 			ComboBox_AddString(hCombo, "Pick+Select");
@@ -171,6 +159,10 @@ INT_PTR CFaceEdit::dlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			break;
 
 		case IDC_REPLACE:
+			break;
+
+		case IDC_MAT_EDIT:
+			m_pEditor->editMaterial(m_sCurrentMat.c_str());
 			break;
 
 		case IDC_APPLY:
@@ -312,90 +304,6 @@ INT_PTR CFaceEdit::dlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		return(FALSE);
 	}
 	return(TRUE);
-}
-
-void CFaceEdit::registerClass()
-{
-	WNDCLASSEX wcex;
-	HBRUSH hBrush = NULL;
-
-	// Resetting the structure members before use
-	memset(&wcex, 0, sizeof(WNDCLASSEX));
-
-	wcex.cbSize = sizeof(WNDCLASSEX);
-
-	wcex.style = CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS;
-	wcex.lpfnWndProc = WndProc;
-	wcex.cbClsExtra = 0;
-	wcex.cbWndExtra = 0;
-	wcex.hInstance = m_hInstance;
-	//wcex.hIcon = LoadIcon(m_hInstance, MAKEINTRESOURCE(IDI_ICON_LOGO));
-	wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
-
-	hBrush = CreateSolidBrush(RGB(0, 0, 0));
-
-
-	wcex.hbrBackground = (HBRUSH)hBrush;
-	wcex.lpszClassName = "XCSGFaceEditVP";
-	//wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
-
-	if(!RegisterClassEx(&wcex))
-	{
-		MessageBox(NULL, "Unable to register window class!", "Error", MB_OK | MB_ICONSTOP);
-	}
-}
-
-LRESULT CALLBACK CFaceEdit::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	CFaceEdit *pThis = (CFaceEdit*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
-	if(pThis)
-	{
-		return(pThis->wndProc(hWnd, msg, wParam, lParam));
-	}
-	return(DefWindowProc(hWnd, msg, wParam, lParam));
-}
-
-LRESULT CFaceEdit::wndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	switch(msg)
-	{
-	case WM_PAINT:
-		m_isDirty = true;
-		// NO BREAK!
-	default:
-		return(DefWindowProc(hWnd, msg, wParam, lParam));
-	}
-	return(0);
-}
-
-void CFaceEdit::initGraphics(IGXDevice *pDev)
-{
-	m_pDev = pDev;
-
-	initViewport();
-
-	//initHelpers();
-
-	m_idScreenOutShader = SGCore_ShaderCreateKit(SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "pp_quad_render.vs"), SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "pp_quad_render.ps"));
-
-
-	m_pMaterialSystem = (IXMaterialSystem*)Core_GetIXCore()->getPluginManager()->getInterface(IXMATERIALSYSTEM_GUID);
-
-	GXBlendDesc blendDesc;
-	blendDesc.renderTarget[0].useBlend = true;
-	blendDesc.renderTarget[0].blendSrcColor = blendDesc.renderTarget[0].blendSrcAlpha = GXBLEND_SRC_ALPHA;
-	blendDesc.renderTarget[0].blendDestColor = blendDesc.renderTarget[0].blendDestAlpha = GXBLEND_INV_SRC_ALPHA;
-	m_pBlendAlpha = m_pDev->createBlendState(&blendDesc);
-}
-
-void CFaceEdit::initViewport()
-{
-	RECT rc;
-	GetClientRect(m_hViewportWnd, &rc);
-	UINT uPanelWidth = rc.right - rc.left;
-	UINT uPanelHeight = rc.bottom - rc.top;
-
-	m_pSwapChain = m_pDev->createSwapChain(uPanelWidth, uPanelHeight, m_hViewportWnd);
 }
 
 void CFaceEdit::activate()
@@ -546,67 +454,6 @@ void CFaceEdit::initSelection()
 
 void CFaceEdit::render(IXGizmoRenderer *pRenderer)
 {
-	if(m_isDirty && m_pTex)
-	{
-		m_isDirty = false;
-
-		//////////////////////////////////////////////////////
-
-		IGXSurface *pTarget = m_pSwapChain->getColorTarget();
-
-		IGXContext *pCtx = m_pDev->getThreadContext();
-		IGXSurface *pOldRT = pCtx->getColorTarget();
-		pCtx->setColorTarget(pTarget);
-		mem_release(pTarget);
-		IGXDepthStencilSurface *pOldDS = pCtx->getDepthStencilSurface();
-		pCtx->unsetDepthStencilSurface();
-
-		pCtx->clear(GX_CLEAR_COLOR, float4(0, 0, 0, 0));
-
-		pCtx->setPrimitiveTopology(GXPT_TRIANGLELIST);
-		pCtx->setRasterizerState(NULL);
-		pCtx->setBlendState(m_pBlendAlpha);
-
-
-		{
-			IXMaterial *pMat = m_pMat;
-			IXTexture *pTex = m_pTex;
-
-			if(!pMat || !pMat->isTransparent())
-			{
-				pCtx->setBlendState(NULL);
-			}
-
-			SGCore_ShaderBind(m_idScreenOutShader);
-
-			IGXBaseTexture *pTexture = NULL;
-
-			pTex->getAPITexture(&pTexture, /*item.uCurrentFrame*/ 0);
-			pCtx->setPSTexture(pTexture);
-			mem_release(pTexture);
-
-			SGCore_ScreenQuadDraw();
-
-			SGCore_ShaderUnBind();
-		}
-
-
-
-		pCtx->setDepthStencilSurface(pOldDS);
-		mem_release(pOldDS);
-		pCtx->setColorTarget(pOldRT);
-		mem_release(pOldRT);
-
-
-
-
-
-		/////////////////////////////////////////////////////
-
-		m_pSwapChain->swapBuffers();
-	}
-
-
 	if(m_isMaskHidden)
 	{
 		return;
@@ -641,20 +488,36 @@ void CFaceEdit::setCurrentMaterial(const char *szMat)
 {
 	m_sCurrentMat = szMat;
 	m_pBrowser->setCurrentMaterial(szMat);
-	mem_release(m_pMat);
-	mem_release(m_pTex);
-	m_pBrowser->getCurrentMaterialInfo(&m_pMat, &m_pTex);
 
-	if(m_pTex)
+	IXMaterial *pMat = NULL;
+	IXTexture *pTex = NULL;
+
+	m_pBrowser->getCurrentMaterialInfo(&pMat, &pTex);
+
+	if(pTex)
 	{
 		char tmp[64];
-		sprintf(tmp, "%ux%u", m_pTex->getWidth(), m_pTex->getHeight());
+		sprintf(tmp, "%ux%u", pTex->getWidth(), pTex->getHeight());
 		SetDlgItemText(m_hDlgWnd, IDC_TEX_SIZE, tmp);
 	}
 
-	syncRecentMaterials();
+	IKeyIterator *pIter = NULL;
+	const char *szTexture = pMat->getTextureName("txBase");
+	if(!szTexture)
+	{
+		pIter = pMat->getTexturesIterator();
+		if(pIter)
+		{
+			szTexture = pIter->getCurrent();
+		}
+	}
+	SetWindowTextW(m_hViewportWnd, szTexture ? CMB2WC(szTexture) : L"");
+	mem_release(pIter);
 
-	m_isDirty = true;
+	mem_release(pMat);
+	mem_release(pTex);
+
+	syncRecentMaterials();
 }
 
 void CFaceEdit::syncRecentMaterials()
@@ -976,7 +839,6 @@ void CFaceEdit::justify(int how, bool isAllAsOne)
 
 		if(!isAllAsOne)
 		{
-			GXCUBEMAP_FACE_NEGATIVE_X;
 			fd.pObject->getFaceExtents(fd.uFace, extents);
 		}
 
@@ -1030,8 +892,8 @@ void CFaceEdit::justify(int how, bool isAllAsOne)
 			break;
 
 		case IDC_JUSTIFY_C:
-			oldFace.fSShift = (vTopLeft.x + vBottomRight.x) * 0.5f;
-			oldFace.fTShift = (vTopLeft.y + vBottomRight.y) * 0.5f;
+			oldFace.fSShift = -(vTopLeft.x + vBottomRight.x) * 0.5f - 0.5f;
+			oldFace.fTShift = -(vTopLeft.y + vBottomRight.y) * 0.5f - 0.5f;
 			break;
 
 		case IDC_JUSTIFY_R:
@@ -1116,7 +978,7 @@ void CFaceEdit::validateStates()
 
 void CFaceEdit::alignFaceToView(const FaceDesc &fd)
 {
-	ICamera *pCamera;
+	IXCamera *pCamera;
 	m_pEditor->getCameraForView(XWP_TOP_LEFT, &pCamera);
 	
 	BrushFace oldFace;

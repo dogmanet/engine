@@ -40,7 +40,7 @@ void XMETHODCALLTYPE CEditable::startup(IGXDevice *pDevice)
 
 	//pMaterialSystem->getTexture("dev_white", &m_pWhiteTexture);
 }
-void CEditable::shutdown()
+void XMETHODCALLTYPE CEditable::shutdown()
 {
 	//mem_release(m_pWhiteTexture);
 	//mem_release(m_pBlendColorFactor);
@@ -84,10 +84,10 @@ void CEditable::removeObject(CEditorObject *pObject)
 //	}
 //}
 
-//void CEditable::onSelectionChanged(CEditorObject *pObject)
-//{
-//	m_pEditorExtension->onSelectionChanged(pObject);
-//}
+void CEditable::onSelectionChanged(CEditorObject *pObject)
+{
+	m_pEditorExtension->onSelectionChanged(pObject);
+}
 
 void CEditable::save(const char *szLevelName)
 {
@@ -461,4 +461,9 @@ void CEditable::onModelRestored(CEditorModel *pModel)
 		add_ref(pModel);
 		m_aModels.push_back(pModel);
 	}
+}
+
+CVertexTool* CEditable::getVertexTool()
+{
+	return(m_pEditorExtension->getVertexTool());
 }

@@ -18,6 +18,8 @@ public:
 
 	virtual UINT XMETHODCALLTYPE getNumFrames() const = 0;
 	virtual float XMETHODCALLTYPE getFrameTime() const = 0;
+
+	virtual const char* XMETHODCALLTYPE getName() const = 0;
 };
 
 #endif

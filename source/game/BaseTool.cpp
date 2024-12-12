@@ -237,7 +237,7 @@ void CBaseTool::updateTransform()
 
 void CBaseTool::_update(float dt)
 {
-	if(m_inventoryMode == IIM_EQUIPPED && m_fCenterLength > 0.4f /* player capsule radius */) 
+	if(m_inventoryMode == IIM_IN_HANDS && m_fCenterLength > 0.4f /* player capsule radius */)
 	{
 		// raycast towards to check if
 		float3 start = m_pParent->getPos();
@@ -316,13 +316,14 @@ void CBaseTool::setParent(CBaseEntity * pEnt, int attachment)
 
 void CBaseTool::_rezoom()
 {
-	const float * r_default_fov = GET_PCVAR_FLOAT("r_default_fov");
+	//const float * r_default_fov = GET_PCVAR_FLOAT("r_default_fov");
 	m_vSlotPosResult = (float3)vlerp(vlerp(m_vSlotPos, m_vSlotPosClose, m_fCloseProgress), m_vSlotPosAim, m_fZoomProgress);
 	//m_vWpnShakeAngles
 	m_qSlotRotResult = SMquaternionSlerp(SMquaternionSlerp(m_qSlotRot, m_qSlotRotClose, m_fCloseProgress), m_qSlotRotAim, m_fZoomProgress);
 	if(m_pOwner && m_pOwner->getClassName() && !fstrcmp(m_pOwner->getClassName(), "player"))
 	{
-		((CPlayer*)m_pOwner.getEntity())->getCamera()->getCamera()->setFOV(SMToRadian(vlerp(*r_default_fov, *r_default_fov - 10.0f, m_fZoomProgress)));
+		//((CPlayer*)m_pOwner.getEntity())->getCamera()->getCamera()->setFOV(SMToRadian(vlerp(*r_default_fov, *r_default_fov - 10.0f, m_fZoomProgress)));
+		((CPlayer*)m_pOwner.getEntity())->getCamera()->getCamera()->setFOVmultiplier(lerpf(1.0f, 0.8f, m_fZoomProgress));
 	}
 	updateTransform();
 }

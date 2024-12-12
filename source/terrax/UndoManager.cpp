@@ -68,8 +68,16 @@ void CUndoManager::flushRedo()
 	}
 }
 
-bool CUndoManager::execCommand(IXEditorCommand *pCommand)
+bool CUndoManager::execCommand(IXEditorCommand *pCommand, bool bSaveForUndo)
 {
+	if(!bSaveForUndo)
+	{
+		++m_isInCommandContext;
+		bool isSuccessful = !pCommand->isEmpty() && pCommand->exec();
+		--m_isInCommandContext;
+		return(isSuccessful);
+	}
+
 	Array<IXEditorCommand*> *pOldAttachedCommands = m_pAttachedCommands;
 	Array<IXEditorCommand*> aAttachedCommands;
 	m_pAttachedCommands = &aAttachedCommands;

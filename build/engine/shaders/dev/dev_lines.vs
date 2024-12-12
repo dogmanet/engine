@@ -12,10 +12,16 @@ dev_lines.vs
 VSO_DevLines main(VSI_DevLines IN)
 {
 	VSO_DevLines OUT = (VSO_DevLines)0;
-	
 	float3 vPos = IN.vPosition.xyz;
-	float3 vRight = normalize(cross(vPos - g_vObserverPosCam.xyz, IN.vDir));
 	
+#ifdef IS_ORTHO
+	float3 vLook = /* normalize( */g_mObserverInvV._m20_m21_m22/* ) */;
+	
+	float3 vRight = normalize(cross(vLook, IN.vDir));
+#else
+	float3 vRight = normalize(cross(vPos - g_vObserverPosCam.xyz, IN.vDir));
+#endif
+
 	float fOffset = IN.vPosition.w * (IN.vTexUV.y - 0.5);
 	
 #ifdef IS_FIXED

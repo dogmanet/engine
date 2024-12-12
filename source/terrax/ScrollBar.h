@@ -1,7 +1,8 @@
 #ifndef __SCROLL_BAR_H
 #define __SCROLL_BAR_H
 
-#include <graphix/graphix.h>
+//#include <graphix/graphix.h>
+#include <xcommon/render/IXRender.h>
 //#include "terrax.h"
 
 class IScrollEventListener
@@ -17,7 +18,7 @@ public:
 class CScrollBar final
 {
 public:
-	CScrollBar(IGXDevice *pDev, IScrollEventListener *pEventListener);
+	CScrollBar(IXRender *pRender, IScrollEventListener *pEventListener);
 	~CScrollBar();
 
 	void render();
@@ -34,10 +35,7 @@ public:
 		return(m_iScrollPos);
 	}
 
-	UINT getWidth() const
-	{
-		return(18);
-	}
+	UINT getWidth() const;
 
 	void onMouseDown(int y);
 	void onMouseUp();
@@ -45,7 +43,10 @@ public:
 	void onMouseHover(bool isHover);
 
 	void update(float fDT);
+
+	void setScale(float fScale);
 private:
+	IXRender *m_pRender = NULL;
 	IGXDevice *m_pDev = NULL;
 
 	IGXIndexBuffer *m_pFrameIB = NULL;
@@ -66,7 +67,9 @@ private:
 		float fHandlerPos;
 
 		float fHandlerSize;
-		float3_t _dummy;
+
+		float fScale;
+		float2_t _dummy;
 	};
 
 	FrameState m_frameState;
@@ -98,6 +101,8 @@ private:
 	int m_iDragStartY = 0;
 
 	float m_fTimer = 0.0f;
+
+	float m_fScale = 1.0f;
 private:
 	void initHelpers();
 

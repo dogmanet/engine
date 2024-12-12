@@ -8,9 +8,11 @@ hdr_tonemapping
 //##########################################################################
 
 SamplerState g_sPointClamp: register(s0);
+SamplerState g_sLinearClamp: register(s1);
 Texture2D g_txScene: register(t0);
 Texture2D g_txLuminance: register(t1);
 Texture2D g_txLuminance2: register(t2);
+Texture2D g_txBloom: register(t3);
 
 //##########################################################################
 
@@ -65,19 +67,16 @@ float4 main(VSO_PP IN):SV_TARGET
 {
 	float4 vColor = g_txScene.Sample(g_sPointClamp, IN.vTexUV);
 	float fLuminance = g_txLuminance.Load(uint3(0, 0, 0)).x;
-	float fLuminance2 = exp(g_txLuminance2.Load(uint3(0, 0, 0)).x);
+	// float fLuminance2 = exp(g_txLuminance2.Load(uint3(0, 0, 0)).x);	
+	float4 vBloomColor = g_txBloom.Sample(g_sLinearClamp, IN.vTexUV);
+
+	// return(vBloomColor);
 
 	float fExposure = 0;
-	vColor.xyz = ToneMap(vColor.xyz, fLuminance, 0, fExposure);
-	
-	/* if(IN.vTexUV.x > 0.9 && IN.vTexUV.y > 0.9)
-	{
-		vColor.xyz = fLuminance;
-	}
-	if(IN.vTexUV.x > 0.9 && IN.vTexUV.y > 0.8 && IN.vTexUV.y < 0.9)
-	{
-		vColor.xyz = fLuminance2;
-	} */
-	
+	vColor.xyz = ToneMap(vColor.xyz * 0.95f + vBloomColor.xyz * 0.05f, fLuminance, 0, fExposure);
+	// vColor.xyz = ToneMap(vColor.xyz, fLuminance, 0, fExposure);
+	// vColor.xyz += vBloomColor.xyz * (1.0 - CalcLuminance(vColor.xyz));
+	// vColor.xyz = vColor.xyz * 0.9f + vBloomColor.xyz * 0.1f;
+
     return(vColor);
 }

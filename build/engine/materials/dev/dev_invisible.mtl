@@ -1,0 +1,4 @@
+[dev_invisible]
+shader = Transparent
+tex.txBase = dev_invisible.dds
+flag.editorial = 1

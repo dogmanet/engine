@@ -26,11 +26,16 @@ namespace gui
 
 		CDOMnode::~CDOMnode()
 		{
+			if(m_pRenderFrame)
+			{
+				assert(m_pRenderFrame->getNode() == this);
+				m_pRenderFrame->clearNode();
+			}
 			while(m_vChilds.size())
 			{
 				IDOMnode * pNode = m_vChilds[0];
-				removeChild(pNode);
-				mem_delete(pNode);
+				removeChild(pNode, false);
+				//mem_delete(pNode);
 			}
 		}
 		
@@ -80,9 +85,13 @@ namespace gui
 				wprintf(L"  ");
 			}
 			wprintf(L"<%s", CDOMnode::getNodeNameById(m_iNodeId).c_str());
-			for(AssotiativeArray<StringW, StringW>::Iterator i = m_mAttributes.begin(); i; ++i)
+			/*for(AssotiativeArray<StringW, StringW>::Iterator i = m_mAttributes.begin(); i; ++i)
 			{
 				wprintf(L" %s=\"%s\"", i.first->c_str(), i.second->c_str());
+			}*/
+			fora(i, m_aAttributes)
+			{
+				wprintf(L" %s=\"%s\"", m_aAttributes[i].wsName.c_str(), m_aAttributes[i].wsValue.c_str());
 			}
 			wprintf(L">\n");
 			for(int i = 0, s = m_vChilds.size(); i < s; i++)
@@ -126,6 +135,7 @@ namespace gui
 
 		void CDOMnode::resetStyleChanges()
 		{
+			m_bSkipStructureChanges = false;
 			m_css.resetChanges();
 			for(int i = 0, s = m_vChilds.size(); i < s; i++)
 			{
@@ -135,10 +145,17 @@ namespace gui
 		
 		const StringW & CDOMnode::getAttribute(const StringW & name)
 		{
-			if(m_mAttributes.KeyExists(name))
+			int idx = m_aAttributes.indexOf(name, [](const Attribute &a, const StringW &b){
+				return(a.wsName == b); 
+			});
+			if(idx >= 0)
+			{
+				return(m_aAttributes[idx].wsValue);
+			}
+			/*if(m_mAttributes.KeyExists(name))
 			{
 				return(m_mAttributes[name]);
-			}
+			}*/
 			static StringW empt(L"");
 			return(empt);
 		}
@@ -149,6 +166,7 @@ namespace gui
 			if(!noSelf)
 			{
 				CDOMnode::applyCSSrules(&m_css_self, this);
+				m_css_self.resetChanges();
 			}
 			UINT c = m_vChilds.size();
 			for(UINT i = 0; i < c; i++)
@@ -167,8 +185,8 @@ namespace gui
 				APPLY_RULE(p_text_decoration_line);
 				APPLY_RULE(p_visibility);
 
-				node->m_css.inheritTransitions(&m_css);
-				node->m_css.setupTransitions(&node->m_css);
+				//node->m_css.inheritTransitions(&m_css);
+				node->m_css.setupTransitions(&/*node->*/m_css);
 				//APPLY_RULE(p_transition_property);
 				//APPLY_RULE(p_transition_duration);
 

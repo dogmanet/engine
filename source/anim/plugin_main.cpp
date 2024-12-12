@@ -110,45 +110,49 @@ public:
 		}
 		return(&s_guid);
 	}
-	IXUnknown* XMETHODCALLTYPE getInterface(const XGUID &guid) override
+	void XMETHODCALLTYPE getInterface(UINT id, void **ppOut) override
 	{
-		if(guid == IXRENDERABLE_GUID)
+		switch(id)
 		{
+		case 0:
 			if(!m_pRenderable)
 			{
 				init();
 			}
-			m_pRenderable->AddRef();
-			return(m_pRenderable);
-		}
-		if(guid == IXUPDATABLE_GUID)
-		{
+			add_ref(m_pRenderable);
+			*ppOut = m_pRenderable;
+			break;
+
+		case 1:
 			if(!m_pUpdatable)
 			{
 				init();
 			}
-			m_pUpdatable->AddRef();
-			return(m_pUpdatable);
-		}
-		if(guid == IXANIMATEDMODELPROVIDER_GUID)
-		{
+			add_ref(m_pUpdatable);
+			*ppOut = m_pUpdatable;
+			break;
+
+		case 2:
 			if(!m_pAnimatedModelProvider)
 			{
 				init();
 			}
-			m_pAnimatedModelProvider->AddRef();
-			return(m_pAnimatedModelProvider);
-		}
-		if(guid == IXDYNAMICMODELPROVIDER_GUID)
-		{
+			add_ref(m_pAnimatedModelProvider);
+			*ppOut = m_pAnimatedModelProvider;
+			break;
+
+		case 3:
 			if(!m_pDynamicModelProvider)
 			{
 				init();
 			}
-			m_pDynamicModelProvider->AddRef();
-			return(m_pDynamicModelProvider);
+			add_ref(m_pDynamicModelProvider);
+			*ppOut = m_pDynamicModelProvider;
+			break;
+		
+		default:
+			*ppOut = NULL;
 		}
-		return(NULL);
 	}
 
 protected:

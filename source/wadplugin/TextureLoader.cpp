@@ -231,6 +231,7 @@ bool CTextureLoader::loadIndexedRGB(UINT uMip, UINT uFrame, byte *aPalette, IXRe
 	if(pMip)
 	{
 		assert(pMip->sizeData == pResource->getTextureBytes(m_format, m_texture43.uWidth >> uMip, m_texture43.uHeight >> uMip));
+		pMip->isWritten = true;
 
 		byte *pData = pMip->pData;
 		byte ci;

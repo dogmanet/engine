@@ -3,6 +3,7 @@
 
 #include "IXEngine.h"
 #include <xUI/IXUI.h>
+#include <xcommon/render/IXRender.h>
 
 // #define USE_BREAKPAD
 
@@ -16,10 +17,11 @@ enum WANT_RESIZE
 	WR_WIDTH = 0x0001,
 	WR_HEIGHT = 0x0002,
 	WR_WINDOWED = 0x0004,
-	WR_BORDERLESS = 0x0008
+	WR_BORDERLESS = 0x0008,
+	WR_VSYNC = 0x0010
 };
 
-class CEngine: public IXUnknownImplementation<IXEngine>
+class CEngine final: public IXUnknownImplementation<IXEngine>
 {
 	friend class CMainLoopTask;
 public:
@@ -34,7 +36,7 @@ public:
 	INT_PTR XMETHODCALLTYPE onMessage(UINT msg, WPARAM wParam, LPARAM lParam) override;
 	IXCore* XMETHODCALLTYPE getCore() override;
 
-protected:
+private:
 
 	void initPaths();
 
@@ -44,20 +46,28 @@ protected:
 	void onRWinHeightChanged();
 	void onRWinWindowedChanged();
 	void onRWinBorderlessChanged();
+	void onRVSyncChanged();
 
 	bool checkResize();
 
 	void showProfile();
 
+private:
 	IXEngineCallback *m_pCallback = NULL;
 
 	IXCore *m_pCore = NULL;
+
+	IXRender *m_pRender = NULL;
+	IXRenderTarget *m_pScreenTarget = NULL;
 
 	WANT_RESIZE m_wantResize = WR_NONE;
 
 	IXUI *m_pXUI = NULL;
 
 	IEventChannel<XEventObserverChanged> *m_pObserverChangedEventChannel = NULL;
+
+	std::chrono::high_resolution_clock::time_point m_fPrevTime = std::chrono::high_resolution_clock::now();
+	float m_fDeltaTime = 0.0f;
 
 #ifdef USE_BREAKPAD
 	google_breakpad::ExceptionHandler *m_pBreakpadHandler = NULL;

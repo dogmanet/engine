@@ -184,6 +184,7 @@ namespace gui
 			}
 
 			void addFile(const WCHAR * szFile, int iMaxWidth = -1);
+			void addStyle(const WCHAR *wszText, int iMaxWidth = -1);
 			void dropStyles();
 
 			//	void RebuildIndex();

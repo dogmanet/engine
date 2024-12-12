@@ -6,7 +6,7 @@
 #include "IAsyncFileReader.h"
 #include "IAsyncTaskRunner.h"
 #include "XEvents.h"
-#include "IXRenderPipeline.h"
+//#include "IXRenderPipeline.h"
 #include "IXConfig.h"
 #include "IXBuffer.h"
 #include "IXConsole.h"
@@ -17,6 +17,7 @@
 class IPluginManager;
 class IXResourceManager;
 class ITask;
+class IXRenderPipeline;
 
 class IXCore: public IXUnknown
 {
@@ -28,8 +29,8 @@ public:
 	virtual IAsyncFileReader* XMETHODCALLTYPE newAsyncFileReader() = 0;
 	virtual IAsyncTaskRunner* XMETHODCALLTYPE newAsyncTaskRunner() = 0;
 
-	virtual void XMETHODCALLTYPE getRenderPipeline(IXRenderPipeline **ppRenderPipeline) = 0;
-	virtual void XMETHODCALLTYPE setRenderPipeline(IXRenderPipeline *pRenderPipeline) = 0;
+	virtual void XMETHODCALLTYPE __removed0(void **ppReserved) = 0;
+	virtual void XMETHODCALLTYPE __removed1(void *pReserved) = 0;
 
 	virtual UINT_PTR XMETHODCALLTYPE getCrtOutputHandler() = 0;
 

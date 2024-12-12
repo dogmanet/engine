@@ -30,6 +30,8 @@ namespace gui
 
 	void CDesktop::loadFromFile(const WCHAR * str)
 	{
+		m_pDoc->cleanup();
+
 		StringW file = StringW(m_pDesktopStack->getResourceDir()) + L"/" + str;
 		dom::IHTMLparser p;
 		p.setDocument(m_pDoc);
@@ -44,6 +46,10 @@ namespace gui
 		m_pFocusedNode = root;
 
 		swscanf(root->getAttribute(L"parallax").c_str(), L"%f", &m_fParallaxFactor);
+
+		m_pDoc->markDirty();
+
+		m_wsFile = str;
 	}
 
 	void CDesktop::setWidth(UINT w)
@@ -62,10 +68,15 @@ namespace gui
 
 	void CDesktop::createRenderTarget()
 	{
-		m_pRenderSurface = GetGUI()->getDevice()->createColorTarget(m_iWidth, m_iHeight, GXFMT_A8B8G8R8, GXMULTISAMPLE_4_SAMPLES, false);
-		m_pDepthStencilSurface = GetGUI()->getDevice()->createDepthStencilSurface(m_iWidth, m_iHeight, GXFMT_D24S8, GXMULTISAMPLE_4_SAMPLES, false);
+		m_pRenderSurface = GetGUI()->getDevice()->createColorTarget(m_iWidth, m_iHeight, GXFMT_A8B8G8R8, GXMULTISAMPLE_4_SAMPLES);
+		m_pDepthStencilSurface = GetGUI()->getDevice()->createDepthStencilSurface(m_iWidth, m_iHeight, GXFMT_D24S8, GXMULTISAMPLE_4_SAMPLES);
 
-		m_txFinal = m_pDesktopStack->getTextureManager()->createTexture(StringW(L"@") + m_sName, m_iWidth, m_iHeight, 32, true, NULL, false);
+
+		GetGUI()->getMaterialSystem()->addTexture(
+			(String("@gui/") + String(m_sName)).c_str(), 
+			GetGUI()->getDevice()->createTexture2D(m_iWidth, m_iHeight, 1, GX_TEXFLAG_RENDERTARGET, GXFMT_A8B8G8R8_SRGB), 
+			&m_txFinal
+		);
 
 		struct point
 		{
@@ -93,10 +104,7 @@ namespace gui
 
 		mem_release(m_pRenderSurface);
 		mem_release(m_pDepthStencilSurface);
-		if(m_txFinal)
-		{
-			m_pDesktopStack->getTextureManager()->unloadTexture(m_txFinal);
-		}
+		mem_release(m_txFinal);
 	}
 	void CDesktop::setDirty()
 	{
@@ -131,7 +139,12 @@ namespace gui
 		//	GetGUI()->getDevice()->SetRenderState(D3DRS_BLENDOPALPHA, D3DBLENDOP_MAX);
 			pCtx->setBlendState(GetGUI()->getBlendStates()->m_pDesktop);
 			
-			m_pDoc->render();
+
+			m_pDesktopStack->setTransformScaling(m_pDesktopStack->getScale());
+
+			m_pDoc->render(fTimeDelta);
+
+			m_pDesktopStack->setTransformScaling(1.0f);
 
 			pCtx->setBlendState(GetGUI()->getBlendStates()->m_pDefault);
 		//	GetGUI()->getDevice()->SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, FALSE);
@@ -143,8 +156,10 @@ namespace gui
 
 			//D3DXSaveSurfaceToFileA("../screenshots/gui.png", D3DXIFF_PNG, m_pRenderSurface, NULL, NULL);
 			
-			
-			IGXSurface *pNewSurface = m_txFinal->getAPItexture()->getMipmap();
+			IGXBaseTexture *pGXTexture;
+			m_txFinal->getAPITexture(&pGXTexture);
+			IGXSurface *pNewSurface = ((IGXTexture2D*)pGXTexture)->getMipmap();
+			mem_release(pGXTexture);
 			pCtx->downsampleColorTarget(m_pRenderSurface, pNewSurface);
 			mem_release(pNewSurface);
 
@@ -157,7 +172,7 @@ namespace gui
 		if(bPresent)
 		{
 			//const CPITexture def_w = CTextureManager::getTexture(L"/img/map.jpg");
-			m_pDesktopStack->getTextureManager()->bindTexture(m_txFinal);
+			GetGUI()->getMaterialSystem()->bindTexture(m_txFinal);
 
 
 			/*if(GetAsyncKeyState('L'))
@@ -206,7 +221,7 @@ namespace gui
 			};*/
 
 			auto shader = GetGUI()->getShaders()->m_baseTexturedColored;
-			SGCore_ShaderBind(shader.m_idShaderKit);
+			GetGUI()->getRender()->bindShader(pCtx, shader.m_idShaderKit);
 
 		//	static CSHADER def_sh = CTextureManager::loadShader(L"text");
 
@@ -233,7 +248,7 @@ namespace gui
 		}
 	}
 
-	CPITexture CDesktop::getTexture()
+	IXTexture* CDesktop::getTexture()
 	{
 		return(m_txFinal);
 	}
@@ -243,7 +258,7 @@ namespace gui
 		return(getDocument()->createFromText(html));
 	}
 
-	void CDesktop::dispatchEvent(IEvent ev)
+	void CDesktop::dispatchEvent(IEvent &ev)
 	{
 		//__try
 		{
@@ -258,7 +273,11 @@ namespace gui
 			RECT rc;
 			if(IsMouseEvent)
 			{
-				pTarget = (dom::CDOMnode*)m_pDoc->getElementByXY(ev.clientX, ev.clientY, true);
+				pTarget = m_pDoc->getCapture();
+				if(!pTarget)
+				{
+					pTarget = (dom::CDOMnode*)m_pDoc->getElementByXY(ev.clientX, ev.clientY, true);
+				}
 				if(!pTarget)
 				{
 					return;
@@ -366,7 +385,7 @@ namespace gui
 				{
 					if(pTarget == m_pFocusedNode)
 					{
-						ev.type = GUI_EVENT_TYPE_CLICK;
+						ev.type = ev.key == KEY_RBUTTON ? GUI_EVENT_TYPE_CONTEXTMENU : GUI_EVENT_TYPE_CLICK;
 						pTarget->dispatchEvent(ev);
 					}
 					else
@@ -419,15 +438,16 @@ namespace gui
 				ev.type = GUI_EVENT_TYPE_BLUR;
 				ev.target = m_pFocusedNode;
 				ev.relatedTarget = pNode;
-				m_pFocusedNode->dispatchEvent(ev);
+				m_pFocusedNode = NULL;
+				ev.target->dispatchEvent(ev);
 			}
 
-			ev.type = GUI_EVENT_TYPE_FOCUS;
-			ev.target = pNode;
-			ev.relatedTarget = m_pFocusedNode;
-			pNode->dispatchEvent(ev);
-
 			m_pFocusedNode = pNode;
+
+			ev.type = GUI_EVENT_TYPE_FOCUS;
+			ev.relatedTarget = ev.target;
+			ev.target = pNode;
+			pNode->dispatchEvent(ev);
 		}
 	}
 
@@ -449,5 +469,10 @@ namespace gui
 	float CDesktop::getParallaxFactor()
 	{
 		return(m_fParallaxFactor);
+	}
+
+	void CDesktop::reload()
+	{
+		loadFromFile(m_wsFile.c_str());
 	}
 };

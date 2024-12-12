@@ -86,6 +86,19 @@ struct VSI_Animation
 };
 
 
+//! частицы
+struct VSI_Particle
+{
+	float2 vTexUV    :TEXCOORD0;
+	
+	float4 vColor    :COLOR0;
+	float4 qRotLocal :TEXCOORD1;
+	float4 qRotGlobal:TEXCOORD2;
+	float3 vPosition :POSITION0;
+	float3 vSize     :TEXCOORD3;
+};
+
+
 //! вода
 struct VSO_WaterPlane
 {
@@ -116,6 +129,8 @@ struct VSO_SceneCommon
 	float4 vPos		:TEXCOORD2;
 	float3 vTangent	:TEXCOORD3;
 	float3 vBinormal	:TEXCOORD4;
+	float4 vColor	:COLOR0;
+	uint4 uInstanceId	:BLENDINDICES0;
 };
 
 struct GSO_SceneShadows
@@ -343,6 +358,20 @@ struct VSO_DevPoints
 	float4 vPosition :POSITION;
 	float4 vColor :TEXCOORD1;
 	float3 vTexUVMode :TEXCOORD0;
+};
+
+struct VSI_DevText
+{
+	float4 vPosTexUV :POSITION0;
+	float4 vColor :TEXCOORD0;
+	float3 vRefPos :TEXCOORD2;
+};
+
+struct VSO_DevText
+{
+	float4 vPosition :POSITION;
+	float4 vColor :TEXCOORD1;
+	float2 vTexUV :TEXCOORD0;
 };
 
 struct VSO_TXTextured

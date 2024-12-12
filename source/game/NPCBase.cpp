@@ -64,7 +64,7 @@ void CNPCBase::setModel(const char * mdl)
 {
 	BaseClass::setModel(mdl);
 
-	if(m_pModel && m_pModel->asAnimatedModel())
+	if(m_pModel && m_pHeadEnt && m_pModel->asAnimatedModel())
 	{
 		ID idBone = m_pModel->asAnimatedModel()->getBoneId("bip01_ponytail1");
 

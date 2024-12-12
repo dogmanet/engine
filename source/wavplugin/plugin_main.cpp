@@ -38,13 +38,17 @@ public:
 		}
 		return(&s_guid);
 	}
-	IXUnknown * XMETHODCALLTYPE getInterface(const XGUID &guid) override
+	void XMETHODCALLTYPE getInterface(UINT id, void **ppOut) override
 	{
-		if (guid == IXAUDIOCODEC_GUID)
+		switch(id)
 		{
-			return(new CAudioCodecWave(m_pCore->getFileSystem()));
+		case 0:
+			*ppOut = new CAudioCodecWave(m_pCore->getFileSystem());
+			break;
+		
+		default:
+			*ppOut = NULL;
 		}
-		return(NULL);
 	}
 
 protected:

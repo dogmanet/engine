@@ -20,7 +20,10 @@ CResourceModelAnimated::~CResourceModelAnimated()
 	}
 	mem_delete_a(m_pControllers);
 
-	mem_delete_a(m_pHitboxes);
+	fora(i, m_aHitBoxes)
+	{
+		mem_release(m_aHitBoxes[i].pPhysbox);
+	}
 
 	for(UINT i = 0, l = m_aImports.size(); i < l; ++i)
 	{
@@ -368,28 +371,75 @@ XResourceModelController * XMETHODCALLTYPE CResourceModelAnimated::getController
 
 UINT XMETHODCALLTYPE CResourceModelAnimated::getHitboxCount() const
 {
-	return(m_uHitboxCount);
+	return(m_aHitBoxes.size());
 }
 void XMETHODCALLTYPE CResourceModelAnimated::setHitboxCount(UINT uCount)
 {
-	mem_delete_a(m_pHitboxes);
-	m_pHitboxes = new XResourceModelHitbox[uCount];
-	memset(m_pHitboxes, 0, sizeof(XResourceModelHitbox)* uCount);
-	m_uHitboxCount = uCount;
+	m_aHitBoxes.resize(uCount);
 }
-XResourceModelHitbox * XMETHODCALLTYPE CResourceModelAnimated::getHitbox(UINT uIndex)
+void XMETHODCALLTYPE CResourceModelAnimated::setHitbox(UINT uIndex, IModelPhysbox *pPhysbox, int iBone, const char *szName, XHITBOXBODYPART part)
 {
-	assert(uIndex < m_uHitboxCount);
-	return(&m_pHitboxes[uIndex]);
+	assert(uIndex < m_aHitBoxes.size());
+	if(uIndex < m_aHitBoxes.size())
+	{
+		Hitbox &hb = m_aHitBoxes[uIndex];
+		mem_release(hb.pPhysbox);
+		hb.pPhysbox = pPhysbox;
+		add_ref(pPhysbox);
+		hb.iBone = iBone;
+		hb.sName = szName;
+		hb.part = part;
+	}
 }
-const XResourceModelHitbox * XMETHODCALLTYPE CResourceModelAnimated::getHitbox(UINT uIndex) const
+IModelPhysbox* XMETHODCALLTYPE CResourceModelAnimated::getHitbox(UINT uIndex)
 {
-	assert(uIndex < m_uHitboxCount);
-	return(&m_pHitboxes[uIndex]);
+	assert(uIndex < m_aHitBoxes.size());
+	if(uIndex < m_aHitBoxes.size())
+	{
+		return(m_aHitBoxes[uIndex].pPhysbox);
+	}
+	return(NULL);
+}
+const IModelPhysbox* XMETHODCALLTYPE CResourceModelAnimated::getHitbox(UINT uIndex) const
+{
+	assert(uIndex < m_aHitBoxes.size());
+	if(uIndex < m_aHitBoxes.size())
+	{
+		return(m_aHitBoxes[uIndex].pPhysbox);
+	}
+	return(NULL);
 }
 
 bool XMETHODCALLTYPE CResourceModelAnimated::validate() const
 {
 	//@TODO: Implement me!
 	return(true);
+}
+
+const char* XMETHODCALLTYPE CResourceModelAnimated::getHitboxName(UINT uIndex) const
+{
+	assert(uIndex < m_aHitBoxes.size());
+	if(uIndex < m_aHitBoxes.size())
+	{
+		return(m_aHitBoxes[uIndex].sName.c_str());
+	}
+	return(NULL);
+}
+int XMETHODCALLTYPE CResourceModelAnimated::getHitboxBone(UINT uIndex) const
+{
+	assert(uIndex < m_aHitBoxes.size());
+	if(uIndex < m_aHitBoxes.size())
+	{
+		return(m_aHitBoxes[uIndex].iBone);
+	}
+	return(-1);
+}
+XHITBOXBODYPART XMETHODCALLTYPE CResourceModelAnimated::getHitboxBodyPart(UINT uIndex) const
+{
+	assert(uIndex < m_aHitBoxes.size());
+	if(uIndex < m_aHitBoxes.size())
+	{
+		return(m_aHitBoxes[uIndex].part);
+	}
+	return(XHBP_DEFAULT);
 }

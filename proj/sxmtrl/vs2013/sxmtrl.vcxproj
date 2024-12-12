@@ -68,23 +68,23 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>../../../build/bin/</OutDir>
-    <TargetName>$(ProjectName)_d</TargetName>
+    <OutDir>../../../build/bin/plugins/</OutDir>
+    <TargetName>$(ProjectName)</TargetName>
     <IncludePath>../../../source;../../../sdks/;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
     <LibraryPath>../../../libs;$(LibraryPath);$(WindowsSDK_LibraryPath_x86)</LibraryPath>
     <SourcePath>../../../source;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86)</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <TargetName>$(ProjectName)_d</TargetName>
+    <TargetName>$(ProjectName)</TargetName>
     <IncludePath>../../../source;../../../sdks/;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
     <LibraryPath>../../../libs64;$(LibraryPath);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
     <SourcePath>../../../source;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86)</SourcePath>
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>../../../build/bin64/</OutDir>
+    <OutDir>../../../build/bin64/plugins/</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>../../../build/bin/</OutDir>
+    <OutDir>../../../build/bin/plugins/</OutDir>
     <IncludePath>../../../source;../../../sdks/;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
     <LibraryPath>../../../libs;$(LibraryPath);$(WindowsSDK_LibraryPath_x86)</LibraryPath>
     <SourcePath>../../../source;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86)</SourcePath>
@@ -94,7 +94,7 @@
     <LibraryPath>../../../libs64;$(LibraryPath);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
     <SourcePath>../../../source;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86)</SourcePath>
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>../../../build/bin64/</OutDir>
+    <OutDir>../../../build/bin64/plugins/</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -174,8 +174,9 @@
     <ClCompile Include="..\..\..\source\common\string.cpp" />
     <ClCompile Include="..\..\..\source\mtrl\LogicExpression.cpp" />
     <ClCompile Include="..\..\..\source\mtrl\MaterialSystem.cpp" />
-    <ClCompile Include="..\..\..\source\mtrl\sxmtrl.cpp" />
-    <ClCompile Include="..\..\..\source\mtrl\sxmtrl_dll.cpp" />
+    <ClCompile Include="..\..\..\source\mtrl\plugin_main.cpp" />
+    <ClCompile Include="..\..\..\source\mtrl\dllmain.cpp" />
+    <ClCompile Include="..\..\..\source\mtrl\Updatable.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\source\common\string.h" />
@@ -183,9 +184,9 @@
     <ClInclude Include="..\..\..\source\mtrl\IXMaterialSystem.h" />
     <ClInclude Include="..\..\..\source\mtrl\IXTexture.h" />
     <ClInclude Include="..\..\..\source\mtrl\LogicExpression.h" />
+    <ClInclude Include="..\..\..\source\mtrl\Updatable.h" />
     <ClInclude Include="..\..\..\source\mtrl\XMaterialProperty.h" />
     <ClInclude Include="..\..\..\source\mtrl\MaterialSystem.h" />
-    <ClInclude Include="..\..\..\source\mtrl\sxmtrl.h" />
     <ClInclude Include="..\..\..\source\xcommon\IXMaterialLoader.h" />
     <ClInclude Include="..\..\..\source\xcommon\IXMaterialProxy.h" />
   </ItemGroup>

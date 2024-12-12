@@ -22,7 +22,29 @@ CCharacterInventory::~CCharacterInventory()
 			REMOVE_ENTITY(m_ppSlots[i]);
 		}
 	}
+
 	mem_delete_a(m_ppSlots);
+
+	fora(i, m_aRecipes)
+	{
+		REMOVE_ENTITY(m_aRecipes[i]);
+	}
+}
+
+void CCharacterInventory::initEquipItems(UINT uCount, const EQUIP_ITEM_TYPE *pTypes)
+{
+	m_aEquipItems.resize(uCount);
+
+	auto &enumReflector = EnumReflector::Get<EQUIP_ITEM_TYPE>();
+
+	UINT *pTypeCounts = (UINT*)alloca(sizeof(UINT) * enumReflector.getCount());
+	memset(pTypeCounts, 0, sizeof(UINT) * enumReflector.getCount());
+
+	fora(i, m_aEquipItems)
+	{
+		m_aEquipItems[i].type = pTypes[i];
+		m_aEquipItems[i].uIndex = pTypeCounts[pTypes[i]]++;
+	}
 }
 
 bool CCharacterInventory::hasItems(const char * szClassName, int iCount)
@@ -33,7 +55,7 @@ bool CCharacterInventory::hasItems(const char * szClassName, int iCount)
 	{
 		if(m_ppSlots[i] && !fstrcmp(m_ppSlots[i]->getClassName(), szClassName))
 		{
-			iCount -= m_ppSlots[i]->m_iInvStackCurSize;
+			iCount -= m_ppSlots[i]->m_uInvStackCurSize;
 			if(iCount <= 0)
 			{
 				return(true);
@@ -53,12 +75,20 @@ int CCharacterInventory::consumeItems(const char *szClassName, int iCount)
 	{
 		if(m_ppSlots[i] && !fstrcmp(m_ppSlots[i]->getClassName(), szClassName))
 		{
-			if(m_ppSlots[i]->m_iInvStackCurSize >= iCount)
+			if(m_ppSlots[i]->m_uInvStackCurSize >= iCount)
 			{
 				iConsumed += iCount;
-				m_ppSlots[i]->m_iInvStackCurSize -= iCount;
-				if(m_ppSlots[i]->m_iInvStackCurSize <= 0)
+				m_ppSlots[i]->m_uInvStackCurSize -= iCount;
+				if(m_ppSlots[i]->m_uInvStackCurSize <= 0)
 				{
+					fora(j, m_aEquipItems)
+					{
+						if(m_aEquipItems[j].pItem == m_ppSlots[i])
+						{
+							m_aEquipItems[j].pItem = NULL;
+							break;
+						}
+					}
 					REMOVE_ENTITY(m_ppSlots[i]);
 					m_ppSlots[i] = 0;
 				}
@@ -66,9 +96,18 @@ int CCharacterInventory::consumeItems(const char *szClassName, int iCount)
 			}
 			else
 			{
-				iConsumed += m_ppSlots[i]->m_iInvStackCurSize;
-				iCount -= m_ppSlots[i]->m_iInvStackCurSize;
+				iConsumed += m_ppSlots[i]->m_uInvStackCurSize;
+				iCount -= m_ppSlots[i]->m_uInvStackCurSize;
 				
+				fora(j, m_aEquipItems)
+				{
+					if(m_aEquipItems[j].pItem == m_ppSlots[i])
+					{
+						m_aEquipItems[j].pItem = NULL;
+						break;
+					}
+				}
+
 				REMOVE_ENTITY(m_ppSlots[i]);
 				m_ppSlots[i] = 0;
 			}
@@ -81,23 +120,24 @@ int CCharacterInventory::consumeItems(const char *szClassName, int iCount)
 void CCharacterInventory::putItems(const char *szClassName, int iCount)
 {
 	assert(iCount > 0);
+
 	for(int i = 0; i < m_iSlotCount; ++i)
 	{
 		if(m_ppSlots[i] && !fstrcmp(m_ppSlots[i]->getClassName(), szClassName) && m_ppSlots[i]->m_bInvStackable)
 		{
-			int iCanAdd = m_ppSlots[i]->m_iInvStackMaxSize - m_ppSlots[i]->m_iInvStackCurSize;
+			int iCanAdd = m_ppSlots[i]->m_uInvStackMaxSize - m_ppSlots[i]->m_uInvStackCurSize;
 			if(iCanAdd > 0)
 			{
 				if(iCanAdd >= iCount)
 				{
-					m_ppSlots[i]->m_iInvStackCurSize += iCount;
+					m_ppSlots[i]->m_uInvStackCurSize += iCount;
 					iCount = 0;
 					break;
 				}
 				else
 				{
 					iCount -= iCanAdd;
-					m_ppSlots[i]->m_iInvStackCurSize += iCanAdd;
+					m_ppSlots[i]->m_uInvStackCurSize += iCanAdd;
 				}
 			}
 		}
@@ -109,22 +149,33 @@ void CCharacterInventory::putItems(const char *szClassName, int iCount)
 		{
 			if(!m_ppSlots[i])
 			{
-				if((m_ppSlots[i] = (CBaseItem*)CREATE_ENTITY(szClassName, m_pOwner->getManager())))
+				CBaseItem *pItem = (CBaseItem*)CREATE_ENTITY(szClassName, m_pOwner->getManager());
+				if(pItem)
 				{
-					m_ppSlots[i]->setMode(IIM_INVENTORY);
-					int iCanAdd = m_ppSlots[i]->m_iInvStackMaxSize - m_ppSlots[i]->m_iInvStackCurSize;
-					if(iCanAdd > 0)
+					if(CEntityFactoryMap::IsEntityOfClass(pItem, "base_recipe"))
 					{
-						if(iCanAdd >= iCount)
+						addRecipe((CBaseRecipe*)pItem);
+						break;
+					}
+					else
+					{
+						m_ppSlots[i] = pItem;
+						m_ppSlots[i]->m_uInvStackCurSize = 0;
+						m_ppSlots[i]->setMode(IIM_INVENTORY);
+						int iCanAdd = m_ppSlots[i]->m_uInvStackMaxSize;
+						if (iCanAdd > 0)
 						{
-							m_ppSlots[i]->m_iInvStackCurSize += iCount;
-							iCount = 0;
-							break;
-						}
-						else
-						{
-							iCount -= iCanAdd;
-							m_ppSlots[i]->m_iInvStackCurSize += iCanAdd;
+							if (iCanAdd >= iCount)
+							{
+								m_ppSlots[i]->m_uInvStackCurSize += iCount;
+								iCount = 0;
+								break;
+							}
+							else
+							{
+								iCount -= iCanAdd;
+								m_ppSlots[i]->m_uInvStackCurSize += iCanAdd;
+							}
 						}
 					}
 				}
@@ -142,70 +193,79 @@ void CCharacterInventory::putItem(CBaseItem *pItem)
 {
 	assert(pItem);
 
-	for(int i = 0; i < m_iSlotCount; ++i)
+	if(CEntityFactoryMap::IsEntityOfClass(pItem, "base_recipe"))
 	{
-		if(m_ppSlots[i] && pItem->m_bInvStackable && !fstrcmp(m_ppSlots[i]->getClassName(), pItem->getClassName()))
+		addRecipe((CBaseRecipe*)pItem);
+	}
+	else
+	{
+		for (int i = 0; i < m_iSlotCount; ++i)
 		{
-			int iCanAdd = m_ppSlots[i]->m_iInvStackMaxSize - m_ppSlots[i]->m_iInvStackCurSize;
-			if(iCanAdd > 0)
+			if(m_ppSlots[i] && pItem->m_bInvStackable && !fstrcmp(m_ppSlots[i]->getClassName(), pItem->getClassName()))
 			{
-				if(iCanAdd >= pItem->m_iInvStackCurSize)
+				int iCanAdd = m_ppSlots[i]->m_uInvStackMaxSize - m_ppSlots[i]->m_uInvStackCurSize;
+				if(iCanAdd > 0)
 				{
-					m_ppSlots[i]->m_iInvStackCurSize += pItem->m_iInvStackCurSize;
-					pItem->m_iInvStackCurSize = 0;
-					break;
-				}
-				else
-				{
-					pItem->m_iInvStackCurSize -= iCanAdd;
-					m_ppSlots[i]->m_iInvStackCurSize += iCanAdd;
+					if(iCanAdd >= pItem->m_uInvStackCurSize)
+					{
+						m_ppSlots[i]->m_uInvStackCurSize += pItem->m_uInvStackCurSize;
+						pItem->m_uInvStackCurSize = 0;
+						break;
+					}
+					else
+					{
+						pItem->m_uInvStackCurSize -= iCanAdd;
+						m_ppSlots[i]->m_uInvStackCurSize += iCanAdd;
+					}
 				}
 			}
 		}
-	}
 
-	if(pItem->m_iInvStackCurSize > 0 || !pItem->m_bInvStackable)
-	{
-		for(int i = 0; i < m_iSlotCount; ++i)
+		if (pItem->m_uInvStackCurSize > 0 || !pItem->m_bInvStackable)
 		{
-			if(!m_ppSlots[i])
+			for (int i = 0; i < m_iSlotCount; ++i)
 			{
-				if(pItem->m_bInvStackable)
+				if(!m_ppSlots[i])
 				{
-					if((m_ppSlots[i] = (CBaseItem*)CREATE_ENTITY(pItem->getClassName(), m_pOwner->getManager())))
+					if(pItem->m_bInvStackable)
 					{
-						m_ppSlots[i]->setMode(IIM_INVENTORY);
-						int iCanAdd = m_ppSlots[i]->m_iInvStackMaxSize - m_ppSlots[i]->m_iInvStackCurSize;
-						if(iCanAdd > 0)
+						if((m_ppSlots[i] = (CBaseItem*)CREATE_ENTITY(pItem->getClassName(), m_pOwner->getManager())))
 						{
-							if(iCanAdd >= pItem->m_iInvStackCurSize)
+							m_ppSlots[i]->m_uInvStackCurSize = 0;
+							m_ppSlots[i]->setMode(IIM_INVENTORY);
+							int iCanAdd = m_ppSlots[i]->m_uInvStackMaxSize;
+							if(iCanAdd > 0)
 							{
-								m_ppSlots[i]->m_iInvStackCurSize += pItem->m_iInvStackCurSize;
-								pItem->m_iInvStackCurSize = 0;
-								break;
+								if(iCanAdd >= pItem->m_uInvStackCurSize)
+								{
+									m_ppSlots[i]->m_uInvStackCurSize += pItem->m_uInvStackCurSize;
+									pItem->m_uInvStackCurSize = 0;
+									break;
+								}
+								else
+								{
+									pItem->m_uInvStackCurSize -= iCanAdd;
+									m_ppSlots[i]->m_uInvStackCurSize += iCanAdd;
+								}
 							}
-							else
-							{
-								pItem->m_iInvStackCurSize -= iCanAdd;
-								m_ppSlots[i]->m_iInvStackCurSize += iCanAdd;
-							}
+						}
+						else
+						{
+							break;
 						}
 					}
 					else
 					{
+						m_ppSlots[i] = pItem;
+						pItem->setMode(IIM_INVENTORY);
 						break;
 					}
-				}
-				else
-				{
-					m_ppSlots[i] = pItem;
-					pItem->setMode(IIM_INVENTORY);
-					break;
 				}
 			}
 		}
 	}
 
+	//! TODO: убрать блять что б этого тут небыло
 	CHUDcontroller *pHUD = m_pOwner->getHUDcontroller();
 
 	if(pHUD)
@@ -213,6 +273,43 @@ void CCharacterInventory::putItem(CBaseItem *pItem)
 		char str[128];
 		sprintf(str, "Найден предмет: %s", pItem->m_szInvName);
 		pHUD->chatMsg(str);
+	}
+
+	m_pOwner->onInventoryChanged();
+}
+
+void CCharacterInventory::addRecipe(CBaseRecipe *pRecipe)
+{
+	if(pRecipe)
+	{
+		if(m_aRecipes.indexOf(pRecipe, [](CBaseRecipe *pA, CBaseRecipe *pB) 
+		{
+			//! HACK: Будет работать потому что гладиолус (хак)
+			return(pA->getClassName() == pB->getClassName());
+		}) < 0)
+		{
+			pRecipe->setMode(IIM_INVENTORY);
+			pRecipe->setFlags(pRecipe->getFlags() & ~EF_LEVEL);
+
+			m_aRecipes.push_back(pRecipe);
+		}
+	}
+}
+
+void CCharacterInventory::takeItem(CBaseItem *pItem)
+{
+	if(isEquipped(pItem))
+	{
+		deequipItem(pItem);
+	}
+
+	for(UINT i = 0; i < m_iSlotCount; ++i)
+	{
+		if(m_ppSlots[i] == pItem)
+		{
+			m_ppSlots[i] = NULL;
+			break;
+		}
 	}
 
 	m_pOwner->onInventoryChanged();
@@ -230,6 +327,79 @@ CBaseItem * CCharacterInventory::getSlot(int i) const
 	return(m_ppSlots[i]);
 }
 
+const EquipItem* CCharacterInventory::getEquipSlots() const
+{
+	return(m_aEquipItems);
+}
+
+UINT CCharacterInventory::getEquipSlotsCount() const
+{
+	return(m_aEquipItems.size());
+}
+
+const EquipItem* CCharacterInventory::getEquipSlot(CBaseItem *pItem) const
+{
+	int idx = m_aEquipItems.indexOf(pItem, [](const EquipItem &item, const CBaseItem *pItem)
+	{
+		return(item.pItem == pItem);
+	});
+
+	return(idx < 0 ? NULL : &m_aEquipItems[idx]);
+}
+
+void CCharacterInventory::equipItem(CBaseItem *pItem, EQUIP_ITEM_TYPE type, UINT uIndex)
+{
+	if(isEquipped(pItem))
+	{
+		fora(j, m_aEquipItems)
+		{
+			if(m_aEquipItems[j].pItem == pItem)
+			{
+				m_aEquipItems[j].pItem = NULL;
+				break;
+			}
+		}
+	}
+
+	fora(i, m_aEquipItems)
+	{
+		if(m_aEquipItems[i].type == type && uIndex == m_aEquipItems[i].uIndex)
+		{
+			SAFE_CALL(m_aEquipItems[i].pItem, setMode, IIM_INVENTORY);
+
+			m_aEquipItems[i].pItem = pItem;
+			SAFE_CALL(m_aEquipItems[i].pItem, setMode, IIM_EQUIPPED);
+			return;
+		}
+	}
+
+	EquipItem item;
+	item.pItem = pItem;
+	item.type = type;
+	item.uIndex = uIndex;
+
+	m_aEquipItems.push_back(item);
+	SAFE_CALL(pItem, setMode, IIM_EQUIPPED);
+}
+
+void CCharacterInventory::deequipItem(CBaseItem *pItem)
+{
+	fora(i, m_aEquipItems)
+	{
+		if(m_aEquipItems[i].pItem == pItem)
+		{
+			SAFE_CALL(m_aEquipItems[i].pItem, setMode, IIM_INVENTORY);
+			m_aEquipItems[i].pItem = NULL;
+			return;
+		}
+	}
+}
+
+bool CCharacterInventory::isEquipped(CBaseItem *pItem)
+{
+	return(pItem->getMode() == IIM_EQUIPPED || pItem->getMode() == IIM_IN_HANDS);
+}
+
 float CCharacterInventory::getTotalWeight() const
 {
 	float fTotal = 0.0f;
@@ -238,22 +408,39 @@ float CCharacterInventory::getTotalWeight() const
 	{
 		if(m_ppSlots[i])
 		{
-			fTotal += m_ppSlots[i]->getWeight() * m_ppSlots[i]->m_iInvStackCurSize;
+			fTotal += m_ppSlots[i]->getWeight() * m_ppSlots[i]->m_uInvStackCurSize;
 		}
 	}
 
 	return(fTotal);
 }
 
-int CCharacterInventory::getItemCount(const char * szClassName)
+CBaseCharacter* CCharacterInventory::getOwner()
 {
-	int iCount = 0;
+	return(m_pOwner);
+}
+
+const Array<CBaseRecipe*> CCharacterInventory::getRecipes()
+{
+	return(m_aRecipes);
+}
+
+UINT CCharacterInventory::getItemCount(const char * szClassName)
+{
+	UINT uCount = 0;
 	for(int i = 0; i < m_iSlotCount; ++i)
 	{
 		if(m_ppSlots[i] && !fstrcmp(m_ppSlots[i]->getClassName(), szClassName))
 		{
-			iCount += m_ppSlots[i]->m_iInvStackCurSize;
+			uCount += m_ppSlots[i]->m_uInvStackCurSize;
 		}
 	}
-	return(iCount);
+	return(uCount);
+}
+
+UINT CCharacterInventory::getItemCount(CBaseItem *pItem)
+{
+	assert(pItem);
+
+	return(getItemCount(pItem->getClassName()));
 }

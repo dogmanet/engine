@@ -20,6 +20,15 @@ void main(uint3 vGroupID: SV_GroupID, uint3 vGroupThreadID: SV_GroupThreadID)
 	vVal.z = g_txInput[vSampleID + uint2(0, 1)];
 	vVal.w = g_txInput[vSampleID + uint2(1, 1)];
 
+#ifdef APPLY_MASK
+	float2 vCenter = float2(THREAD_GROUP_DIM - 0.5f, THREAD_GROUP_DIM - 0.5f);
+	float fMaxRadius = length(vCenter);
+	float fRadius = length(float2(vSampleID) - float2(THREAD_GROUP_DIM - 0.5f, THREAD_GROUP_DIM - 0.5f));
+	float fWeight = smoothstep(0.0f, 1.0f, 1.0f - (fRadius / fMaxRadius)) * 0.009740113406211618f;
+	
+	vVal *= fWeight;
+#endif
+
 	g_vShared[uThreadID] = vVal;
 	GroupMemoryBarrierWithGroupSync();
 
@@ -34,7 +43,11 @@ void main(uint3 vGroupID: SV_GroupID, uint3 vGroupThreadID: SV_GroupThreadID)
 
 	if(uThreadID == 0)
 	{
+#ifdef APPLY_MASK
+		g_txOutput[vGroupID.xy] = dot(g_vShared[0], 0.25f);
+#else
 		g_txOutput[vGroupID.xy] = dot(g_vShared[0], 0.25f) / (float)(TOTAL_THREADS);
+#endif
 		// g_txOutput[vGroupID.xy] = -10.0f;
 	}
 }

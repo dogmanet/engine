@@ -1,6 +1,5 @@
 #include "GizmoMove.h"
 #include "Editor.h"
-#include <gcore/sxgcore.h>
 #include "GizmoHandle.h"
 
 #define AXES_HELPER_MOVE_LENGTH 1.0f		/*!< */
@@ -132,10 +131,11 @@ void CGizmoMove::draw(IXGizmoRenderer *pGRBoth, IXGizmoRenderer *pGR2D, IXGizmoR
 
 	IXGizmoRenderer *pRenderer = pGR3D;
 
-	ICamera *pCamera;
+	IXCamera *pCamera;
 	m_pEditor->getCameraForView(XWP_TOP_LEFT, &pCamera);
+	float3 vCamDir = pCamera->getPosition() - m_vPos;
 
-	float fDist = SMVector3Distance(m_vPos, pCamera->getPosition()) * 0.20f;
+	float fDist = SMVector3Length(vCamDir) * 0.20f;
 	float3 vScale = (fDist > 0.25f ? fDist : 0.25f);
 
 	if(m_fFixedScale < 0.0f)
@@ -149,6 +149,11 @@ void CGizmoMove::draw(IXGizmoRenderer *pGRBoth, IXGizmoRenderer *pGR2D, IXGizmoR
 
 	DWORD color_act = 0xFFFFFF00;
 	DWORD color_act2 = 0x1FFFFF00;
+
+
+	bool bXNeg = vCamDir.x <= 0.0f;
+	bool bYNeg = vCamDir.y <= 0.0f;
+	bool bZNeg = vCamDir.z <= 0.0f;
 
 	float len = AXES_HELPER_MOVE_LENGTH;
 	vert lst[] = {
@@ -174,6 +179,24 @@ void CGizmoMove::draw(IXGizmoRenderer *pGRBoth, IXGizmoRenderer *pGR2D, IXGizmoR
 		{float3_t(0, 0, len * 0.5f), (m_currentAxe & HANDLER_AXE_XZ) == HANDLER_AXE_XZ ? color_act : 0xFF0000FF},
 		{float3_t(len * 0.5f, 0, len * 0.5f), (m_currentAxe & HANDLER_AXE_XZ) == HANDLER_AXE_XZ ? color_act : 0x3F0000FF},
 	};
+	if(bXNeg || bYNeg || bZNeg)
+	{
+		for(UINT i = 0; i < ARRAYSIZE(lst); ++i)
+		{
+			if(bXNeg)
+			{
+				lst[i].pos.x *= -1.0f;
+			}
+			if(bYNeg)
+			{
+				lst[i].pos.y *= -1.0f;
+			}
+			if(bZNeg)
+			{
+				lst[i].pos.z *= -1.0f;
+			}
+		}
+	}
 
 	for(UINT i = 0, l = ARRAYSIZE(lst) / 2; i < l; ++i)
 	{
@@ -294,6 +317,24 @@ void CGizmoMove::draw(IXGizmoRenderer *pGRBoth, IXGizmoRenderer *pGR2D, IXGizmoR
 		{float3_t(0, len * 0.5f, 0), (m_currentAxe & HANDLER_AXE_YZ) == HANDLER_AXE_YZ ? color_act2 : 0x1F00FF00},
 		{float3_t(0, len * 0.5f, len * 0.5f), (m_currentAxe & HANDLER_AXE_YZ) == HANDLER_AXE_YZ ? color_act2 : 0x1F00FFFF},
 	};
+	if(bXNeg || bYNeg || bZNeg)
+	{
+		for(UINT i = 0; i < ARRAYSIZE(l2); ++i)
+		{
+			if(bXNeg)
+			{
+				l2[i].pos.x *= -1.0f;
+			}
+			if(bYNeg)
+			{
+				l2[i].pos.y *= -1.0f;
+			}
+			if(bZNeg)
+			{
+				l2[i].pos.z *= -1.0f;
+			}
+		}
+	}
 
 	for(UINT i = 0, l = ARRAYSIZE(l2) / 3; i < l; ++i)
 	{
@@ -310,10 +351,11 @@ void CGizmoMove::draw(IXGizmoRenderer *pGRBoth, IXGizmoRenderer *pGR2D, IXGizmoR
 
 bool CGizmoMove::intersectMove(const float3 &vStart, const float3 &vRayDir)
 {
-	ICamera *pCamera;
+	IXCamera *pCamera;
 	m_pEditor->getCameraForView(XWP_TOP_LEFT, &pCamera);
+	float3 vCamDir = pCamera->getPosition() - m_vPos;
 
-	float fDist = SMVector3Distance(m_vPos, pCamera->getPosition()) * 0.20f;
+	float fDist = SMVector3Length(vCamDir) * 0.20f;
 	float fScale = (fDist > 0.25f ? fDist : 0.25f);
 	
 	float3 vRayOrigin = (vStart - m_vPos) / fScale;
@@ -329,8 +371,14 @@ bool CGizmoMove::intersectMove(const float3 &vStart, const float3 &vRayDir)
 
 	float mind = FLOAT_INF;
 
-	if(SMTriangleIntersectLine(float3(0, 0, 0), float3(len * 0.5f, 0, 0), float3_t(len * 0.5f, len * 0.5f, 0), vRayOrigin, end, &p)
-		|| SMTriangleIntersectLine(float3(0, 0, 0), float3(len * 0.5f, len * 0.5f, 0), float3_t(0, len * 0.5f, 0), vRayOrigin, end, &p))
+	bool bXNeg = vCamDir.x <= 0.0f;
+	bool bYNeg = vCamDir.y <= 0.0f;
+	bool bZNeg = vCamDir.z <= 0.0f;
+
+	float3 vNeg(bXNeg ? -1.0f : 1.0f, bYNeg ? -1.0f : 1.0f, bZNeg ? -1.0f : 1.0f);
+
+	if(SMTriangleIntersectLine(float3(0, 0, 0), float3(len * 0.5f, 0, 0) * vNeg, float3(len * 0.5f, len * 0.5f, 0) * vNeg, vRayOrigin, end, &p)
+		|| SMTriangleIntersectLine(float3(0, 0, 0), float3(len * 0.5f, len * 0.5f, 0) * vNeg, float3(0, len * 0.5f, 0) * vNeg, vRayOrigin, end, &p))
 	{
 		float d = SMVector3Length2(p - vRayOrigin);
 		if(d < mind)
@@ -340,8 +388,8 @@ bool CGizmoMove::intersectMove(const float3 &vStart, const float3 &vRayDir)
 		}
 	}
 
-	if(SMTriangleIntersectLine(float3(0, 0, 0), float3(len * 0.5f, 0, 0), float3_t(len * 0.5f, 0, len * 0.5f), vRayOrigin, end, &p)
-		|| SMTriangleIntersectLine(float3(0, 0, 0), float3(len * 0.5f, 0, len * 0.5f), float3_t(0, 0, len * 0.5f), vRayOrigin, end, &p))
+	if(SMTriangleIntersectLine(float3(0, 0, 0), float3(len * 0.5f, 0, 0) * vNeg, float3_t(len * 0.5f, 0, len * 0.5f) * vNeg, vRayOrigin, end, &p)
+		|| SMTriangleIntersectLine(float3(0, 0, 0), float3(len * 0.5f, 0, len * 0.5f) * vNeg, float3_t(0, 0, len * 0.5f) * vNeg, vRayOrigin, end, &p))
 	{
 		float d = SMVector3Length2(p - vRayOrigin);
 		if(d < mind)
@@ -351,8 +399,8 @@ bool CGizmoMove::intersectMove(const float3 &vStart, const float3 &vRayDir)
 		}
 	}
 
-	if(SMTriangleIntersectLine(float3(0, 0, 0), float3(0, 0, len * 0.5f), float3_t(0, len * 0.5f, len * 0.5f), vRayOrigin, end, &p)
-		|| SMTriangleIntersectLine(float3(0, 0, 0), float3(0, len * 0.5f, len * 0.5f), float3_t(0, len * 0.5f, 0), vRayOrigin, end, &p))
+	if(SMTriangleIntersectLine(float3(0, 0, 0), float3(0, 0, len * 0.5f) * vNeg, float3_t(0, len * 0.5f, len * 0.5f) * vNeg, vRayOrigin, end, &p)
+		|| SMTriangleIntersectLine(float3(0, 0, 0), float3(0, len * 0.5f, len * 0.5f) * vNeg, float3_t(0, len * 0.5f, 0) * vNeg, vRayOrigin, end, &p))
 	{
 		float d = SMVector3Length2(p - vRayOrigin);
 		if(d < mind)
@@ -452,6 +500,61 @@ bool CGizmoMove::intersectMove(const float3 &vStart, const float3 &vRayDir)
 		float3(-a2size * 0.5f, -a2size * 0.5f, len + asize * 2.0f),
 		float3(-a2size * 0.5f, a2size * 0.5f, len + asize * 2.0f),
 	};
+
+	if(bXNeg || bYNeg || bZNeg)
+	{
+		for(UINT i = 0; i < ARRAYSIZE(asX); ++i)
+		{
+			if(bXNeg)
+			{
+				asX[i].x *= -1.0f;
+			}
+			if(bYNeg)
+			{
+				asX[i].y *= -1.0f;
+			}
+			if(bZNeg)
+			{
+				asX[i].z *= -1.0f;
+			}
+		}
+	}
+	if(bXNeg || bYNeg || bZNeg)
+	{
+		for(UINT i = 0; i < ARRAYSIZE(asY); ++i)
+		{
+			if(bXNeg)
+			{
+				asY[i].x *= -1.0f;
+			}
+			if(bYNeg)
+			{
+				asY[i].y *= -1.0f;
+			}
+			if(bZNeg)
+			{
+				asY[i].z *= -1.0f;
+			}
+		}
+	}
+	if(bXNeg || bYNeg || bZNeg)
+	{
+		for(UINT i = 0; i < ARRAYSIZE(asZ); ++i)
+		{
+			if(bXNeg)
+			{
+				asZ[i].x *= -1.0f;
+			}
+			if(bYNeg)
+			{
+				asZ[i].y *= -1.0f;
+			}
+			if(bZNeg)
+			{
+				asZ[i].z *= -1.0f;
+			}
+		}
+	}
 
 	for(int i = 0, l = sizeof(asX) / sizeof(asX[0]); i < l; i += 3)
 	{

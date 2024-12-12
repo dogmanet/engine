@@ -173,6 +173,8 @@ void CBrushMesh::buildModel(bool bBuildPhysbox)
 	pProvider->createStaticModel(pResource, &m_pModel);
 	mem_release(pResource);
 
+	SAFE_CALL(m_pModel, setColor, (float4)m_vColor);
+
 	if(bBuildPhysbox)
 	{
 		if(m_pRigidBody && m_isPhysicsLoaded)
@@ -1466,6 +1468,11 @@ UINT CBrushMesh::findOrAddEdge(const float3 &vA, const float3 &vB)
 	UINT u0 = findOrAddVertex(vA);
 	UINT u1 = findOrAddVertex(vB);
 
+	return(findOrAddEdge(u0, u1));
+}
+
+UINT CBrushMesh::findOrAddEdge(UINT u0, UINT u1, bool isInternal)
+{
 	for(UINT i = 0, l = m_aEdges.size(); i < l; ++i)
 	{
 		Edge &e = m_aEdges[i];
@@ -1475,7 +1482,7 @@ UINT CBrushMesh::findOrAddEdge(const float3 &vA, const float3 &vB)
 		}
 	}
 
-	m_aEdges.push_back({{u0, u1}});
+	m_aEdges.push_back({{u0, u1}, isInternal});
 	return(m_aEdges.size() - 1);
 }
 
@@ -1501,7 +1508,7 @@ void CBrushMesh::cleanupUnreferencedEdges()
 				Face &f = m_aFaces[j];
 				fora(k, f.aEdges)
 				{
-					if(f.aEdges[k] > i)
+					if(f.aEdges[k] > (UINT)i)
 					{
 						--f.aEdges[k];
 					}
@@ -1511,7 +1518,7 @@ void CBrushMesh::cleanupUnreferencedEdges()
 		}
 	}
 }
-void CBrushMesh::cleanupUnreferencedVertices()
+UINT CBrushMesh::cleanupUnreferencedVertices(UINT *puRemovedVertices)
 {
 	Array<bool> aUsed(false, m_aVertices.size());
 
@@ -1522,26 +1529,42 @@ void CBrushMesh::cleanupUnreferencedVertices()
 		aUsed[e.uVertex[1]] = true;
 	}
 
-	for(int i = (int)aUsed.size() - 1; i >= 0; --i)
+	UINT uRemoved = 0;
+	if(puRemovedVertices)
 	{
-		if(!aUsed[i])
+		fora(i, aUsed)
 		{
-			fora(j, m_aEdges)
+			if(!aUsed[i])
 			{
-				Edge &e = m_aEdges[j];
-				if(e.uVertex[0] > i)
-				{
-					--e.uVertex[0];
-				}
-				if(e.uVertex[1] > i)
-				{
-					--e.uVertex[1];
-				}
+				puRemovedVertices[uRemoved++] = i;
 			}
-
-			m_aVertices.erase(i);
 		}
 	}
+
+	if(uRemoved || !puRemovedVertices)
+	{
+		for(int i = (int)aUsed.size() - 1; i >= 0; --i)
+		{
+			if(!aUsed[i])
+			{
+				fora(j, m_aEdges)
+				{
+					Edge &e = m_aEdges[j];
+					if(e.uVertex[0] > (UINT)i)
+					{
+						--e.uVertex[0];
+					}
+					if(e.uVertex[1] > (UINT)i)
+					{
+						--e.uVertex[1];
+					}
+				}
+
+				m_aVertices.erase(i);
+			}
+		}
+	}
+	return(uRemoved);
 }
 
 bool CBrushMesh::clip(const SMPLANE &plane)
@@ -1775,6 +1798,582 @@ void CBrushMesh::buildPhysbox(IXResourceModel *pResource)
 	pConvex->initData(m_aVertices.size(), m_aVertices);
 
 	pResource->addPhysbox(pConvex);
+}
+
+bool CBrushMesh::couldMoveVertices(const UINT *puAffectedVertices, UINT uVertexCount, UINT uVertexOffset, const float3 &vDeltaPos)
+{
+	// FIXME: enum status
+	// OPTIMIZE: dynamic allocations
+	Array<float3_t> aOldVertices = m_aVertices;
+	Array<byte> aFaceStatus(m_aFaces.size()); // 0 = steady, 1 = intermediate, 2 = moved
+	for(UINT i = 0; i < uVertexCount; ++i)
+	{
+		m_aVertices[puAffectedVertices[i] - uVertexOffset] = (float3)(m_aVertices[puAffectedVertices[i] - uVertexOffset] + vDeltaPos);
+	}
+
+	// compute face's status
+	UINT uFaceAffectedVertices;
+	fora(uFace, m_aFaces)
+	{
+		Face &face = m_aFaces[uFace];
+		uFaceAffectedVertices = 0;
+		fora(uEdge, face.aEdges)
+		{
+			Edge &e = m_aEdges[face.aEdges[uEdge]];
+			for(UINT i = 0; i < uVertexCount; ++i)
+			{
+				if(e.uVertex[0] == (puAffectedVertices[i] - uVertexOffset))
+				{
+					++uFaceAffectedVertices;
+				}
+				if(e.uVertex[1] == (puAffectedVertices[i] - uVertexOffset))
+				{
+					++uFaceAffectedVertices;
+				}
+			}
+		}
+
+		if(uFaceAffectedVertices == 0)
+		{
+			aFaceStatus[uFace] = 0;
+		}
+		else if(uFaceAffectedVertices == face.aEdges.size() * 2)
+		{
+			aFaceStatus[uFace] = 2;
+		}
+		else
+		{
+			aFaceStatus[uFace] = 1;
+		}
+	}
+
+	bool isValid = true;
+	// find broken faces
+	Array<UINT> aFaceVertices(m_aVertices.size());
+	Array<byte> aPotentiallyBrokenVertices(0, m_aVertices.size());
+	Array<float3_t> aVertices(m_aVertices.size());
+	fora(uFace, m_aFaces)
+	{
+		if(aFaceStatus[uFace] == 1)
+		{
+			Face &face = m_aFaces[uFace];
+
+			{
+				bool isFirst = true;
+				UINT uLastVtx = UINT_MAX;
+
+				Edge &e0 = m_aEdges[face.aEdges[0]];
+				Edge &e1 = m_aEdges[face.aEdges[1]];
+				if(e0.uVertex[0] == e1.uVertex[0] || e0.uVertex[0] == e1.uVertex[1])
+				{
+					std::swap(e0.uVertex[0], e0.uVertex[1]);
+				}
+
+				for(UINT j = 0, jl = face.aEdges.size() - 1; j < jl; ++j)
+				{
+					Edge edge = m_aEdges[face.aEdges[j]];
+					if(edge.uVertex[0] != uLastVtx && uLastVtx != UINT_MAX)
+					{
+						std::swap(edge.uVertex[0], edge.uVertex[1]);
+					}
+					uLastVtx = edge.uVertex[1];
+
+					if(isFirst)
+					{
+						isFirst = false;
+
+						aFaceVertices.push_back(edge.uVertex[0]);
+						aFaceVertices.push_back(edge.uVertex[1]);
+					}
+					else
+					{
+						aFaceVertices.push_back(edge.uVertex[1]);
+					}
+				}
+
+				// project face vertices onto face's plane
+				fora(uVtx, aFaceVertices)
+				{
+					aVertices.push_back(ProjectToFace(face.vNormal, m_aVertices[aFaceVertices[uVtx]]));
+				}
+
+				fora(uVtx, aFaceVertices)
+				{
+					//5
+					//012, 123, 234, 340, 401
+					UINT a, b, c;
+					a = uVtx;
+					b = (uVtx + 1) % uVtxl;
+					c = (uVtx + 2) % uVtxl;
+
+					float fAngle = SMRightAngleBetweenVectors(aVertices[c] - aVertices[b], aVertices[a] - aVertices[b], face.vNormal);
+					//printf("%f\n", fAngle);
+					if(fabsf(fAngle - SM_PI) < 0.001f || fAngle > SM_PI)
+					{
+						isValid = false;
+					}
+				}
+
+				aFaceVertices.clearFast();
+				aVertices.clearFast();
+			}
+			
+			{
+				float3 vNormal0 = calcFaceNormal(uFace);
+
+				for(UINT uFace1 = 0; uFace1 < uFacel; ++uFace1)
+				{
+					if(uFace1 > uFace || aFaceStatus[uFace1] != 1)
+					{
+						Face &face1 = m_aFaces[uFace1];
+						float3 vNormal1 = calcFaceNormal(uFace1);
+
+						//face0.isInternal && face1.isInternal
+						UINT uCommonEdge;
+						if(isFacesSibling(uFace, uFace1, &uCommonEdge))
+						{
+							// classifyFace
+							SMPLANE planeFace0(vNormal0, m_aVertices[m_aEdges[uCommonEdge].uVertex[0]]);
+							int cls = classifyFace(uFace1, planeFace0);
+
+							if(cls == -2 || cls > 0)
+							{
+								++aPotentiallyBrokenVertices[m_aEdges[uCommonEdge].uVertex[0]];
+								++aPotentiallyBrokenVertices[m_aEdges[uCommonEdge].uVertex[1]];
+								break;
+							}
+						}
+					}
+				}
+			}
+
+			/*plane = SMPLANE(calcFaceNormal(uFace), m_aVertices[m_aEdges[m_aFaces[uFace].aEdges[0]].uVertex[0]]);
+
+			float f0 = SMVector4Dot(float4(m_aVertices[puAffectedVertices[i]], 1.0f), plane);
+			if(f0 >= 0.0f)
+			{
+				isValid = false;
+				break;
+			}*/
+		}
+	}
+
+	fora(uVtx, aPotentiallyBrokenVertices)
+	{
+		if(aPotentiallyBrokenVertices[uVtx] > 1)
+		{
+			isValid = false;
+			break;
+		}
+	}
+
+	//printf("%d\n", isValid ? 1 : 0);
+	
+	m_aVertices.swap(aOldVertices);
+
+	return(isValid);
+}
+
+UINT CBrushMesh::moveVertices(const UINT *puAffectedVertices, UINT uVertexCount, const float3 &vDeltaPos, UINT *puRemovedVertices)
+{
+	for(UINT i = 0; i < uVertexCount; ++i)
+	{
+		m_aVertices[puAffectedVertices[i]] = (float3)(m_aVertices[puAffectedVertices[i]] + vDeltaPos);
+	}
+	
+	// weld merged vertices
+	{
+		bool wasWelded = false;
+		for(UINT i = 0; i < uVertexCount; ++i)
+		{
+			fora(uVtx, m_aVertices)
+			{
+				if(puAffectedVertices[i] != uVtx && fabsf(SMVector3Length2(m_aVertices[puAffectedVertices[i]] - m_aVertices[uVtx]) < 0.000001f))
+				{
+					// weld
+					fora(uEdge, m_aEdges)
+					{
+						Edge &e = m_aEdges[uEdge];
+						for(UINT j = 0; j < 2; ++j)
+						{
+							if(e.uVertex[j] == uVtx)
+							{
+								e.uVertex[j] = puAffectedVertices[i];
+								wasWelded = true;
+							}
+						}
+					}
+					break;
+				}
+			}
+		}
+
+		if(wasWelded)
+		{
+			fora(uFace, m_aFaces)
+			{
+				Face &f = m_aFaces[uFace];
+				fora(uEdge, f.aEdges)
+				{
+					Edge &e = m_aEdges[f.aEdges[uEdge]];
+					if(e.uVertex[0] == e.uVertex[1])
+					{
+						f.aEdges.erase(uEdge);
+						--uEdge;
+						--uEdgel;
+					}
+				}
+
+				if(f.aEdges.size() < 3)
+				{
+					m_aFaces.erase(uFace);
+					--uFace;
+					--uFacel;
+				}
+			}
+
+			fora(uEdge, m_aEdges)
+			{
+				Edge &e = m_aEdges[uEdge];
+				for(UINT uEdge2 = uEdge + 1; uEdge2 < uEdgel; ++uEdge2)
+				{
+					Edge &e2 = m_aEdges[uEdge2];
+					if((e.uVertex[0] == e2.uVertex[0] && e.uVertex[1] == e2.uVertex[1])
+						|| (e.uVertex[0] == e2.uVertex[1] && e.uVertex[1] == e2.uVertex[0])
+						)
+					{
+						fora(uFace, m_aFaces)
+						{
+							Face &f = m_aFaces[uFace];
+							fora(uFEdge, f.aEdges)
+							{
+								if(f.aEdges[uFEdge] == uEdge2)
+								{
+									f.aEdges[uFEdge] = uEdge;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	//UINT *puVerts = (UINT*)alloca(sizeof(UINT) * m_aVertices.size());
+	Array<UINT> puVerts(m_aVertices.size());
+
+	// merge coplanar faces
+	{
+		float3 vNormal0, vNormal1;
+		fora(uFace, m_aFaces)
+		{
+			Face &face0 = m_aFaces[uFace];
+			vNormal0 = calcFaceNormal(uFace);
+
+			for(UINT uFace1 = uFace + 1; uFace1 < uFacel; ++uFace1)
+			{
+				Face &face1 = m_aFaces[uFace1];
+				vNormal1 = calcFaceNormal(uFace1);
+
+				//face0.isInternal && face1.isInternal
+				UINT uCommonEdge;
+				if(isFacesSibling(uFace, uFace1, &uCommonEdge))
+				{
+					// classifyFace
+					SMPLANE planeFace0(vNormal0, m_aVertices[m_aEdges[uCommonEdge].uVertex[0]]);
+					int cls = classifyFace(uFace1, planeFace0);
+
+					if(cls == -2 || cls > 0)
+					{
+						face0.aEdges.reserve(face0.aEdges.size() + face1.aEdges.size());
+
+						UINT uDstPos = face0.aEdges.indexOf(uCommonEdge);
+						UINT uSrcPos = face1.aEdges.indexOf(uCommonEdge);
+
+						Edge &testEdge0 = m_aEdges[face0.aEdges[(uDstPos + 1) % face0.aEdges.size()]];
+						Edge &testEdge1 = m_aEdges[face1.aEdges[(uSrcPos + 1) % face1.aEdges.size()]];
+
+						bool isForwardDirection = testEdge0.uVertex[0] != testEdge1.uVertex[0] && testEdge0.uVertex[0] != testEdge1.uVertex[1]
+							&& testEdge0.uVertex[1] != testEdge1.uVertex[0] && testEdge0.uVertex[1] != testEdge1.uVertex[1];
+
+						face0.aEdges.erase(uDstPos);
+
+						for(UINT i = uSrcPos + 1, l = uSrcPos + face1.aEdges.size(); i < l; ++i)
+						{
+							face0.aEdges.insert(face1.aEdges[i % face1.aEdges.size()], uDstPos);
+
+							if(isForwardDirection)
+							{
+								++uDstPos;
+							}
+						}
+
+						m_aFaces.erase(uFace1);
+
+						--uFace;
+						--uFacel;
+						break;
+					}
+
+				}
+				/*if(fabsf(1.0f - SMVector3Dot(vNormal0, vNormal1)) < 0.001f && isFacesSibling(uFace, uFace1, &uCommonEdge))
+				{
+					face0.aEdges.reserve(face0.aEdges.size() + face1.aEdges.size());
+
+					UINT uDstPos = face0.aEdges.indexOf(uCommonEdge);
+					UINT uSrcPos = face1.aEdges.indexOf(uCommonEdge);
+
+					Edge &testEdge0 = m_aEdges[face0.aEdges[(uDstPos + 1) % face0.aEdges.size()]];
+					Edge &testEdge1 = m_aEdges[face1.aEdges[(uSrcPos + 1) % face1.aEdges.size()]];
+
+					bool isForwardDirection = testEdge0.uVertex[0] != testEdge1.uVertex[0] && testEdge0.uVertex[0] != testEdge1.uVertex[1]
+						&& testEdge0.uVertex[1] != testEdge1.uVertex[0] && testEdge0.uVertex[1] != testEdge1.uVertex[1];
+
+					face0.aEdges.erase(uDstPos);
+
+					for(UINT i = uSrcPos + 1, l = uSrcPos + face1.aEdges.size(); i < l; ++i)
+					{
+						face0.aEdges.insert(face1.aEdges[i % face1.aEdges.size()], uDstPos);
+
+						if(isForwardDirection)
+						{
+							++uDstPos;
+						}
+					}
+
+					m_aFaces.erase(uFace1);
+
+					--uFace;
+					--uFacel;
+					break;
+				}*/
+			}
+		}
+	}
+
+	cleanupUnreferencedEdges();
+
+	// fix broken faces
+	// found affected faces
+	// fix it
+	fora(uFace, m_aFaces)
+	{
+		Face &face = m_aFaces[uFace];
+
+		if(face.aEdges.size() == 3 || fabsf(SMVector3Dot(face.vNormal, vDeltaPos)) < 0.001f)
+		{
+			// moved in the face plane, skipping
+			continue;
+		}
+
+		bool hasAffected = false, isFullAffected = true;
+		fora(j, face.aEdges)
+		{
+			Edge edge = m_aEdges[face.aEdges[j]];
+
+			for(UINT v = 0; v < 2; ++v)
+			{
+				bool isFound = false;
+				for(UINT i = 0; i < uVertexCount; ++i)
+				{
+					if(puAffectedVertices[i] == edge.uVertex[v])
+					{
+						isFound = true;
+						break;
+					}
+				}
+
+				if(isFound)
+				{
+					hasAffected = true;
+				}
+				else
+				{
+					isFullAffected = false;
+				}
+			}
+		}
+
+		if(hasAffected && !isFullAffected)
+		{
+			// potentially broken face
+			UINT uCurVec = 0;
+			puVerts.clearFast();
+
+			{
+				Edge &e0 = m_aEdges[face.aEdges[0]];
+				Edge &e1 = m_aEdges[face.aEdges[1]];
+				if(e0.uVertex[0] == e1.uVertex[0] || e0.uVertex[0] == e1.uVertex[1])
+				{
+					std::swap(e0.uVertex[0], e0.uVertex[1]);
+				}
+			}
+
+			UINT uLastVtx = UINT_MAX;
+			bool isFirst = true;
+			for(UINT j = 0, jl = face.aEdges.size() - 1; j < jl; ++j)
+			{
+				Edge edge = m_aEdges[face.aEdges[j]];
+				if(edge.uVertex[0] != uLastVtx && uLastVtx != UINT_MAX)
+				{
+					std::swap(edge.uVertex[0], edge.uVertex[1]);
+				}
+				uLastVtx = edge.uVertex[1];
+
+				if(isFirst)
+				{
+					isFirst = false;
+
+					puVerts[uCurVec++] = edge.uVertex[0];
+				}
+
+				puVerts[uCurVec++] = edge.uVertex[1];
+			}
+
+			UINT uMaxVec = uCurVec;
+			UINT uFaceVerts;
+			uCurVec = 0;
+			float fDist;
+			bool isFirstPass = true;
+			while(uMaxVec >= 3)
+			{
+				uCurVec %= uMaxVec;
+				SMPLANE plane(
+					m_aVertices[puVerts[uCurVec]],
+					m_aVertices[puVerts[(uCurVec + 1) % uMaxVec]],
+					m_aVertices[puVerts[(uCurVec + 2) % uMaxVec]]
+					);
+
+				bool isConvex = true;
+				uFaceVerts = 3;
+				for(UINT i = uCurVec + 3, l = uCurVec + uMaxVec; i < l; ++i)
+				{
+					fDist = SMVector4Dot(float4(m_aVertices[puVerts[i % uMaxVec]], 1.0f), plane);
+
+					if(SMIsZero(fDist))
+					{
+						++uFaceVerts;
+					}
+					else if(fDist > 0.0f)
+					{
+						isConvex = false;
+						break;
+					}
+				}
+
+				if(!isConvex)
+				{
+					++uCurVec;
+					continue;
+				}
+				
+				if(isFirstPass)
+				{
+					isFirstPass = false;
+					uCurVec += uFaceVerts - 1;
+					continue;
+				}
+
+				Face &newFace = m_aFaces[m_aFaces.size()];
+				Face &srcFace = m_aFaces[uFace];
+
+				newFace.texInfo = srcFace.texInfo;
+				newFace.vNormal = SMVector3Normalize(SMVector3Cross(
+					m_aVertices[puVerts[uCurVec]] - m_aVertices[puVerts[(uCurVec + 1) % uMaxVec]],
+					m_aVertices[puVerts[uCurVec]] - m_aVertices[puVerts[(uCurVec + 2) % uMaxVec]]
+					));
+				newFace.isInternal = srcFace.isInternal;
+				newFace.aEdges.reserve(uFaceVerts);
+				newFace.aEdges.push_back(findOrAddEdge(puVerts[(uCurVec + uFaceVerts - 1) % uMaxVec], puVerts[uCurVec], newFace.isInternal));
+				for(UINT i = uCurVec, l = uCurVec + uFaceVerts - 1; i < l; ++i)
+				{
+					newFace.aEdges.push_back(findOrAddEdge(puVerts[i % uMaxVec], puVerts[(i + 1) % uMaxVec]));
+				}
+
+				//puVerts.erase(uCurVec + 1);
+
+				UINT uS = (uCurVec + 1) % uMaxVec;
+				UINT uE = uS + uFaceVerts - 3;
+
+				if(uE >= uMaxVec)
+				{
+					uE %= uMaxVec;
+					for(UINT i = uMaxVec; uS < i; --i)
+					{
+						puVerts.erase(i - 1);
+					}
+					for(int i = (int)uE; i >= 0; --i)
+					{
+						puVerts.erase(i);
+					}
+					uCurVec = 0;
+				}
+				else
+				{
+					for(int i = (int)uE; (int)uS <= i; --i)
+					{
+						puVerts.erase(i);
+					}
+					++uCurVec;
+				}
+				
+				uMaxVec -= uFaceVerts - 2;
+			}
+
+			m_aFaces.erase(uFace);
+			--uFacel;
+			--uFace;
+		}
+	}
+
+	fora(uFace, m_aFaces)
+	{
+		Face &face = m_aFaces[uFace];
+		face.vNormal = calcFaceNormal(uFace);
+	}
+
+	UINT uRemovedCount = cleanupUnreferencedVertices(puRemovedVertices);
+
+	m_isBoundDirty = true;
+	buildModel();
+
+	return(uRemovedCount);
+}
+
+float3 CBrushMesh::calcFaceNormal(UINT uFace)
+{
+	float3 vNormal;
+	triangulateFace(uFace, [&vNormal](const float3 &vA, const float3 &vB, const float3 &vC){
+		vNormal = SMVector3Normalize(SMVector3Cross(vA - vB, vA - vC));
+		return(false);
+	});
+
+	return(vNormal);
+}
+bool CBrushMesh::isFacesSibling(UINT uFace0, UINT uFace1, UINT *puCommonEdge)
+{
+	Face &face0 = m_aFaces[uFace0];
+	Face &face1 = m_aFaces[uFace1];
+	fora(uEdge, face0.aEdges)
+	{
+		int edg = face1.aEdges.indexOf(face0.aEdges[uEdge]);
+		if(edg >= 0)
+		{
+			if(puCommonEdge)
+			{
+				*puCommonEdge = face1.aEdges[edg];
+			}
+			return(true);
+		}
+	}
+
+	return(false);
+}
+
+void CBrushMesh::setColor(const float3_t &vColor)
+{
+	m_vColor = vColor;
+	SAFE_CALL(m_pModel, setColor, (float4)vColor);
 }
 
 //##########################################################################

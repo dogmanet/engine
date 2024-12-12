@@ -31,6 +31,7 @@ CAnimatedModel::~CAnimatedModel()
 	mem_release(m_pShared);
 	mem_release(m_pBoneConstantBuffer);
 	mem_release(m_pWorldBuffer);
+	mem_release(m_pColorBuffer);
 
 	for(UINT i = 0, l = m_aLayers.size(); i < l; ++i)
 	{
@@ -49,6 +50,7 @@ void CAnimatedModel::initGPUresources()
 	}
 	m_pBoneConstantBuffer = m_pDevice->createConstantBuffer(sizeof(ModelBoneShader) * m_pShared->getBoneCount());
 	m_pWorldBuffer = m_pDevice->createConstantBuffer(sizeof(SMMATRIX));
+	m_pColorBuffer = m_pDevice->createConstantBuffer(sizeof(float4));
 }
 
 bool XMETHODCALLTYPE CAnimatedModel::isEnabled() const
@@ -70,15 +72,24 @@ UINT CAnimatedModel::addLayer()
 	return(m_aLayers.size() - 1);
 }
 
-IXAnimatedModel * XMETHODCALLTYPE CAnimatedModel::asAnimatedModel()
+void CAnimatedModel::delLayer()
+{
+	layer_s *pLayer = &m_aLayers[m_aLayers.size() - 1];
+
+	mem_delete_a(pLayer->pCurrentBones);
+
+	m_aLayers.erase(m_aLayers.size() - 1);
+}
+
+IXAnimatedModel* XMETHODCALLTYPE CAnimatedModel::asAnimatedModel()
 {
 	return(this);
 }
-IXDynamicModel * XMETHODCALLTYPE CAnimatedModel::asDynamicModel()
+IXDynamicModel* XMETHODCALLTYPE CAnimatedModel::asDynamicModel()
 {
 	return(NULL);
 }
-IXStaticModel * XMETHODCALLTYPE CAnimatedModel::asStaticModel()
+IXStaticModel* XMETHODCALLTYPE CAnimatedModel::asStaticModel()
 {
 	return(NULL);
 }
@@ -195,6 +206,7 @@ float4 XMETHODCALLTYPE CAnimatedModel::getColor() const
 void XMETHODCALLTYPE CAnimatedModel::setColor(const float4 &vColor)
 {
 	m_vColor = vColor;
+	m_isColorDirty = true;
 }
 
 UINT XMETHODCALLTYPE CAnimatedModel::getPhysboxCount(UINT uPartIndex) const
@@ -244,9 +256,17 @@ UINT XMETHODCALLTYPE CAnimatedModel::getHitboxCount(UINT uPartIndex) const
 {
 	return(m_pShared->getHitboxCount(uPartIndex));
 }
-const XResourceModelHitbox * XMETHODCALLTYPE CAnimatedModel::getHitbox(UINT id, UINT uPartIndex) const
+const IModelPhysbox* XMETHODCALLTYPE CAnimatedModel::getHitbox(UINT id, UINT uPartIndex) const
 {
 	return(m_pShared->getHitbox(id, uPartIndex));
+}
+int XMETHODCALLTYPE CAnimatedModel::getHitboxBone(UINT id, UINT uPartIndex) const
+{
+	return(m_pShared->getHitboxBone(id, uPartIndex));
+}
+XHITBOXBODYPART XMETHODCALLTYPE CAnimatedModel::getHitboxBodyPart(UINT id, UINT uPartIndex) const
+{
+	return(m_pShared->getHitboxBodyPart(id, uPartIndex));
 }
 
 void XMETHODCALLTYPE CAnimatedModel::play(const char *szName, UINT uFadeTime, UINT uLayer, bool bReplaceActivity)
@@ -421,7 +441,7 @@ void CAnimatedModel::playActivityNext(UINT uLayer)
 	}
 }
 
-float3 XMETHODCALLTYPE CAnimatedModel::getBoneTransformPos(UINT id)
+float3 XMETHODCALLTYPE CAnimatedModel::getBoneTransformPos(UINT id, XMODEL_BONE_TRANSFORM boneTranform)
 {
 	if(id >= m_pShared->getBoneCount())
 	{
@@ -429,10 +449,17 @@ float3 XMETHODCALLTYPE CAnimatedModel::getBoneTransformPos(UINT id)
 		LibReport(REPORT_MSG_LEVEL_WARNING, "CAnimatedModel::getBoneTransformPos() Invalid bone id requested");
 		return(0);
 	}
+	switch(boneTranform)
+	{
+	case XMBT_WORLD:
+		return(getOrientation() * ((m_pRenderFrameBones[id].position - m_pRenderFrameBones[id].orient * (float3)m_pShared->getInvertedBindPose()[id].position)) * m_fScale + getPosition());
+	case XMBT_RENDER:
+		return(getOrientation() * m_pRenderFrameBones[id].position * m_fScale + getPosition());
+	}
 
-	return(getOrientation() * ((m_pRenderFrameBones[id].position - m_pRenderFrameBones[id].orient * (float3)m_pShared->getInvertedBindPose()[id].position)) * m_fScale + getPosition());
+	return(0);
 }
-SMQuaternion XMETHODCALLTYPE CAnimatedModel::getBoneTransformRot(UINT id)
+SMQuaternion XMETHODCALLTYPE CAnimatedModel::getBoneTransformRot(UINT id, XMODEL_BONE_TRANSFORM boneTranform)
 {
 	if(id >= m_pShared->getBoneCount())
 	{
@@ -440,9 +467,29 @@ SMQuaternion XMETHODCALLTYPE CAnimatedModel::getBoneTransformRot(UINT id)
 		LibReport(REPORT_MSG_LEVEL_WARNING, "CAnimatedModel::getBoneTransformRot() Invalid bone id requested");
 		return(SMQuaternion());
 	}
+
+	switch(boneTranform)
+	{
+	case XMBT_WORLD:
+	case XMBT_RENDER:
+		return(m_pRenderFrameBones[id].orient * getOrientation());
+	}
 	
-	return(m_pRenderFrameBones[id].orient * getOrientation());
+	return(SMQuaternion());
 }
+
+int XMETHODCALLTYPE CAnimatedModel::getBoneParent(UINT id)
+{
+	if(id >= m_pShared->getBoneCount())
+	{
+		assert(!"Invalid ID supplied");
+		LibReport(REPORT_MSG_LEVEL_WARNING, "CAnimatedModel::getBoneParent() Invalid bone id requested");
+		return(-1);
+	}
+
+	return(m_pShared->getBoneParent(id));
+}
+
 SMMATRIX XMETHODCALLTYPE CAnimatedModel::getBoneTransform(UINT id)
 {
 	//@TODO: Implement me
@@ -496,7 +543,7 @@ UINT XMETHODCALLTYPE CAnimatedModel::getControllersCount() const
 {
 	return(m_pShared->getControllersCount());
 }
-const char * XMETHODCALLTYPE CAnimatedModel::getControllerName(UINT id)
+const char* XMETHODCALLTYPE CAnimatedModel::getControllerName(UINT id)
 {
 	return(m_pShared->getControllerName(id));
 }
@@ -687,7 +734,7 @@ void CAnimatedModel::update(float fDT)
 	fillBoneMatrix();
 }
 
-bool CAnimatedModel::validateLayer(UINT uLayer)
+bool CAnimatedModel::validateLayer(UINT uLayer) const
 {
 	if(uLayer < m_aLayers.size())
 	{
@@ -716,11 +763,11 @@ void CAnimatedModel::fillBoneMatrix()
 
 		for(UINT i = 0, l = m_pShared->getBoneCount(); i < l; ++i)
 		{
-			if(j == 0/* || !m_pIsBoneWorld[0][i]*/)
+			//if(j == 0/* || !m_pIsBoneWorld[0][i]*/)
 			{
 				auto bineBind = m_pShared->getBone(i);
-				m_pNextFrameBones[i].position = (float4)(m_pNextFrameBones[i].position + (pLayer->pCurrentBones[i].position - bineBind->position));
-				m_pNextFrameBones[i].orient = m_pNextFrameBones[i].orient * (pLayer->pCurrentBones[i].orient * bineBind->orient.Conjugate());
+				m_pNextFrameBones[i].position = (float4)(m_pNextFrameBones[i].position + (pLayer->pCurrentBones[i].position - bineBind->position)) * pLayer->fWeight;
+				m_pNextFrameBones[i].orient = SMquaternionSlerp(SMQuaternion(), m_pNextFrameBones[i].orient * (pLayer->pCurrentBones[i].orient * bineBind->orient.Conjugate()), pLayer->fWeight);
 			}
 		}
 	}
@@ -776,14 +823,21 @@ void XMETHODCALLTYPE CAnimatedModel::render(UINT uLod, XMODEL_FEATURE bmFeatures
 		m_isWorldDirty = false;
 	}
 
+	if(m_isColorDirty)
+	{
+		m_pColorBuffer->update(&m_vColor);
+		m_isColorDirty = false;
+	}
+
 	m_pProvider->bindVertexFormat();
 
 	IGXContext *pCtx = m_pDevice->getThreadContext();
 
 	pCtx->setVSConstant(m_pWorldBuffer, 1 /* SCR_OBJECT */);
+	m_pDevice->getThreadContext()->setPSConstant(m_pColorBuffer, 8);
 	pCtx->setVSConstant(m_pBoneConstantBuffer, 10);
 
-	m_pShared->render(m_uSkin, uLod, m_vColor);
+	m_pShared->render(m_uSkin, uLod);
 }
 
 void CAnimatedModel::sync()
@@ -821,4 +875,52 @@ bool XMETHODCALLTYPE CAnimatedModel::rayTest(const float3 &vStart, const float3 
 	}
 
 	return(false);
+}
+
+void XMETHODCALLTYPE CAnimatedModel::setLayer(UINT uLayer)
+{
+	m_uLayer = uLayer;
+}
+UINT XMETHODCALLTYPE CAnimatedModel::getLayer()
+{
+	return(m_uLayer);
+}
+
+UINT XMETHODCALLTYPE CAnimatedModel::getLayersCount() const
+{
+	return(m_aLayers.size());
+}
+void XMETHODCALLTYPE CAnimatedModel::setLayersCount(UINT uCount)
+{
+	for(UINT i = m_aLayers.size(); i < uCount; ++i)
+	{
+		addLayer();
+	}
+	
+	for(UINT i = uCount, l = m_aLayers.size(); i < l; ++i)
+	{
+		delLayer();
+	}
+}
+float XMETHODCALLTYPE CAnimatedModel::getLayerBlendWeight(UINT uLayer) const
+{
+	if(!validateLayer(uLayer))
+	{
+		return(0.0f);
+	}
+
+	const layer_s *pLayer = &m_aLayers[uLayer];
+
+	return(pLayer->fWeight);
+}
+void XMETHODCALLTYPE CAnimatedModel::setLayerBlendWeight(UINT uLayer, float fWeight)
+{
+	if(!validateLayer(uLayer))
+	{
+		return;
+	}
+
+	layer_s *pLayer = &m_aLayers[uLayer];
+
+	pLayer->fWeight = fWeight;
 }

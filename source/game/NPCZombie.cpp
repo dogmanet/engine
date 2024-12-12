@@ -34,28 +34,39 @@ CNPCZombie::CNPCZombie():
 	IXSoundSystem *pSound = (IXSoundSystem*)(Core_GetIXCore()->getPluginManager()->getInterface(IXSOUNDSYSTEM_GUID));
 	if(pSound)
 	{
-		IXSoundLayer *pGameLayer = pSound->findLayer("xGame");
-		m_pSndIdle = pGameLayer->newSoundPlayer("mobs/zombie/zombie_idle_16.ogg", SOUND_SPACE_3D);
-		m_pSndIdle2 = pGameLayer->newSoundPlayer("mobs/zombie/zombie_idle_17.ogg", SOUND_SPACE_3D);
-		m_pSndDeath = pGameLayer->newSoundPlayer("mobs/zombie/zombie_die_1.ogg", SOUND_SPACE_3D);
+		IXSoundLayer *pGameLayer = pSound->findLayer("xGame"); if(pGameLayer){
+			m_pSndIdle = pGameLayer->newSoundPlayer("mobs/zombie/zombie_idle_16.ogg", SOUND_SPACE_3D);
+			m_pSndIdle2 = pGameLayer->newSoundPlayer("mobs/zombie/zombie_idle_17.ogg", SOUND_SPACE_3D);
+			m_pSndDeath = pGameLayer->newSoundPlayer("mobs/zombie/zombie_die_1.ogg", SOUND_SPACE_3D);
+		}
 	}
 
-	m_pActiveTool = (CBaseTool*)CREATE_ENTITY("wpn_zombie_hands", m_pMgr);
-	m_pActiveTool->setOwner(this);
-	m_pActiveTool->setPos(getPos() + float3(1.0f, m_fCapsHeight - 0.1f, 1.0f));
-	m_pActiveTool->setOrient(m_pHeadEnt->getOrient());
-	m_pActiveTool->setParent(m_pHeadEnt);
-
-	SET_TIMEOUT(think, randf(1.0f, 3.0f));
 }
 
 CNPCZombie::~CNPCZombie()
 {
-	REMOVE_ENTITY(m_pActiveTool);
+	if(m_pActiveTool)
+	{
+		REMOVE_ENTITY(m_pActiveTool);
+	}
 
 	mem_release(m_pSndIdle);
 	mem_release(m_pSndIdle2);
 	mem_release(m_pSndDeath);
+}
+
+void CNPCZombie::onPostLoad()
+{
+	BaseClass::onPostLoad();
+
+	m_pActiveTool = (CBaseTool*)CREATE_ENTITY("wpn_zombie_hands", m_pMgr);
+	m_pActiveTool->setOwner(this);
+	m_pActiveTool->setPos(getPos() + float3(1.0f, m_fCapsHeight - 0.1f, 1.0f));
+	m_pActiveTool->setMode(IIM_IN_HANDS);
+	m_pActiveTool->setOrient(m_pHeadEnt->getOrient());
+	m_pActiveTool->setParent(m_pHeadEnt);
+
+	SET_TIMEOUT(think, randf(1.0f, 3.0f));
 }
 
 void CNPCZombie::onDeath(CBaseEntity *pAttacker, CBaseEntity *pInflictor)
@@ -66,7 +77,7 @@ void CNPCZombie::onDeath(CBaseEntity *pAttacker, CBaseEntity *pInflictor)
 
 	SET_TIMEOUT(removeThis, randf(10.0f, 30.0f));
 
-	m_pActiveTool->stopAction();
+	SAFE_CALL(m_pActiveTool, stopAction);
 }
 
 void CNPCZombie::setPos(const float3 &pos)

@@ -34,6 +34,8 @@ bool XMETHODCALLTYPE CCommandProperties::isEmpty()
 bool XMETHODCALLTYPE CCommandProperties::exec()
 {
 	_prop_obj *pObj;
+	bool isNameChanged = false;
+
 	for(UINT j = 0, jl = m_aObjects.size(); j < jl; ++j)
 	{
 		pObj = &m_aObjects[j];
@@ -44,9 +46,19 @@ bool XMETHODCALLTYPE CCommandProperties::exec()
 			if(i.second->isChanged)
 			{
 				pObj->pObject->setKV(i.first->c_str(), i.second->sNew.c_str());
+				if(!strcmp(i.first->c_str(), "name"))
+				{
+					g_pEditor->onObjectNameChanged(pObj->pObject);
+					isNameChanged = true;
+				}
 			}
 		}
 		pObj->pObject->postSetup();
+	}
+
+	if(isNameChanged)
+	{
+		g_pEditor->onObjectNameChanged();
 	}
 
 	bool isSucceeded = true;
@@ -62,6 +74,8 @@ bool XMETHODCALLTYPE CCommandProperties::exec()
 bool XMETHODCALLTYPE CCommandProperties::undo()
 {
 	_prop_obj *pObj;
+	bool isNameChanged = false;
+
 	for(UINT j = 0, jl = m_aObjects.size(); j < jl; ++j)
 	{
 		pObj = &m_aObjects[j];
@@ -72,9 +86,19 @@ bool XMETHODCALLTYPE CCommandProperties::undo()
 			if(i.second->isChanged)
 			{
 				pObj->pObject->setKV(i.first->c_str(), i.second->sOld.c_str());
+				if(!strcmp(i.first->c_str(), "name"))
+				{
+					g_pEditor->onObjectNameChanged(pObj->pObject);
+					isNameChanged = true;
+				}
 			}
 		}
 		pObj->pObject->postSetup();
+	}
+
+	if(isNameChanged)
+	{
+		g_pEditor->onObjectNameChanged();
 	}
 
 	bool isSucceeded = true;

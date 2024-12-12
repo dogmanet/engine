@@ -1,0 +1,242 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\source\common\string.cpp" />
+    <ClCompile Include="..\..\..\source\xParticles\dllmain.cpp" />
+    <ClCompile Include="..\..\..\source\xParticles\Editable.cpp" />
+    <ClCompile Include="..\..\..\source\xParticles\EditorExtension.cpp" />
+    <ClCompile Include="..\..\..\source\xParticles\EffectBrowserWindow.cpp" />
+    <ClCompile Include="..\..\..\source\xParticles\EffectEditorWindow.cpp" />
+    <ClCompile Include="..\..\..\source\xParticles\EffectLoader.cpp" />
+    <ClCompile Include="..\..\..\source\xParticles\ParticleEffect.cpp" />
+    <ClCompile Include="..\..\..\source\xParticles\ParticleEffectEmitter.cpp" />
+    <ClCompile Include="..\..\..\source\xParticles\ParticleEffectEmitterColorSpeedData.cpp" />
+    <ClCompile Include="..\..\..\source\xParticles\ParticleEffectEmitterForceLifetimeData.cpp" />
+    <ClCompile Include="..\..\..\source\xParticles\ParticleEffectEmitterLifetimeEmitterSpeedData.cpp" />
+    <ClCompile Include="..\..\..\source\xParticles\ParticleEffectEmitterLimitVelocityLifetimeData.cpp" />
+    <ClCompile Include="..\..\..\source\xParticles\ParticleEffectEmitterRenderData.cpp" />
+    <ClCompile Include="..\..\..\source\xParticles\ParticleEffectEmitterRotationLifetimeData.cpp" />
+    <ClCompile Include="..\..\..\source\xParticles\ParticleEffectEmitterRotationSpeedData.cpp" />
+    <ClCompile Include="..\..\..\source\xParticles\ParticleEffectEmitterShapeData.cpp" />
+    <ClCompile Include="..\..\..\source\xParticles\ParticleEffectEmitterSizeSpeedData.cpp" />
+    <ClCompile Include="..\..\..\source\xParticles\ParticleEffectEmitterVelocityLifetimeData.cpp" />
+    <ClCompile Include="..\..\..\source\xParticles\ParticlePlayer.cpp" />
+    <ClCompile Include="..\..\..\source\xParticles\ParticleSystem.cpp" />
+    <ClCompile Include="..\..\..\source\xParticles\plugin_main.cpp" />
+    <ClCompile Include="..\..\..\source\xParticles\Renderable.cpp" />
+    <ClCompile Include="..\..\..\source\xParticles\RenderableVisibility.cpp" />
+    <ClCompile Include="..\..\..\source\xParticles\Updatable.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\source\xcommon\particles\IXParticleSystem.h" />
+    <ClInclude Include="..\..\..\source\xParticles\Editable.h" />
+    <ClInclude Include="..\..\..\source\xParticles\EditorExtension.h" />
+    <ClInclude Include="..\..\..\source\xParticles\EffectBrowserWindow.h" />
+    <ClInclude Include="..\..\..\source\xParticles\EffectEditorWindow.h" />
+    <ClInclude Include="..\..\..\source\xParticles\EffectLoader.h" />
+    <ClInclude Include="..\..\..\source\xParticles\ParticleBurst.h" />
+    <ClInclude Include="..\..\..\source\xParticles\ParticleEffect.h" />
+    <ClInclude Include="..\..\..\source\xParticles\ParticleEffectEmitter.h" />
+    <ClInclude Include="..\..\..\source\xParticles\ParticleEffectEmitterColorLifetimeData.h" />
+    <ClInclude Include="..\..\..\source\xParticles\ParticleEffectEmitterColorSpeedData.h" />
+    <ClInclude Include="..\..\..\source\xParticles\ParticleEffectEmitterEmissionData.h" />
+    <ClInclude Include="..\..\..\source\xParticles\ParticleEffectEmitterForceLifetimeData.h" />
+    <ClInclude Include="..\..\..\source\xParticles\ParticleEffectEmitterGenericData.h" />
+    <ClInclude Include="..\..\..\source\xParticles\ParticleEffectEmitterLifetimeEmitterSpeedData.h" />
+    <ClInclude Include="..\..\..\source\xParticles\ParticleEffectEmitterLimitVelocityLifetimeData.h" />
+    <ClInclude Include="..\..\..\source\xParticles\ParticleEffectEmitterRenderData.h" />
+    <ClInclude Include="..\..\..\source\xParticles\ParticleEffectEmitterRotationLifetimeData.h" />
+    <ClInclude Include="..\..\..\source\xParticles\ParticleEffectEmitterRotationSpeedData.h" />
+    <ClInclude Include="..\..\..\source\xParticles\ParticleEffectEmitterShapeData.h" />
+    <ClInclude Include="..\..\..\source\xParticles\ParticleEffectEmitterSizeLifetimeData.h" />
+    <ClInclude Include="..\..\..\source\xParticles\ParticleEffectEmitterSizeSpeedData.h" />
+    <ClInclude Include="..\..\..\source\xParticles\ParticleEffectEmitterVelocityLifetimeData.h" />
+    <ClInclude Include="..\..\..\source\xParticles\ParticlePlayer.h" />
+    <ClInclude Include="..\..\..\source\xParticles\ParticleSystem.h" />
+    <ClInclude Include="..\..\..\source\xParticles\Renderable.h" />
+    <ClInclude Include="..\..\..\source\xParticles\RenderableVisibility.h" />
+    <ClInclude Include="..\..\..\source\xParticles\Updatable.h" />
+    <ClInclude Include="..\..\..\source\xParticles\resource.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\..\..\source\xParticles\xParticles.rc" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{6CB8C7D4-F3F9-418D-8939-BB07C488FF01}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>xParticles</RootNamespace>
+    <ProjectName>xParticles</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v120_xp</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v120_xp</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v120_xp</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v120_xp</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <OutDir>../../../build/bin/plugins/</OutDir>
+    <IncludePath>$(IncludePath);../../../sdks/;$(WindowsSdk_IncludePath);../../../source;</IncludePath>
+    <LibraryPath>;../../../libs;$(LibraryPath)</LibraryPath>
+    <SourcePath>../../../source;$(SourcePath)</SourcePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IncludePath>$(IncludePath);../../../sdks/;$(WindowsSdk_IncludePath);../../../source;</IncludePath>
+    <LibraryPath>;../../../libs64;$(LibraryPath)</LibraryPath>
+    <SourcePath>../../../source;$(SourcePath)</SourcePath>
+    <LinkIncremental>false</LinkIncremental>
+    <OutDir>../../../build/bin64/plugins/</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <OutDir>../../../build/bin/plugins/</OutDir>
+    <IncludePath>$(IncludePath);../../../sdks/;$(WindowsSdk_IncludePath);../../../source;</IncludePath>
+    <LibraryPath>;../../../libs;$(LibraryPath)</LibraryPath>
+    <SourcePath>../../../source;$(SourcePath)</SourcePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IncludePath>$(IncludePath);../../../sdks/;$(WindowsSdk_IncludePath);../../../source;</IncludePath>
+    <LibraryPath>;../../../libs64;$(LibraryPath)</LibraryPath>
+    <SourcePath>../../../source;$(SourcePath)</SourcePath>
+    <LinkIncremental>false</LinkIncremental>
+    <OutDir>../../../build/bin64/plugins/</OutDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_DEBUG;_WINDOWS;SX_LIB_NAME="EFF";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <TreatSpecificWarningsAsErrors>4316</TreatSpecificWarningsAsErrors>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ImportLibrary>../../../libs/$(TargetName).lib</ImportLibrary>
+      <ProgramDatabaseFile>$(ProjectDir)../../../pdb/$(TargetName).pdb</ProgramDatabaseFile>
+      <Profile>true</Profile>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN64;_CRT_SECURE_NO_WARNINGS;_DEBUG;_WINDOWS;SX_LIB_NAME="EFF";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <TreatSpecificWarningsAsErrors>4316</TreatSpecificWarningsAsErrors>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ImportLibrary>../../../libs/$(TargetName).lib</ImportLibrary>
+      <ProgramDatabaseFile>$(ProjectDir)../../../pdb64/$(TargetName).pdb</ProgramDatabaseFile>
+      <Profile>true</Profile>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;NDEBUG;_WINDOWS;SX_LIB_NAME="EFF";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <TreatSpecificWarningsAsErrors>4316</TreatSpecificWarningsAsErrors>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <ProgramDatabaseFile>$(ProjectDir)../../../pdb/$(TargetName).pdb</ProgramDatabaseFile>
+      <ImportLibrary>../../../libs/$(TargetName).lib</ImportLibrary>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN64;_CRT_SECURE_NO_WARNINGS;NDEBUG;_WINDOWS;SX_LIB_NAME="EFF";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <TreatSpecificWarningsAsErrors>4316</TreatSpecificWarningsAsErrors>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <ProgramDatabaseFile>$(ProjectDir)../../../pdb64/$(TargetName).pdb</ProgramDatabaseFile>
+      <ImportLibrary>../../../libs/$(TargetName).lib</ImportLibrary>
+    </Link>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

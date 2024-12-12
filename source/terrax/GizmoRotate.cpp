@@ -1,6 +1,5 @@
 #include "GizmoRotate.h"
 #include "Editor.h"
-#include <gcore/sxgcore.h>
 
 CGizmoRotate::CGizmoRotate(CEditor *pEditor):
 	m_pEditor(pEditor)
@@ -31,7 +30,7 @@ const float3_t& XMETHODCALLTYPE CGizmoRotate::getPos()
 
 void CGizmoRotate::draw(IXGizmoRenderer *pGRBoth, IXGizmoRenderer *pGR2D, IXGizmoRenderer *pGR3D)
 {
-	ICamera *pCamera;
+	IXCamera *pCamera;
 	m_pEditor->getCameraForView(XWP_TOP_LEFT, &pCamera);
 
 
@@ -187,7 +186,7 @@ bool CGizmoRotate::wantHandle(const float3 &vRayOrigin, const float3 &vRayDir)
 
 bool CGizmoRotate::intersectMove(const float3 &vStart, const float3 &vRayDir)
 {
-	ICamera *pCamera;
+	IXCamera *pCamera;
 	m_pEditor->getCameraForView(XWP_TOP_LEFT, &pCamera);
 
 	float fDist = SMVector3Distance(m_vPos, pCamera->getPosition()) * 0.20f;

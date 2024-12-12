@@ -51,7 +51,9 @@ public:
 	void XMETHODCALLTYPE enablePart(UINT uIndex, bool yesNo) override;
 
 	UINT XMETHODCALLTYPE getHitboxCount(UINT uPartIndex = 0) const override;
-	const XResourceModelHitbox* XMETHODCALLTYPE getHitbox(UINT id, UINT uPartIndex = 0) const override;
+	const IModelPhysbox* XMETHODCALLTYPE getHitbox(UINT id, UINT uPartIndex = 0) const override;
+	int XMETHODCALLTYPE getHitboxBone(UINT id, UINT uPartIndex = 0) const override;
+	XHITBOXBODYPART XMETHODCALLTYPE getHitboxBodyPart(UINT id, UINT uPartIndex = 0) const override;
 
 	void XMETHODCALLTYPE play(const char *szName, UINT uFadeTime = 0, UINT uSlot = 0, bool bReplaceActivity = true) override;
 	void XMETHODCALLTYPE stop(UINT uSlot = 0) override;
@@ -60,8 +62,8 @@ public:
 	void XMETHODCALLTYPE startActivity(const char *szName, UINT uFadeTime = 0, UINT uSlot = 0) override;
 	void XMETHODCALLTYPE stopAll() override;
 
-	float3 XMETHODCALLTYPE getBoneTransformPos(UINT id) override;
-	SMQuaternion XMETHODCALLTYPE getBoneTransformRot(UINT id) override;
+	float3 XMETHODCALLTYPE getBoneTransformPos(UINT id, XMODEL_BONE_TRANSFORM boneTranform = XMBT_WORLD) override;
+	SMQuaternion XMETHODCALLTYPE getBoneTransformRot(UINT id, XMODEL_BONE_TRANSFORM boneTranform = XMBT_WORLD) override;
 	SMMATRIX XMETHODCALLTYPE getBoneTransform(UINT id) override;
 
 	UINT XMETHODCALLTYPE getBoneId(const char *szName) override;
@@ -79,9 +81,17 @@ public:
 
 	void XMETHODCALLTYPE setCallback(IAnimationCallback *pCallback) override;
 
+	int XMETHODCALLTYPE getBoneParent(UINT id) override;
+
+	UINT XMETHODCALLTYPE getLayersCount() const override;
+	void XMETHODCALLTYPE setLayersCount(UINT uCount) override;
+	float XMETHODCALLTYPE getLayerBlendWeight(UINT uLayer) const override;
+	void XMETHODCALLTYPE setLayerBlendWeight(UINT uLayer, float fWeight) override;
+
 	void update(float fDT);
 
 	UINT addLayer();
+	void delLayer();
 
 	void XMETHODCALLTYPE render(UINT uLod, XMODEL_FEATURE bmFeatures) override;
 	void sync();
@@ -89,6 +99,9 @@ public:
 	void initGPUresources();
 
 	bool XMETHODCALLTYPE rayTest(const float3 &vStart, const float3 &vEnd, float3 *pvOut = NULL, float3 *pvNormal = NULL, bool isRayInWorldSpace = true, bool bReturnNearestPoint = false) override;
+
+	void XMETHODCALLTYPE setLayer(UINT uLayer) override;
+	UINT XMETHODCALLTYPE getLayer() override;
 protected:
 	CAnimatedModelProvider *m_pProvider;
 	CAnimatedModelShared *m_pShared;
@@ -104,6 +117,9 @@ protected:
 	IGXConstantBuffer *m_pWorldBuffer = NULL;
 	bool m_isWorldDirty = true;
 	IGXConstantBuffer *m_pBoneConstantBuffer = NULL;
+
+	IGXConstantBuffer *m_pColorBuffer = NULL;
+	bool m_isColorDirty = true;
 
 	IAnimationCallback *m_pCallback = NULL;
 
@@ -146,12 +162,14 @@ protected:
 		UINT uActivityFadeTime = 0;
 
 		bool isDirty = true;
+
+		float fWeight = 1.0f;
 	};
 	Array<layer_s, 1> m_aLayers;
 
 
 	void playActivityNext(UINT uLayer);
-	bool validateLayer(UINT uLayer);
+	bool validateLayer(UINT uLayer) const;
 	void fillBoneMatrix();
 
 	mutable bool m_isLocalAABBvalid = false;
@@ -161,6 +179,8 @@ protected:
 	void _updateAABB() const;
 
 	bool m_wasInitiated = false;
+
+	UINT m_uLayer = 0;
 };
 
 #endif

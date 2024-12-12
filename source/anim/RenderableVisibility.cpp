@@ -1,5 +1,4 @@
 #include "RenderableVisibility.h"
-#include <gcore/sxgcore.h>
 #include "AnimatedModelProvider.h"
 #include "DynamicModelProvider.h"
 
@@ -27,7 +26,7 @@ void CRenderableVisibility::setOcclusionCuller(IXOcclusionCuller *pOcclusionCull
 	m_pOcclusionCuller = pOcclusionCuller;
 }
 
-void CRenderableVisibility::updateForCamera(ICamera *pCamera, const IXRenderableVisibility *pReference)
+void CRenderableVisibility::updateForCamera(IXCamera *pCamera, const IXRenderableVisibility *pReference)
 {
 	CRenderableVisibility *pRef = NULL;
 	if(pReference)
@@ -37,12 +36,12 @@ void CRenderableVisibility::updateForCamera(ICamera *pCamera, const IXRenderable
 	}
 
 	IXFrustum *pFrustum = pCamera->getFrustum();
-	m_pProviderAnimated->computeVisibility(pFrustum, this, pRef);
-	m_pProviderDynamic->computeVisibility(pFrustum, pCamera->getLook(), this, pRef);
+	m_pProviderAnimated->computeVisibility(pFrustum, this, pCamera->getLayerMask(), pRef);
+	m_pProviderDynamic->computeVisibility(pFrustum, pCamera->getLook(), this, pCamera->getLayerMask(), pRef, pCamera);
 	mem_release(pFrustum);
 }
 
-void CRenderableVisibility::updateForFrustum(const IXFrustum *pFrustum, const IXRenderableVisibility *pReference)
+void CRenderableVisibility::updateForFrustum(const IXFrustum *pFrustum, UINT bmLayers, const IXRenderableVisibility *pReference)
 {
 	CRenderableVisibility *pRef = NULL;
 	if(pReference)
@@ -51,12 +50,13 @@ void CRenderableVisibility::updateForFrustum(const IXFrustum *pFrustum, const IX
 		pRef = (CRenderableVisibility*)pReference;
 	}
 
-	m_pProviderAnimated->computeVisibility(pFrustum, this, pRef);
-	m_pProviderDynamic->computeVisibility(pFrustum, float3(), this, pRef);
+	m_pProviderAnimated->computeVisibility(pFrustum, this, bmLayers, pRef);
+	m_pProviderDynamic->computeVisibility(pFrustum, float3(), this, bmLayers, pRef);
 }
 
 static void SortRenderList(Array<CDynamicModel*> &aList)
 {
+	XPROFILE_FUNCTION();
 	aList.quickSort([](CDynamicModel *pA, CDynamicModel *pB){
 		if(pA->getShared() == pB->getShared())
 		{
@@ -227,16 +227,19 @@ static void SetRenderList(Array<CDynamicModel*> &aList, void **ppData, UINT uCou
 
 void CRenderableVisibility::setRenderList(void **ppData, UINT uCount)
 {
+	XPROFILE_FUNCTION();
 	SetRenderList(m_aRenderList, ppData, uCount);
 }
 
 void CRenderableVisibility::setTransparentList(void **ppData, UINT uCount)
 {
+	XPROFILE_FUNCTION();
 	SetRenderList(m_aTransparentList, ppData, uCount, false);
 }
 
 void CRenderableVisibility::setSelfillumList(void **ppData, UINT uCount)
 {
+	XPROFILE_FUNCTION();
 	SetRenderList(m_aSelfillumList, ppData, uCount);
 }
 

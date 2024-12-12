@@ -2,12 +2,12 @@
 #define _TERRAX_H_
 
 // "/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'" 
-#include <gcore/sxgcore.h>
 #include <xcommon/editor/IXEditorExtension.h>
 #include <xcommon/editor/IXEditorObject.h>
 #include <common/assotiativearray.h>
 #include <xEngine/IXEngine.h>
 #include <xcommon/editor/IXEditable.h>
+#include <xcommon/editor/IXEditorImporter.h>
 
 #define MAIN_WINDOW_TITLE      "TerraX"
 #define MAIN_WINDOW_CLASS      "X Main Window"
@@ -33,6 +33,7 @@
 
 #include "Grid.h"
 #include "MaterialBrowser.h"
+#include "MaterialEditor.h"
 #include "Editor.h"
 #include "ProxyObject.h"
 
@@ -82,7 +83,7 @@ struct CTerraXConfig
 
 	X_2D_VIEW m_x2DView[4];
 	float m_fViewportScale[4];
-	ICamera *m_pViewportCamera[4];
+	IXCamera *m_pViewportCamera[4];
 
 	GRID_STEP m_gridStep = GRID_STEP_1M;
 	bool m_bShowGrid = true;
@@ -100,6 +101,7 @@ struct CTerraXState: public TerraXState
 	float4_t m_vViewportBorders[4];
 
 	bool isFrameSelect = false;
+	bool isFrameSelectInternal = false;
 	float2_t vFrameSelectStart;
 
 	bool bHasSelection = false;
@@ -170,6 +172,8 @@ extern CEditor *g_pEditor;
 extern IXEditorGizmoMove *g_pGizmoMove;
 extern IXEditorGizmoRotate *g_pGizmoRotate;
 
+extern UINT g_uWndMainDpi;
+
 #define X2D_TOP_POS float3(0.0f, 1000.0f, 0.0f)
 #define X2D_TOP_ROT SMQuaternion(-SM_PIDIV2, 'x')
 #define X2D_FRONT_POS float3(0.0f, 0.0f, -1000.0f)
@@ -183,11 +187,20 @@ extern BOOL g_is2DPanning;
 
 extern IXEditorTool *g_pCurrentTool;
 
+struct XExtMenuItem
+{
+	const XEditorMenuItem *pItem;
+	HMENU hMenu;
+};
+
+extern Array<IXEditorImporter*> g_pEditorImporters;
+extern Array<XExtMenuItem> g_aExtMenuItems;
+
 void XResetLevel();
 bool XSaveLevel(const char *szNewName=NULL, bool bForcePrompt = false);
 void XLoadLevel(const char *szName);
 void XRender3D();
-void XRender2D(X_2D_VIEW view, float fScale, bool preScene);
+void XRender2D(IXCamera *pCamera, X_2D_VIEW view, float fScale, bool preScene, bool bRenderSelection);
 
 void XFrameRun(float fDeltaTime);
 
@@ -201,7 +214,7 @@ struct XBorderVertex
 
 extern Array<IXEditorObject*> g_pLevelObjects;
 extern Map<XGUID, IXEditorModel*> g_apLevelModels;
-extern Map<IXEditorObject*, CProxyObject*> g_mObjectsLocation;
+extern Map<IXEditorObject*, ICompoundObject*> g_mObjectsLocation;
 extern Array<CProxyObject*> g_apProxies;
 
 template<typename T, class L>
@@ -214,26 +227,25 @@ void XEnumerateObjects(const T &Func, L *pWhere)
 		{
 			IXEditorObject *pObj = pWhere->getObject(i);
 			isProxy = NULL;
-			pObj->getInternalData(&X_IS_PROXY_GUID, &isProxy);
+			pObj->getInternalData(&X_IS_COMPOUND_GUID, &isProxy);
 			Func(pObj, isProxy ? true : false, pWhere);
 			if(isProxy)
 			{
-				XEnumerateObjects(Func, (CProxyObject*)pObj);
+				XEnumerateObjects(Func, (ICompoundObject*)pObj);
 			}
 		}
 	}
 	else
 	{
-
 		fora(i, g_pLevelObjects)
 		{
 			IXEditorObject *pObj = g_pLevelObjects[i];
 			isProxy = NULL;
-			pObj->getInternalData(&X_IS_PROXY_GUID, &isProxy);
+			pObj->getInternalData(&X_IS_COMPOUND_GUID, &isProxy);
 			Func(pObj, isProxy ? true : false, pWhere);
 			if(isProxy)
 			{
-				XEnumerateObjects(Func, (CProxyObject*)pObj);
+				XEnumerateObjects(Func, (ICompoundObject*)pObj);
 			}
 		}
 	}
@@ -242,7 +254,7 @@ void XEnumerateObjects(const T &Func, L *pWhere)
 template<typename T>
 void XEnumerateObjects(const T &Func)
 {
-	XEnumerateObjects(Func, (CProxyObject*)NULL);
+	XEnumerateObjects(Func, (ICompoundObject*)NULL);
 }
 
 void XDrawBorder(GXCOLOR color, const float3_t &vA, const float3_t &vB, const float3_t &vC, const float3_t &vD, float fViewportScale = 0.01f);
@@ -254,6 +266,7 @@ void XUpdateSelectionBound();
 
 bool XRayCast(X_WINDOW_POS wnd);
 bool XIsMouseInSelection(X_WINDOW_POS wnd);
+bool XIsMouseInBound(X_WINDOW_POS wnd, const float3_t &vBoundMin, const float3_t &vBoundMax);
 
 void XUpdatePropWindow();
 void XUpdateGizmos();
@@ -271,13 +284,25 @@ void XSetXformType(X_2DXFORM_TYPE type);
 
 bool XIsKeyPressed(UINT uKey);
 
-CProxyObject* XTakeObject(IXEditorObject *pObject, CProxyObject *pWhere);
+void BeginMaterialEdit(const char *szMaterialName);
+void XSetCameraRotation(const float3 &vPitchYawRoll);
+
+ICompoundObject* XTakeObject(IXEditorObject *pObject, ICompoundObject *pWhere);
 IXEditorObject* XFindObjectByGUID(const XGUID &guid);
-CProxyObject* XGetObjectParent(IXEditorObject *pObject);
+ICompoundObject* XGetObjectParent(IXEditorObject *pObject);
 
 void CheckToolbarButton(int iCmd, BOOL isChecked);
 
+
+int DivDpi(int iUnscaled, UINT uCurrentDpi);
+int MulDpi(int iUnscaled, UINT uCurrentDpi);
+float MulDpiF(float fUnscaled, UINT uCurrentDpi);
+void DivDpiRect(RECT *pRc, UINT uCurrentDpi);
+void MulDpiRect(RECT *pRc, UINT uCurrentDpi);
+
 extern IXEngine *g_pEngine;
+
+extern HINSTANCE hInst;
 
 class CCommandMove;
 class CGizmoMoveCallback: public IXEditorGizmoMoveCallback

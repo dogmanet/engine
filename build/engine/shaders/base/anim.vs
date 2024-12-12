@@ -19,7 +19,10 @@ VSO_SceneCommon main(VSI_Animation IN)
 	OUT.vPosition = mul(OUT.vPosition, g_mW);
 	OUT.vPosition = mul(OUT.vPosition, g_mVP);
 	OUT.vNormal = mul(OUT.vNormal, (float3x3)g_mW);
+	OUT.vTangent = mul(OUT.vTangent, (float3x3)g_mW);
+	OUT.vBinormal = mul(OUT.vBinormal, (float3x3)g_mW);
 	OUT.vTexUV = IN.vTexUV;
+	OUT.vColor = float4(1.0f, 1.0f, 1.0f, 1.0f);
 	
 	OUT.vPos = OUT.vPosition;
     

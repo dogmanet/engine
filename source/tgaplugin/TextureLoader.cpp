@@ -169,7 +169,7 @@ bool CTextureLoader::loadUncompressedRGB(IXResourceTexture2D *pResource)
 	if(pMip)
 	{
 		assert(pMip->sizeData == pResource->getTextureBytes(m_format, m_tgaHeader.width, m_tgaHeader.height));
-
+		pMip->isWritten = true;
 		m_pCurrentFile->setPos(m_pCurrentFile->getPos() + m_tgaHeader.idlength + m_tgaHeader.colormaptype * m_tgaHeader.colormaplength);
 
 		if(m_format == GXFMT_A8B8G8R8)

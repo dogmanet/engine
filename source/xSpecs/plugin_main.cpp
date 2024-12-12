@@ -39,21 +39,25 @@ public:
 		}
 		return(&s_guid);
 	}
-	IXUnknown* XMETHODCALLTYPE getInterface(const XGUID &guid) override
+	void XMETHODCALLTYPE getInterface(UINT id, void **ppOut) override
 	{
-		if(guid == IXTEXTUREPROXY_GUID)
+		switch(id)
 		{
-			return(new CTextureProxy(m_pCore->getFileSystem()));
+		case 0:
+			*ppOut = new CTextureProxy(m_pCore->getFileSystem());
+			break;
+
+		case 1:
+			*ppOut = new CMaterialProxy(m_pCore->getFileSystem());
+			break;
+
+		case 2:
+			*ppOut = new CMaterialLoader(m_pCore);
+			break;
+		
+		default:
+			*ppOut = NULL;
 		}
-		if(guid == IXMATERIALPROXY_GUID)
-		{
-			return(new CMaterialProxy(m_pCore->getFileSystem()));
-		}
-		if(guid == IXMATERIALLOADER_GUID)
-		{
-			return(new CMaterialLoader(m_pCore));
-		}
-		return(NULL);
 	}
 
 protected:

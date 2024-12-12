@@ -43,6 +43,7 @@ Stack<CommandBuffer> g_cbufStack;
 char g_szServerPort[8] = "59705";
 char g_szServerAddr[255] = "127.0.0.1";
 
+void cmd_endalias();
 
 SX_LIB_API XDEPRECATED void Core_0RegisterConcmd(const char * name, SXCONCMD cmd, const char * desc)
 {
@@ -131,6 +132,11 @@ public:
 	void reg()
 	{
 		Core_0RegisterConcmdAlias(m_sName.c_str(), this, m_sDesc.c_str());
+	}
+
+	const char* getName()
+	{
+		return(m_sName.c_str());
 	}
 private:
 	String m_sName;
@@ -273,7 +279,8 @@ void ConsoleExecInternal(char * cmd, char * args)
 }
 void ConsoleExecInternal(char * cmd)
 {
-	if(g_pNewAlias && fstrcmp(cmd, "endalias"))
+	//printf("> %s\n", cmd);
+	if(g_pNewAlias && fstrcmp(cmd, "endalias") && fstrcmp(cmd, "endalias\r"))
 	{
 		g_pNewAlias->addCommand(cmd);
 		return;
@@ -314,6 +321,11 @@ SX_LIB_API void Core_0ConsoleUpdate()
 	}
 	if(!g_cbufStack.IsEmpty())
 	{
+		if(g_pNewAlias)
+		{
+			LogWarning("Forcebly closing alias '%s' as end-of-input received\n", g_pNewAlias->getName());
+			cmd_endalias();
+		}
 		g_cbufStack.pop(&g_vCommandBuffer);
 	}
 
@@ -747,6 +759,11 @@ bool ConsoleConnect(const char *szName, bool bNewInstance)
 	}
 
 	g_iSendSocket = Connect(g_szServerAddr, CONSOLE_PORT);
+	if(g_iSendSocket == INVALID_SOCKET)
+	{
+		Sleep(1000);
+		g_iSendSocket = Connect(g_szServerAddr, CONSOLE_PORT);
+	}
 
 	if(g_iSendSocket == INVALID_SOCKET)
 	{

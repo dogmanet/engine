@@ -5,8 +5,9 @@
 #include <xcommon/IXCore.h>
 #include <common/aastring.h>
 #include <common/queue.h>
+#include <xcommon/render/IXRenderUtils.h>
 
-#define BVH_CHILD_COUNT 27
+#define BVH_CHILD_COUNT 8 /*27*/
 
 typedef UINT NodeFeature;
 typedef UINT NodeType;
@@ -21,14 +22,17 @@ class CSceneObject final: public IXUnknownImplementation<IXSceneObject>
 	friend class CScene;
 public:
 
-	CSceneObject(CScene *pScene, const SMAABB &aabb, void *pUserData, NodeType bmType, NodeFeature bmFeatures);
+	CSceneObject(CScene *pScene, const SMAABB &aabb, void *pUserData, NodeType bmType, NodeFeature bmFeatures, UINT uLayer);
 	~CSceneObject();
 	
 	void XMETHODCALLTYPE update(const SMAABB &aabb) override;
 	void updateFeatures(NodeFeature bmFeatures);
+	void updateLayer(UINT bmLayer);
 
 	void XMETHODCALLTYPE setFeature(IXSceneFeature *pFeat, bool isSet) override;
 	void XMETHODCALLTYPE setFeatures(IXSceneFeature **ppFeatures) override;
+
+	void XMETHODCALLTYPE setLayer(UINT uLayer) override;
 
 	void setNode(CSceneNode *pNode);
 	CSceneNode* getNode();
@@ -45,6 +49,10 @@ public:
 	{
 		return(m_bmType);
 	}
+	UINT getLayer() const
+	{
+		return(m_bmLayer);
+	}
 
 private:
 	SMAABB m_aabb;
@@ -54,6 +62,7 @@ private:
 
 	NodeFeature m_bmFeatures;
 	NodeType m_bmType;
+	UINT m_bmLayer = 0x1;
 
 	void *m_pUserData;
 
@@ -87,12 +96,19 @@ public:
 	CSceneQuery(CScene *pScene, CSceneObjectType *pObjectType);
 	~CSceneQuery();
 
+	SX_ALIGNED_OP_MEM();
+
 	UINT XMETHODCALLTYPE execute(const IXFrustum *pFrustum, void ***pppObjects, IXOcclusionCuller *pOcclusionCuller = NULL) override;
 	UINT XMETHODCALLTYPE execute(const IXFrustum *pFrustum, const float3 &vDir, void ***pppObjects, IXOcclusionCuller *pOcclusionCuller = NULL) override;
 
 	void XMETHODCALLTYPE setOP(XSCENE_QUERY_OP op) override;
 
 	void XMETHODCALLTYPE setFeature(IXSceneFeature *pFeat, XSCENE_QUERY_FEATURE mode) override;
+
+	void XMETHODCALLTYPE setScreenSizeCulling(const float3 &vCamPos, float fFov, float fScreenHeightPx, float fThresholdPx = 4.0f) override;
+	void XMETHODCALLTYPE unsetScreenSizeCulling() override;
+
+	void XMETHODCALLTYPE setLayerMask(UINT bmLayerMask) override;
 
 private:
 	CScene *m_pScene;
@@ -105,8 +121,17 @@ private:
 
 	const UINT *pOrder = NULL;
 
+	bool m_useScreenSizeCulling = false;
+	float m_fScreenSizeCoeff;
+	float3 m_vCamPos;
+	float m_fThresholdPx;
+
+	UINT m_bmLayerMask = 0x01;
+private:
 	void queryObjectsInternal(CSceneNode *pNode, const IXFrustum *pFrustum, bool isFullyVisible = false, IXOcclusionCuller *pOcclusionCuller = NULL);
+	void queryObjectsLeaf(CSceneNode *pNode, const IXFrustum *pFrustum, bool isFullyVisible = false, IXOcclusionCuller *pOcclusionCuller = NULL);
 	bool testFeatures(NodeFeature bmFeatures, bool isStrict = true);
+	bool testSize(const SMAABB &aabb);
 };
 
 //##########################################################################
@@ -117,7 +142,7 @@ public:
 	CSceneObjectType(CScene *pScene, UINT uId);
 	~CSceneObjectType();
 
-	IXSceneObject* XMETHODCALLTYPE newObject(const SMAABB &aabb, void *pUserData, IXSceneFeature **ppFeatures = NULL) override;
+	IXSceneObject* XMETHODCALLTYPE newObject(const SMAABB &aabb, void *pUserData, IXSceneFeature **ppFeatures = NULL, UINT uLayer = 0) override;
 	IXSceneQuery* XMETHODCALLTYPE newQuery() override;
 
 	NodeType getType()
@@ -162,6 +187,13 @@ public:
 	{
 		return(m_bmTypes);
 	}
+	UINT getLayerMask() const
+	{
+		return(m_bmLayerMask);
+	}
+
+	bool validate();
+	void print(UINT uLvl = 0, UINT *puNodesCount = NULL, UINT *puObjectsCount = NULL, UINT *puMaxDepth = NULL);
 
 protected:
 	int selectChild(const SMAABB &aabb);
@@ -171,7 +203,8 @@ protected:
 
 	void growExtents(const SMAABB &aabb);
 	void shrinkExtents(const SMAABB &aabb);
-	void updateExtents();
+	void updateExtents(bool shouldRebalance = false);
+	void takeChildren(CSceneNode *pNode);
 
 	void testSuicide();
 	void unsplit();
@@ -199,13 +232,16 @@ protected:
 
 	NodeFeature m_bmFeatures = 0;
 	NodeType m_bmTypes = 0;
+	UINT m_bmLayerMask = 0;
 };
 
 //##########################################################################
 
 class CDevBVHrenderInc;
 class CDevBVHrenderDec;
+class CDevBVHValidate;
 class CCvarListener;
+class CEditable;
 class CScene final: public IXUnknownImplementation<IXScene>
 {
 	friend class CSceneObject;
@@ -220,7 +256,7 @@ public:
 	IXSceneFeature* XMETHODCALLTYPE registerObjectFeature(const char *szName) override;
 	IXSceneFeature* XMETHODCALLTYPE getObjectFeature(const char *szName) override;
 
-	IXSceneObject* newObject(const SMAABB &aabb, void *pUserData, NodeType bmType, IXSceneFeature **ppFeatures);
+	IXSceneObject* newObject(const SMAABB &aabb, void *pUserData, NodeType bmType, IXSceneFeature **ppFeatures, UINT uLayer);
 
 	UINT XMETHODCALLTYPE getTreeHeight() override;
 
@@ -231,10 +267,14 @@ public:
 
 	void enqueueObjectUpdate(CSceneObject* pObject, const SMAABB &aabb);
 	void enqueueObjectUpdateFeatures(CSceneObject* pObject, NodeFeature bmFeatures);
+	void enqueueObjectUpdateLayer(CSceneObject* pObject, UINT bmLayer);
 	void enqueueObjectDelete(CSceneObject* pObject);
 
 	void sync();
 	
+	bool validate();
+	void print();
+
 protected:
 	void addObject(CSceneObject *pObject);
 	void removeObject(CSceneObject *pObject);
@@ -251,11 +291,16 @@ private:
 	{
 		SMAABB aabbNew;
 		CSceneObject *pObject;
-		NodeFeature bmFeatures;
+		union
+		{
+			NodeFeature bmFeatures;
+			UINT bmLayer;
+		};
 		enum
 		{
 			UPDATE,
 			UPDATE_FEATURES,
+			UPDATE_LAYER,
 			REMOVE,
 			ADD
 		} action;
@@ -265,15 +310,17 @@ private:
 
 	CDevBVHrenderInc *m_pDevBVHrenderInc = NULL;
 	CDevBVHrenderDec *m_pDevBVHrenderDec = NULL;
+	CDevBVHValidate *m_pDevBVHValidate = NULL;
 
 	CCvarListener *m_pCvarListener = NULL;
 
-	Array<IXModel*> m_aModels;
+	CEditable *m_pEditable = NULL;
+	IXGizmoRenderer *m_pRenderer = NULL;
 
 	AssotiativeArray<AAString, CSceneObjectType*> m_mapTypes;
 	AssotiativeArray<AAString, CSceneFeature*> m_mapFeatures;
 
-	void drawLevelInternal(CSceneNode *pNode, int iLvl, int iCurLvl = 0);
+	void drawLevelInternal(CSceneNode *pNode, CSceneNode *pParent, int iLvl, int iCurLvl = 0);
 };
 
 #endif

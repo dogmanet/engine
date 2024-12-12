@@ -33,6 +33,8 @@ VSO_SceneCommon SkinBoneTransform(uint iBone, float weight, VSI_Animation v)
 	float4 q = g_BufferBoneWorld[iBone + 1];
 	Output.vPosition = float4((SkinRotateVec(q, v.vPosition) + bpos.xyz) * weight, 1.0);
 	Output.vNormal = SkinRotateVec(q, v.vNormal) * weight;
+	Output.vTangent = SkinRotateVec(q, v.vTangent) * weight;
+	Output.vBinormal = SkinRotateVec(q, v.vBinormal) * weight;
 
 	return(Output);
 }
@@ -49,6 +51,8 @@ VSO_SceneCommon SkinAllTransform(VSI_Animation v)
 	o = SkinBoneTransform(iBone, fWeight, v);
 	Output.vPosition += o.vPosition;
 	Output.vNormal += o.vNormal;
+	Output.vTangent += o.vTangent;
+	Output.vBinormal += o.vBinormal;
     
     //Bone1
     iBone = v.vBones.y;
@@ -56,6 +60,8 @@ VSO_SceneCommon SkinAllTransform(VSI_Animation v)
 	o = SkinBoneTransform(iBone, fWeight, v);
 	Output.vPosition += o.vPosition;
 	Output.vNormal += o.vNormal;
+	Output.vTangent += o.vTangent;
+	Output.vBinormal += o.vBinormal;
     
     //Bone2
     iBone = v.vBones.z;
@@ -63,13 +69,18 @@ VSO_SceneCommon SkinAllTransform(VSI_Animation v)
 	o = SkinBoneTransform(iBone, fWeight, v);
 	Output.vPosition += o.vPosition;
 	Output.vNormal += o.vNormal;
+	Output.vTangent += o.vTangent;
+	Output.vBinormal += o.vBinormal;
     
     //Bone3
     iBone = v.vBones.w;
-    fWeight = v.vWeights.w;
+    // fWeight = v.vWeights.w;
+    fWeight = 1.0 - (v.vWeights.x + v.vWeights.y + v.vWeights.z);
 	o = SkinBoneTransform(iBone, fWeight, v);
 	Output.vPosition += o.vPosition;
 	Output.vNormal += o.vNormal;
+	Output.vTangent += o.vTangent;
+	Output.vBinormal += o.vBinormal;
 
 	Output.vPosition.w = 1.0;
 	

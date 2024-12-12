@@ -84,7 +84,10 @@ bool XMETHODCALLTYPE CCommandClip::exec()
 				for(UINT j = 0, jl = co.pSrcObj->getProperyCount(); j < jl; ++j)
 				{
 					const X_PROP_FIELD *pField = co.pSrcObj->getPropertyMeta(j);
-					co.pDstObj->setKV(pField->szKey, co.pSrcObj->getKV(pField->szKey), true);
+					if(fstrcmp(pField->szKey, "guid"))
+					{
+						co.pDstObj->setKV(pField->szKey, co.pSrcObj->getKV(pField->szKey), true);
+					}
 				}
 
 				co.pDstObj->clip(-m_clipPlane);

@@ -533,8 +533,20 @@ void SXInput::QueueMsg(const IMSG & msg)
 					}
 					else
 					{
+						RECT rc;
+						GetClientRect(GetForegroundWindow(), &rc);
+						
+						rc.right = (rc.right - rc.left) / 2;
+						rc.bottom = (rc.bottom - rc.top) / 2;
+
 						mdelta.x += absoluteX - s_iLastX;
 						mdelta.y += absoluteY - s_iLastY;
+
+						if(mdelta.x > rc.right || mdelta.x < -rc.right || mdelta.y > rc.bottom || mdelta.y < -rc.bottom)
+						{
+							mdelta.x = 0;
+							mdelta.y = 0;
+						}
 					}
 					s_iLastX = absoluteX;
 					s_iLastY = absoluteY;

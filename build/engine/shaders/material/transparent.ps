@@ -21,7 +21,7 @@ cbuffer CDataClipPlanes: register(b6)
 
 //##########################################################################
 
-float4 main(PSI_XMaterial IN):COLOR0
+float4 main(PSI_XMaterial IN, bool isFrontFace:SV_IsFrontFace):COLOR0
 {
 	float3 vPos = IN.vPos.xyz / IN.vPos.w;
 	[unroll]for(uint i = 0; i < 4; ++i)
@@ -34,6 +34,10 @@ float4 main(PSI_XMaterial IN):COLOR0
 	
 	// ClipFar(IN.vPos.z, g_vNearFarLayers.y);
 	IN.vNormal = normalize(IN.vNormal);
+	
+	if(!isFrontFace){
+		IN.vNormal *= -1.0f;
+	}
 	
 	XMaterial mtrl = XMATERIAL_MAIN(IN);
 	

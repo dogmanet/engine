@@ -1,0 +1,27 @@
+#include <struct.h>
+#include <mtrl.h>
+#include <const.h>
+
+//##########################################################################
+
+Texture2D g_txAO: register(t0);
+
+SamplerState g_sPointClamp: register(s0);
+
+float4 main(VSO_PP IN):COLOR0
+{
+	float2 vTexelSize = g_vNearFar.zw;
+    float vAOSample = 0.0f;
+	[unroll]
+    for(int x = -2; x < 2; ++x) 
+    {
+		[unroll]
+        for(int y = -2; y < 2; ++y) 
+        {
+            float2 vOffset = float2(float(x), float(y)) * vTexelSize;
+            vAOSample += g_txAO.Sample(g_sPointClamp, IN.vTexUV + vOffset).r;
+        }
+    }
+    vAOSample /= (4.0f * 4.0f);
+	return(float4(vAOSample.xxx, 1.0f));
+}

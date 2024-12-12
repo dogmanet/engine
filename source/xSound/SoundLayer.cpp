@@ -117,9 +117,9 @@ void CSoundLayer::delSndPlayer(const CSoundPlayer *pSndPlayer)
 	
 	idx = m_aSndPlayers.indexOf(pSndPlayer);
 	if(idx >= 0)
-	{
+		{
 		m_aSndPlayers.erase(idx);
-	}
+		}
 
 	mem_delete(pSndPlayer);
 }
@@ -147,9 +147,9 @@ void CSoundLayer::delSndEmitter(const CSoundEmitter *pSndEmitter)
 
 	idx = m_aSndEmitters.indexOf(pSndEmitter);
 	if(idx >= 0)
-	{
+		{
 		m_aSndEmitters.erase(idx);
-	}
+		}
 
 	mem_delete(pSndEmitter);
 }
@@ -217,7 +217,7 @@ IXSoundLayer* XMETHODCALLTYPE CSoundLayer::newSoundLayer(const char *szName, con
 	{
 		return(NULL);
 	}
-	
+
 	CSoundLayer *pLayer = new CSoundLayer();
 	pLayer->init(m_pSoundSystem, this, pDesc, szName);
 
@@ -387,12 +387,12 @@ void CSoundLayer::_play(bool canPlay, bool isFromParent)
 	}
 
 	for(UINT i = 0, l = m_aSndPlayers.size(); i < l; ++i)
-	{
+		{
 		m_aSndPlayers[i]->_onLayerPlay(isPlaying);
 	}
 
 	for(UINT i = 0, l = m_aSndEmitters.size(); i < l; ++i)
-	{
+		{
 		m_aSndEmitters[i]->_onLayerPlay(isPlaying);
 	}
 

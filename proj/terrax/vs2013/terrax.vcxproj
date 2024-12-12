@@ -102,7 +102,7 @@
       </PrecompiledHeader>
       <WarningLevel>TurnOffAllWarnings</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;SX_TERRAX;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);SX_LIB_NAME="LEd"</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;SX_TERRAX;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);SX_LIB_NAME="TrX"</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <TreatSpecificWarningsAsErrors>4316</TreatSpecificWarningsAsErrors>
@@ -125,7 +125,7 @@
       </PrecompiledHeader>
       <WarningLevel>TurnOffAllWarnings</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN64;SX_TERRAX;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);SX_LIB_NAME="LEd"</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN64;SX_TERRAX;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);SX_LIB_NAME="TrX"</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <TreatSpecificWarningsAsErrors>4316</TreatSpecificWarningsAsErrors>
@@ -150,7 +150,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;SX_TERRAX;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);SX_LIB_NAME="LEd"</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;SX_TERRAX;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);SX_LIB_NAME="TrX"</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <TreatSpecificWarningsAsErrors>4316</TreatSpecificWarningsAsErrors>
     </ClCompile>
@@ -175,7 +175,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN64;SX_TERRAX;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);SX_LIB_NAME="LEd"</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN64;SX_TERRAX;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);SX_LIB_NAME="TrX"</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <TreatSpecificWarningsAsErrors>4316</TreatSpecificWarningsAsErrors>
     </ClCompile>
@@ -197,17 +197,23 @@
     <ClCompile Include="..\..\..\source\common\guid.cpp" />
     <ClCompile Include="..\..\..\source\common\string.cpp" />
     <ClCompile Include="..\..\..\source\common\string_utils.cpp" />
-    <ClCompile Include="..\..\..\source\editors_utils\axes_helper.cpp" />
     <ClCompile Include="..\..\..\source\skyxengine.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\..\source\terrax\2DGraphNode.cpp" />
+    <ClCompile Include="..\..\..\source\terrax\2DGraphNodeData.cpp" />
+    <ClCompile Include="..\..\..\source\terrax\3DOverlayGraphNode.cpp" />
+    <ClCompile Include="..\..\..\source\terrax\3DOverlayGraphNodeData.cpp" />
+    <ClCompile Include="..\..\..\source\terrax\ColorGradientEditorDialog.cpp" />
+    <ClCompile Include="..\..\..\source\terrax\ColorPicker.cpp" />
     <ClCompile Include="..\..\..\source\terrax\CommandBuildModel.cpp" />
     <ClCompile Include="..\..\..\source\terrax\CommandCreate.cpp" />
     <ClCompile Include="..\..\..\source\terrax\CommandDelete.cpp" />
     <ClCompile Include="..\..\..\source\terrax\CommandDestroyModel.cpp" />
+    <ClCompile Include="..\..\..\source\terrax\CommandDuplicate.cpp" />
     <ClCompile Include="..\..\..\source\terrax\CommandModifyModel.cpp" />
     <ClCompile Include="..\..\..\source\terrax\CommandMove.cpp" />
     <ClCompile Include="..\..\..\source\terrax\CommandPaste.cpp" />
@@ -215,6 +221,9 @@
     <ClCompile Include="..\..\..\source\terrax\CommandRotate.cpp" />
     <ClCompile Include="..\..\..\source\terrax\CommandScale.cpp" />
     <ClCompile Include="..\..\..\source\terrax\CommandSelect.cpp" />
+    <ClCompile Include="..\..\..\source\terrax\CurveEditorDialog.cpp" />
+    <ClCompile Include="..\..\..\source\terrax\CurveEditorGraphNode.cpp" />
+    <ClCompile Include="..\..\..\source\terrax\CurveEditorGraphNodeData.cpp" />
     <ClCompile Include="..\..\..\source\terrax\Editor.cpp" />
     <ClCompile Include="..\..\..\source\terrax\EditorMaterialBrowser.cpp" />
     <ClCompile Include="..\..\..\source\terrax\GizmoHandle.cpp" />
@@ -222,14 +231,23 @@
     <ClCompile Include="..\..\..\source\terrax\GizmoRadius.cpp" />
     <ClCompile Include="..\..\..\source\terrax\GizmoRotate.cpp" />
     <ClCompile Include="..\..\..\source\terrax\GizmoScale.cpp" />
+    <ClCompile Include="..\..\..\source\terrax\GradientPreviewGraphNode.cpp" />
+    <ClCompile Include="..\..\..\source\terrax\GradientPreviewGraphNodeData.cpp" />
     <ClCompile Include="..\..\..\source\terrax\Grid.cpp" />
     <ClCompile Include="..\..\..\source\terrax\LevelOpenDialog.cpp" />
     <ClCompile Include="..\..\..\source\terrax\mainWindow.cpp" />
     <ClCompile Include="..\..\..\source\terrax\MaterialBrowser.cpp" />
+    <ClCompile Include="..\..\..\source\terrax\MaterialBrowserGraphNode.cpp" />
+    <ClCompile Include="..\..\..\source\terrax\MaterialBrowserGraphNodeData.cpp" />
+    <ClCompile Include="..\..\..\source\terrax\MaterialEditor.cpp" />
     <ClCompile Include="..\..\..\source\terrax\PropertyWindow.cpp" />
     <ClCompile Include="..\..\..\source\terrax\ProxyObject.cpp" />
+    <ClCompile Include="..\..\..\source\terrax\SceneTreeWindow.cpp" />
     <ClCompile Include="..\..\..\source\terrax\ScrollBar.cpp" />
     <ClCompile Include="..\..\..\source\terrax\terrax.cpp" />
+    <ClCompile Include="..\..\..\source\terrax\TextureViewGraphNode.cpp" />
+    <ClCompile Include="..\..\..\source\terrax\TextureViewGraphNodeData.cpp" />
+    <ClCompile Include="..\..\..\source\terrax\TextureWindow.cpp" />
     <ClCompile Include="..\..\..\source\terrax\Tools.cpp" />
     <ClCompile Include="..\..\..\source\terrax\UndoManager.cpp" />
   </ItemGroup>
@@ -240,13 +258,19 @@
     <ClInclude Include="..\..\..\source\common\file_utils.h" />
     <ClInclude Include="..\..\..\source\common\string.h" />
     <ClInclude Include="..\..\..\source\common\string_utils.h" />
-    <ClInclude Include="..\..\..\source\editors_utils\axes_helper.h" />
     <ClInclude Include="..\..\..\source\gdefines.h" />
     <ClInclude Include="..\..\..\source\SkyXEngine.h" />
+    <ClInclude Include="..\..\..\source\terrax\2DGraphNode.h" />
+    <ClInclude Include="..\..\..\source\terrax\2DGraphNodeData.h" />
+    <ClInclude Include="..\..\..\source\terrax\3DOverlayGraphNode.h" />
+    <ClInclude Include="..\..\..\source\terrax\3DOverlayGraphNodeData.h" />
+    <ClInclude Include="..\..\..\source\terrax\ColorGradientEditorDialog.h" />
+    <ClInclude Include="..\..\..\source\terrax\ColorPicker.h" />
     <ClInclude Include="..\..\..\source\terrax\CommandBuildModel.h" />
     <ClInclude Include="..\..\..\source\terrax\CommandCreate.h" />
     <ClInclude Include="..\..\..\source\terrax\CommandDelete.h" />
     <ClInclude Include="..\..\..\source\terrax\CommandDestroyModel.h" />
+    <ClInclude Include="..\..\..\source\terrax\CommandDuplicate.h" />
     <ClInclude Include="..\..\..\source\terrax\CommandModifyModel.h" />
     <ClInclude Include="..\..\..\source\terrax\CommandMove.h" />
     <ClInclude Include="..\..\..\source\terrax\CommandPaste.h" />
@@ -254,6 +278,9 @@
     <ClInclude Include="..\..\..\source\terrax\CommandRotate.h" />
     <ClInclude Include="..\..\..\source\terrax\CommandScale.h" />
     <ClInclude Include="..\..\..\source\terrax\CommandSelect.h" />
+    <ClInclude Include="..\..\..\source\terrax\CurveEditorDialog.h" />
+    <ClInclude Include="..\..\..\source\terrax\CurveEditorGraphNode.h" />
+    <ClInclude Include="..\..\..\source\terrax\CurveEditorGraphNodeData.h" />
     <ClInclude Include="..\..\..\source\terrax\Editor.h" />
     <ClInclude Include="..\..\..\source\terrax\EditorMaterialBrowser.h" />
     <ClInclude Include="..\..\..\source\terrax\GizmoHandle.h" />
@@ -261,20 +288,33 @@
     <ClInclude Include="..\..\..\source\terrax\GizmoRadius.h" />
     <ClInclude Include="..\..\..\source\terrax\GizmoRotate.h" />
     <ClInclude Include="..\..\..\source\terrax\GizmoScale.h" />
+    <ClInclude Include="..\..\..\source\terrax\GradientPreviewGraphNode.h" />
+    <ClInclude Include="..\..\..\source\terrax\GradientPreviewGraphNodeData.h" />
+    <ClInclude Include="..\..\..\source\terrax\ICompoundObject.h" />
     <ClInclude Include="..\..\..\source\terrax\LevelOpenDialog.h" />
     <ClInclude Include="..\..\..\source\terrax\MaterialBrowser.h" />
+    <ClInclude Include="..\..\..\source\terrax\MaterialBrowserGraphNode.h" />
+    <ClInclude Include="..\..\..\source\terrax\MaterialBrowserGraphNodeData.h" />
+    <ClInclude Include="..\..\..\source\terrax\MaterialEditor.h" />
     <ClInclude Include="..\..\..\source\terrax\PropertyWindow.h" />
     <ClInclude Include="..\..\..\source\terrax\ProxyObject.h" />
+    <ClInclude Include="..\..\..\source\terrax\SceneTreeWindow.h" />
     <ClInclude Include="..\..\..\source\terrax\ScrollBar.h" />
+    <ClInclude Include="..\..\..\source\terrax\TextureViewGraphNode.h" />
+    <ClInclude Include="..\..\..\source\terrax\TextureViewGraphNodeData.h" />
+    <ClInclude Include="..\..\..\source\terrax\TextureWindow.h" />
     <ClInclude Include="..\..\..\source\terrax\Tools.h" />
     <ClInclude Include="..\..\..\source\terrax\UndoManager.h" />
     <ClInclude Include="..\..\..\source\terrax\Grid.h" />
     <ClInclude Include="..\..\..\source\terrax\resource.h" />
     <ClInclude Include="..\..\..\source\terrax\terrax.h" />
+    <ClInclude Include="..\..\..\source\xcommon\editor\IXColorPicker.h" />
+    <ClInclude Include="..\..\..\source\xcommon\editor\IXCurveEditor.h" />
     <ClInclude Include="..\..\..\source\xcommon\editor\IXEditable.h" />
     <ClInclude Include="..\..\..\source\xcommon\editor\IXEditor.h" />
     <ClInclude Include="..\..\..\source\xcommon\editor\IXEditorExtension.h" />
     <ClInclude Include="..\..\..\source\xcommon\editor\IXEditorGizmo.h" />
+    <ClInclude Include="..\..\..\source\xcommon\editor\IXEditorImporter.h" />
     <ClInclude Include="..\..\..\source\xcommon\editor\IXEditorMaterialBrowser.h" />
     <ClInclude Include="..\..\..\source\xcommon\editor\IXEditorObject.h" />
   </ItemGroup>

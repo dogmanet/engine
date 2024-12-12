@@ -10,5 +10,5 @@ terrax_colored.ps
 
 float4 main(VSO_TXColored2 IN):COLOR0
 {
-	return(IN.vColor);
+	return(float4(pow(IN.vColor.rgb, 2.2), IN.vColor.a));
 }

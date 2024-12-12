@@ -56,12 +56,14 @@ body:disabled #background
 #engine_version
 {
 	position: absolute;
-	bottom: 40px;
-	right: 40px;
+	// bottom: 40px;
+	bottom: 10px;
+	//right: 40px;
+	right: 10px;
 	font-size: 16px;
-	height: 16px;
+	height: 20px;
 	text-align: right;
 	font-name: traceroute;
-	transform: rotateY(-5deg);
+	//transform: rotateY(-5deg);
 	width: 30%;
 }

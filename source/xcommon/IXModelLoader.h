@@ -7,7 +7,7 @@
 
 // {8E7DA1D6-7965-41A1-BFB4-07B087E854A1}
 #define IXMODELLOADER_GUID DEFINE_XGUID(0x8e7da1d6, 0x7965, 0x41a1, 0xbf, 0xb4, 0x7, 0xb0, 0x87, 0xe8, 0x54, 0xa1)
-#define IXMODELLOADER_VERSION 2
+#define IXMODELLOADER_VERSION 3
 
 //! возможная информация о dse файле
 struct XModelInfo
@@ -56,7 +56,7 @@ public:
 	virtual const char* XMETHODCALLTYPE getCopyright() const = 0;
 	virtual const char* XMETHODCALLTYPE getDescription() const = 0;
 
-	virtual bool XMETHODCALLTYPE open(IFile *pFile) = 0;
+	virtual bool XMETHODCALLTYPE open(const char *szFileName) = 0;
 	virtual XMODELTYPE XMETHODCALLTYPE getType() const = 0;
 	virtual bool XMETHODCALLTYPE loadAsStatic(IXResourceModelStatic *pResource) = 0;
 	virtual bool XMETHODCALLTYPE loadAsAnimated(IXResourceModelAnimated *pResource) = 0;

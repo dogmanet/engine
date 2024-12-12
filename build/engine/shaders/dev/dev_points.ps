@@ -17,15 +17,11 @@ float4 main(VSO_DevPoints IN):COLOR0
 {
 	float fAlpha = lerp(1.0f, 1.0 - saturate((length((IN.vTexUVMode.xy - 0.5) * 2.0) - 0.9) * 10.0), IN.vTexUVMode.z);
 	
+	float4 vFinalColor;
 #ifdef USE_TEXTURE
-	float4 vFinalColor = g_txDiffuse.Sample(g_sSampler, IN.vTexUVMode.xy);
-	return(vFinalColor * IN.vColor * float4(1.0, 1.0, 1.0, fAlpha));
+	vFinalColor = g_txDiffuse.Sample(g_sSampler, IN.vTexUVMode.xy) * IN.vColor * float4(1.0, 1.0, 1.0, fAlpha);
 #else
-	return(IN.vColor * float4(1.0, 1.0, 1.0, fAlpha));
+	vFinalColor = IN.vColor * float4(1.0, 1.0, 1.0, fAlpha);
 #endif
-	// half4 vFinalColor = g_txDiffuse.Sample(g_sSampler, IN.vTexUV);
-	// clip(vFinalColor.a - 0.5);
-	// vFinalColor *= g_vColor;
-	// return(vFinalColor);
-	return(IN.vColor);
+	return(float4(pow(vFinalColor.rgb, 2.2), vFinalColor.a));
 }

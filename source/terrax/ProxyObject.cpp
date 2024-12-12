@@ -5,6 +5,7 @@
 #include "terrax.h"
 #include "CommandDelete.h"
 #include <common/aastring.h>
+#include <core/sxcore.h>
 
 extern AssotiativeArray<AAString, IXEditable*> g_mEditableSystems;
 
@@ -136,7 +137,7 @@ void XMETHODCALLTYPE CProxyObject::remove()
 		g_apProxies.erase(idx);
 	}
 
-	XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+	XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 		g_mObjectsLocation.erase(pObj);
 		mem_release(pObj);
 	}, this);
@@ -167,7 +168,7 @@ void XMETHODCALLTYPE CProxyObject::create()
 		g_apProxies.push_back(this);
 	}
 
-	XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+	XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 		g_mObjectsLocation[pObj] = pParent;
 		add_ref(pObj);
 	}, this);
@@ -239,8 +240,11 @@ bool CProxyObject::setDstObject(const XGUID &guid)
 		if(idx >= 0)
 		{
 			g_pLevelObjects.erase(idx);
+			g_pEditor->onObjectRemoved(pObj);
 		}
 
+		m_qOrient = pObj->getOrient();
+		pObj->setOrient(SMQuaternion());
 		m_vPos = pObj->getPos();
 
 		return(true);
@@ -276,7 +280,7 @@ void CProxyObject::addSrcModel(const XGUID &guid)
 		IXEditorObject *pObject;
 		if(pModel->getObject(i, &pObject))
 		{
-			CProxyObject *pOldWhere = XTakeObject(pObject, this);
+			ICompoundObject *pOldWhere = XTakeObject(pObject, this);
 			assert(pOldWhere == NULL);
 			m_aObjects.push_back({pObject, m_qOrient.Conjugate() * (pObject->getPos() - m_vPos), pObject->getOrient() * m_qOrient.Conjugate()});
 		}
@@ -355,7 +359,7 @@ void CProxyObject::reset()
 
 	fora(i, m_aObjects)
 	{
-		CProxyObject *pOldWhere = XTakeObject(m_aObjects[i].pObj, NULL);
+		ICompoundObject *pOldWhere = XTakeObject(m_aObjects[i].pObj, NULL);
 		assert(pOldWhere == this);
 		mem_release(m_aObjects[i].pObj);
 	}
@@ -364,6 +368,7 @@ void CProxyObject::reset()
 	if(m_pTargetObject)
 	{
 		g_pLevelObjects.push_back(m_pTargetObject);
+		g_pEditor->onObjectAdded(m_pTargetObject);
 		m_pTargetObject = NULL;
 	}
 
@@ -442,7 +447,7 @@ void CProxyObject::addChildObject(IXEditorObject *pObject)
 	assert(idx >= 0);
 	if(idx >= 0)
 	{
-		CProxyObject *pOldContainer = XTakeObject(pObject, this);
+		ICompoundObject *pOldContainer = XTakeObject(pObject, this);
 		assert(pOldContainer == NULL);
 		add_ref(pObject);
 		m_aObjects.push_back({pObject, m_qOrient.Conjugate() * (pObject->getPos() - m_vPos), pObject->getOrient() * m_qOrient.Conjugate()});
@@ -452,7 +457,7 @@ void CProxyObject::addChildObject(IXEditorObject *pObject)
 }
 void CProxyObject::removeChildObject(IXEditorObject *pObject)
 {
-	CProxyObject *pOldContainer = XTakeObject(pObject, NULL);
+	ICompoundObject *pOldContainer = XTakeObject(pObject, NULL);
 	assert(pOldContainer == this);
 
 	int idx = m_aObjects.indexOf(pObject, [](const SrcObject &a, IXEditorObject *b){
@@ -539,7 +544,7 @@ void CProxyObject::saveModel()
 
 void XMETHODCALLTYPE CProxyObject::getInternalData(const XGUID *pGUID, void **ppOut)
 {
-	if(*pGUID == X_IS_PROXY_GUID)
+	if(*pGUID == X_IS_PROXY_GUID || *pGUID == X_IS_COMPOUND_GUID)
 	{
 		*ppOut = (void*)1;
 	}

@@ -31,6 +31,15 @@ bool XMETHODCALLTYPE CEditorExtension::getTool(UINT uId, IXEditorTool **ppOut)
 	return(false);
 }
 
+UINT XMETHODCALLTYPE CEditorExtension::getResourceBrowserCount()
+{
+	return(0);
+}
+bool XMETHODCALLTYPE CEditorExtension::getResourceBrowser(UINT uId, IXEditorResourceBrowser **ppOut)
+{
+	return(false);
+}
+
 void CEditorExtension::onSelectionChanged(CEditorObject *pObject)
 {
 	auto &aObjects = m_pEditable->getObjects();

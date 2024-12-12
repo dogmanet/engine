@@ -118,6 +118,7 @@ protected:
 
 	void onIsStaticChange(bool isStatic);
 	void onSetUseAutoPhysbox(bool use);
+	void onColorChanged(const float3 &vColor);
 	int m_iSkin = 0;
 
 	struct

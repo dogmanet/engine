@@ -5,7 +5,6 @@ See the license in LICENSE
 ***********************************************************/
 
 #include "BaseAnimating.h"
-#include "gcore/sxgcore.h"
 
 #include <xcommon/resource/IXResourceManager.h>
 #include <xcommon/resource/IXResourceModel.h>
@@ -24,7 +23,7 @@ BEGIN_PROPTABLE(CBaseAnimating)
 	//! Объект референса для цвета свечения
 	DEFINE_FIELD_ENTITY(CBaseEntity, m_pEntColorRef, 0, "glow_color_ref", "Glow color reference", EDITOR_TEXTFIELD)
 	//! Цвет свечения
-	DEFINE_FIELD_VECTOR(m_vGlowColor, 0, "glow_color", "Glow color", EDITOR_TEXTFIELD)
+	DEFINE_FIELD_VECTORFN(m_vGlowColor, 0, "glow_color", "Glow color", onColorChanged, EDITOR_TEXTFIELD)
 
 	DEFINE_FIELD_BOOLFN(m_isStatic, 0, "is_static", "Is static", onIsStaticChange, EDITOR_YESNO)
 
@@ -89,6 +88,10 @@ CBaseAnimating::CBaseAnimating():
 	m_pAnimationCallback(new CAnimationCallback(this))
 {
 	memset(m_vNextAnim, 0, sizeof(m_vNextAnim));
+
+	m_vGlowColor.x = 0.0f;
+	m_vGlowColor.y = randf(0.1f, 1.0f);
+	m_vGlowColor.z = randf(0.1f, 1.0f);
 }
 
 CBaseAnimating::~CBaseAnimating()
@@ -117,6 +120,18 @@ void CBaseAnimating::onSetUseAutoPhysbox(bool use)
 	}
 }
 
+void CBaseAnimating::onColorChanged(const float3 &vColor)
+{
+	m_vGlowColor = vColor;
+	if(SMVector3Length(vColor) < 0.1f)
+	{
+		m_vGlowColor.x = 0.0f;
+		m_vGlowColor.y = randf(0.1f, 1.0f);
+		m_vGlowColor.z = randf(0.1f, 1.0f);
+	}
+	SAFE_CALL(m_pModel, setColor, (float3)m_vGlowColor);
+}
+
 void CBaseAnimating::setModel(const char * mdl)
 {
 	_setStrVal(&m_szModelFile, mdl);
@@ -141,6 +156,7 @@ void CBaseAnimating::setModel(const char * mdl)
 			m_pModel->setScale(m_fBaseScale);
 			m_pModel->setPosition(getPos());
 			m_pModel->setOrientation(getOrient());
+			m_pModel->setColor((float4)m_vGlowColor);
 			
 			auto pAnimating = m_pModel->asAnimatedModel();
 			if(pAnimating)
@@ -323,7 +339,7 @@ void CBaseAnimating::initPhysics()
 		}
 		{
 			auto pResource = m_pModel->getResource()->asAnimated();
-			if(pResource)
+			if(pResource && pResource->getLodCount())
 			{
 				UINT uUsedLod = pResource->getLodCount() - 1;
 				for(UINT i = 0, l = pResource->getSubsetCount(uUsedLod); i < l; ++i)
@@ -595,6 +611,33 @@ void CBaseAnimating::renderEditor(bool is3D, bool bRenderSelection, IXGizmoRende
 	if(bRenderSelection)
 	{
 		SAFE_CALL(m_pModel, render, 0, MF_OPAQUE | MF_TRANSPARENT);
+
+		IXAnimatedModel *pAnim;
+		if(m_pModel && pRenderer && (pAnim = m_pModel->asAnimatedModel()))
+		{
+			pRenderer->setPointMode(XGPM_ROUND);
+			pRenderer->setPointSize(is3D ? 0.02f : 3.0f);
+			pRenderer->setLineWidth(is3D ? 0.01f : 1.5f);
+
+			float3 vPos;
+			int iParent;
+			UINT uBoneCount = pAnim->getBoneCount();
+			for(UINT i = 0; i < uBoneCount; ++i)
+			{
+				vPos = pAnim->getBoneTransformPos(i);
+				pRenderer->setColor(float4(1.0f, 1.0f, 1.0f, 1.0f));
+				pRenderer->drawPoint(vPos);
+				iParent = pAnim->getBoneParent(i);
+				if(iParent >= 0)
+				{
+					pRenderer->setColor(float4(0.0f, 1.0f, 0.0f, 0.1f));
+					pRenderer->jumpTo(pAnim->getBoneTransformPos(iParent));
+					pRenderer->setColor(float4(0.0f, 1.0f, 0.0f, 1.0f));
+					pRenderer->lineTo(vPos);
+				}
+			}
+			// render skeleton
+		}
 	}
 }
 

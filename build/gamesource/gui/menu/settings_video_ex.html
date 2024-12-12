@@ -18,6 +18,7 @@
 				<!-- <div class="menu-item">Размытие теней</div>		 -->
 				<!-- <div class="menu-item">Размытие в движении</div>			 -->
 				<div class="menu-item">Качество отражений</div>			
+				<div class="menu-item">Качество FXAA</div>
 				
 				<div class="menu-item bottom" onclick="on_cancel">Назад</div>
 			</div>
@@ -78,6 +79,12 @@
 					<option value="1">Среднее</option>
 					<!-- <option value="2.000000">Высокое</option> -->
 					<!-- <option value="4.000000">Очень высокое</option> -->
+				</select>
+				<select class="set_item" cvar="pp_fxaa">
+					<option value="0">Нет</option>
+					<option value="1">Низкое</option>
+					<option value="2">Среднее</option>
+					<option value="3">Высокое</option>
 				</select>
 				
 				<div class="menu-item bottom" onclick="settings_commit" style="text-align: right;">Применить</div>

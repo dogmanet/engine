@@ -10,6 +10,7 @@
 #include <graphix/graphix.h>
 #include <mtrl/IXMaterialSystem.h>
 #include <xcommon/gui/IXFontManager.h>
+#include <xcommon/render/IXRender.h>
 //#include "terrax.h"
 
 #include "ScrollBar.h"
@@ -49,9 +50,10 @@ public:
 	CMaterialBrowser(HINSTANCE hInstance, HWND hMainWnd);
 	~CMaterialBrowser();
 
-	void browse(IMaterialBrowserCallback *pCallback);
+	void browse(IMaterialBrowserCallback *pCallback, bool bTextureOnly = false);
+	void abort();
 
-	void initGraphics(IGXDevice *pDev);
+	void initGraphics(IXRender *pRender);
 	void render();
 	void swapBuffers();
 
@@ -75,9 +77,11 @@ private:
 
 	bool m_isDirty = false;
 	bool m_bDoSwap = false;
+	IXRender *m_pRender = NULL;
 	IGXDevice *m_pDev = NULL;
-	IGXSwapChain *m_pSwapChain = NULL;
+	//IGXSwapChain *m_pSwapChain = NULL;
 	IGXSurface *m_pSurface = NULL;
+	IXRenderTarget *m_pFinalTarget = NULL;
 
 	bool m_isResizing = false;
 	bool m_isScreenSizeChanged = false;
@@ -102,7 +106,8 @@ private:
 		float fHighlight;
 
 		float2_t vPosition;
-		float2_t _dummy;
+		float fScale;
+		float _dummy;
 	};
 
 	FrameState m_frameState;
@@ -127,6 +132,7 @@ private:
 		IXMaterial *pMaterial;
 		IXTexture *pTexture;
 		bool isTexture;
+		bool isMaterial;
 		bool isTranslated;
 		bool isTransparent;
 
@@ -181,6 +187,9 @@ private:
 
 	IMaterialBrowserCallback *m_pCallback = NULL;
 
+	//UINT m_uCurrentDpi = USER_DEFAULT_SCREEN_DPI;
+	float m_fScale = 1.0f;
+
 private:
 	void registerClass();
 
@@ -199,6 +208,9 @@ private:
 	void preload();
 
 	void scheduleFilterIn(float fSeconds);
+
+	void initFont();
+	void invalidateTexts();
 };
 
 #endif

@@ -13,10 +13,14 @@ gbuffer.ps
 
 //##########################################################################
 
-PSO_RSMbuffer main(PSI_XMaterial IN)
+PSO_RSMbuffer main(PSI_XMaterial IN, bool isFrontFace:SV_IsFrontFace)
 {
 	// ClipFar(IN.vPos.z, g_vNearFarLayers.y);
 	IN.vNormal = normalize(IN.vNormal);
+	
+	if(!isFrontFace){
+		IN.vNormal *= -1.0f;
+	}
 	
 	PSO_RSMbuffer OUT;
 #ifdef IS_CUBEMAP

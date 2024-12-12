@@ -4,12 +4,12 @@
 #include <gdefines.h>
 #include <common/math.h>
 
-class ICamera;
+class IXCamera;
 class IXOcclusionCuller: public IXUnknown
 {
 public:
 	//! обновление
-	virtual void XMETHODCALLTYPE update(ICamera *pCamera, float fFOV, float fAspectRatio, float fFarPlane) = 0;
+	virtual void XMETHODCALLTYPE update(IXCamera *pCamera, float fFOV, float fAspectRatio, float fFarPlane) = 0;
 
 	//! видна ли точка
 	virtual bool XMETHODCALLTYPE isPointVisible(const float3 &vPoint) const = 0;

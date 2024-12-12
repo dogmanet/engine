@@ -24,6 +24,8 @@ See the license in LICENSE
 #include <xcommon/physics/IXPhysics.h>
 #include <xcommon/IXSoundSystem.h>
 #include <xcommon/render/IXRenderUtils.h>
+#include <xcommon/render/IXRender.h>
+#include <xcommon/particles/IXParticleSystem.h>
 #include "physics_util.h"
 #include "EntityFactory.h"
 #include "EntityManager.h"
@@ -35,6 +37,12 @@ See the license in LICENSE
 #include <light/IXLightSystem.h>
 
 #pragma pointers_to_members(full_generality, virtual_inheritance)
+
+IXRender* GetRender();
+IXParticleSystem* GetParticleSystem();
+
+
+
 
 #pragma warning(push)
 #pragma warning(disable:4251)
@@ -118,6 +126,7 @@ public:
 	void broadcastMessage(const char *szInputName, inputdata_t inputData, float fRadius);
 	void broadcastMessage(const char *szInputName, float fArg, float fRadius);
 	void broadcastMessage(const char *szInputName, int iArg, float fRadius);
+	void broadcastMessage(const char *szInputName, UINT uArg, float fRadius);
 	void broadcastMessage(const char *szInputName, bool bArg, float fRadius);
 	void broadcastMessage(const char *szInputName, const char *szArg, float fRadius);
 	void broadcastMessage(const char *szInputName, const float3_t &f3Arg, float fRadius);

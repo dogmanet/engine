@@ -1,4 +1,4 @@
-﻿#include "GUIbase.h"
+#include "GUIbase.h"
 #include "IHTMLparser.h"
 #include "IDOMdocument.h"
 
@@ -18,6 +18,8 @@
 
 #include <core/sxcore.h>
 
+DECLARE_PROFILER_INTERNAL();
+
 namespace gui
 {
 	CGUI *g_pGUI;
@@ -27,24 +29,28 @@ namespace gui
 		return(g_pGUI);
 	}
 
-	CGUI::CGUI(IGXDevice *pDev, IXMaterialSystem *pMaterialSystem, IFileSystem *pFileSystem):
-		m_pDevice(pDev)
+	CGUI::CGUI(IXRender *pRender, IXMaterialSystem *pMaterialSystem, IFileSystem *pFileSystem):
+		m_pRender(pRender),
+		m_pDevice(pRender->getDevice()),
+		m_pMaterialSystem(pMaterialSystem)
 	{
 		g_pGUI = this;
+		
+		INIT_PROFILER_INTERNAL();
 
 		gui::CKeyMap::init();
 
-		m_shaders.m_baseTexturedColored.m_idVS = SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "gui_main.vs");
-		m_shaders.m_baseTexturedColored.m_idPS = SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "gui_main.ps");
-		m_shaders.m_baseTexturedColored.m_idShaderKit = SGCore_ShaderCreateKit(m_shaders.m_baseTexturedColored.m_idVS, m_shaders.m_baseTexturedColored.m_idPS);
+		m_shaders.m_baseTexturedColored.m_idVS = m_pRender->loadShader(SHADER_TYPE_VERTEX, "gui_main.vs");
+		m_shaders.m_baseTexturedColored.m_idPS = m_pRender->loadShader(SHADER_TYPE_PIXEL, "gui_main.ps");
+		m_shaders.m_baseTexturedColored.m_idShaderKit = m_pRender->createShaderKit(m_shaders.m_baseTexturedColored.m_idVS, m_shaders.m_baseTexturedColored.m_idPS);
 
-		m_shaders.m_baseColored.m_idVS = SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "gui_simple.vs");
-		m_shaders.m_baseColored.m_idPS = SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "gui_simple.ps");
-		m_shaders.m_baseColored.m_idShaderKit = SGCore_ShaderCreateKit(m_shaders.m_baseColored.m_idVS, m_shaders.m_baseColored.m_idPS);
+		m_shaders.m_baseColored.m_idVS = m_pRender->loadShader(SHADER_TYPE_VERTEX, "gui_simple.vs");
+		m_shaders.m_baseColored.m_idPS = m_pRender->loadShader(SHADER_TYPE_PIXEL, "gui_simple.ps");
+		m_shaders.m_baseColored.m_idShaderKit = m_pRender->createShaderKit(m_shaders.m_baseColored.m_idVS, m_shaders.m_baseColored.m_idPS);
 
-		m_shaders.m_baseTexturedTextransformColored.m_idVS = SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "gui_main_textransform.vs");
+		m_shaders.m_baseTexturedTextransformColored.m_idVS = m_pRender->loadShader(SHADER_TYPE_VERTEX, "gui_main_textransform.vs");
 		m_shaders.m_baseTexturedTextransformColored.m_idPS = m_shaders.m_baseTexturedColored.m_idPS;
-		m_shaders.m_baseTexturedTextransformColored.m_idShaderKit = SGCore_ShaderCreateKit(m_shaders.m_baseTexturedTextransformColored.m_idVS, m_shaders.m_baseTexturedTextransformColored.m_idPS);
+		m_shaders.m_baseTexturedTextransformColored.m_idShaderKit = m_pRender->createShaderKit(m_shaders.m_baseTexturedTextransformColored.m_idVS, m_shaders.m_baseTexturedTextransformColored.m_idPS);
 
 		GXDepthStencilDesc depthStencilDesc;
 		depthStencilDesc.useDepthTest = false;
@@ -66,14 +72,19 @@ namespace gui
 		blendDesc.renderTarget[0].useBlend = true;
 		blendDesc.renderTarget[0].blendSrcAlpha = blendDesc.renderTarget[0].blendSrcColor = GXBLEND_SRC_ALPHA;
 		blendDesc.renderTarget[0].blendDestAlpha = blendDesc.renderTarget[0].blendDestColor = GXBLEND_INV_SRC_ALPHA;
+
+		blendDesc.renderTarget[0].blendSrcAlpha = GXBLEND_ONE;
+		blendDesc.renderTarget[0].blendDestAlpha = GXBLEND_INV_SRC_ALPHA;
+
 		m_blendStates.m_pDefault = m_pDevice->createBlendState(&blendDesc);
 
 		blendDesc.renderTarget[0].u8RenderTargetWriteMask = 0;
 		m_blendStates.m_pNoColorWrite = m_pDevice->createBlendState(&blendDesc);
 
 		blendDesc.renderTarget[0].u8RenderTargetWriteMask = GXCOLOR_WRITE_ENABLE_ALL;
-		blendDesc.renderTarget[0].blendSrcAlpha = GXBLEND_ONE;
-		blendDesc.renderTarget[0].blendOpAlpha = GXBLEND_OP_MAX;
+	//	blendDesc.renderTarget[0].blendSrcAlpha = GXBLEND_ONE;
+	//	blendDesc.renderTarget[0].blendDestAlpha = GXBLEND_INV_SRC_ALPHA;
+	//	blendDesc.renderTarget[0].blendOpAlpha = GXBLEND_OP_MAX;
 		m_blendStates.m_pDesktop = m_pDevice->createBlendState(&blendDesc);
 
 		GXRasterizerDesc rasterizerDesc;
@@ -129,19 +140,25 @@ namespace gui
 		return(m_pDevice);
 	}
 
+	IXRender* CGUI::getRender()
+	{
+		return(m_pRender);
+	}
+
 	IDesktopStack* CGUI::newDesktopStack(const char *szResPath, UINT uWidth, UINT uHeight)
 	{
-		CDesktopStack *pStack = new CDesktopStack(this, m_pDevice, szResPath, uWidth, uHeight);
+		CDesktopStack *pStack = new CDesktopStack(this, m_pRender, szResPath, uWidth, uHeight);
 		return(pStack);
 	}
 
 //##########################################################################
 
-	CDesktopStack::CDesktopStack(CGUI *pGUI, IGXDevice *pDev, const char *szResPath, UINT uWidth, UINT uHeight):
+	CDesktopStack::CDesktopStack(CGUI *pGUI, IXRender *pRender, const char *szResPath, UINT uWidth, UINT uHeight):
 		m_pGUI(pGUI),
-		m_pDevice(pDev)
+		m_pRender(pRender),
+		m_pDevice(pRender->getDevice())
 	{
-		pGUI->AddRef();
+		add_ref(pGUI);
 		updateScreenSize(uWidth, uHeight);
 
 		StringW srp = String(szResPath);
@@ -161,7 +178,7 @@ namespace gui
 		m_pTextureManager = new CTextureManager(m_szResourceDir);
 		m_pFontManager = new IFontManager(m_szResourceDir, m_pTextureManager);
 
-		m_pDefaultWhite = m_pTextureManager->getTexture(L"/dev/white.png");
+		m_pDefaultWhite = m_pTextureManager->getWhite();
 	}
 
 	CDesktopStack::~CDesktopStack()
@@ -176,6 +193,18 @@ namespace gui
 		mem_release(m_pQuadVerticesXYZ);
 
 		mem_release(m_pGUI);
+
+		mem_release(m_pActiveDesktop);
+
+		Array<IDesktop*> aDesktops(m_mDesktops.Size());
+		for(AssotiativeArray<StringW, IDesktop*>::Iterator i = m_mDesktops.begin(); i; ++i)
+		{
+			aDesktops.push_back(*(i.second));
+		}
+		fora(i, aDesktops)
+		{
+			mem_release(aDesktops[i]);
+		}
 	}
 
 	IGXRenderBuffer* CDesktopStack::getQuadRenderBufferXYZ(float3_t *pVertices)
@@ -199,6 +228,13 @@ namespace gui
 		return(m_pQuadRenderXYZTex16);
 	}
 
+	static void InitEventModKeys(IEvent *pEvent)
+	{
+		pEvent->bCtrlKey = CKeyMap::keyState(KEY_CTRL);
+		pEvent->bShiftKey = CKeyMap::keyState(KEY_SHIFT);
+		pEvent->bAltKey = CKeyMap::keyState(KEY_ALT);
+	}
+
 	BOOL CDesktopStack::putMessage(UINT message, WPARAM wParam, LPARAM lParam)
 	{
 		if(!m_pActiveDesktop)
@@ -211,6 +247,9 @@ namespace gui
 		char src[] = {(char)wParam, 0};
 		wchar_t dst[] = {0, 0};
 #endif
+
+#define _GET_X_LPARAM(x) ((int)((float)(GET_X_LPARAM(x)) / m_fScale))
+#define _GET_Y_LPARAM(x) ((int)((float)(GET_Y_LPARAM(x)) / m_fScale))
 
 		static int wheelDelta = 0;
 		static int wheelCount = 0;
@@ -252,8 +291,9 @@ namespace gui
 			if(wheelCount)
 			{
 				ev.type = wheelCount > 0 ? GUI_EVENT_TYPE_MOUSEWHEELUP : GUI_EVENT_TYPE_MOUSEWHEELDOWN;
-				ev.clientX = GET_X_LPARAM(lParam);
-				ev.clientY = GET_Y_LPARAM(lParam);
+				ev.clientX = _GET_X_LPARAM(lParam);
+				ev.clientY = _GET_Y_LPARAM(lParam);
+				InitEventModKeys(&ev);
 
 				for(; wheelCount != 0; wheelCount += (wheelCount > 0 ? -1 : 1))
 				{
@@ -291,11 +331,17 @@ namespace gui
 				ev.type = GUI_EVENT_TYPE_KEYDOWN;
 				ev.clientX = ev.clientY = 0;
 				ev.key = wParam;
+				InitEventModKeys(&ev);
 				m_pActiveDesktop->dispatchEvent(ev);
+
+				if(wParam == KEY_ESCAPE && !ev.preventDefault)
+				{
+					popDesktop();
+				}
 			}
-			if(wParam == KEY_ESCAPE)
+			else
 			{
-				popDesktop();
+				return(FALSE);
 			}
 			break;
 
@@ -303,19 +349,26 @@ namespace gui
 		case WM_SYSKEYUP:
 			if(CKeyMap::keyUp(wParam))
 			{
-				ev.type = GUI_EVENT_TYPE_KEYUP;
-				ev.clientX = ev.clientY = 0;
-				ev.key = wParam;
-				m_pActiveDesktop->dispatchEvent(ev);
+				if(wParam == KEY_R && CKeyMap::keyState(KEY_CTRL) && CKeyMap::keyState(KEY_SHIFT))
+				{
+					m_pActiveDesktop->reload();
+				}
+				else
+				{
+					ev.type = GUI_EVENT_TYPE_KEYUP;
+					ev.clientX = ev.clientY = 0;
+					ev.key = wParam;
+					InitEventModKeys(&ev);
+					m_pActiveDesktop->dispatchEvent(ev);
+				}
 			}
 			break;
 
 		case WM_CHAR:
-
 			ev.type = GUI_EVENT_TYPE_KEYPRESS;
 			ev.clientX = ev.clientY = 0;
 
-#ifdef _UNICODE
+#if 1 // def _UNICODE
 			ev.key = wParam;
 #else
 			
@@ -324,6 +377,7 @@ namespace gui
 			ev.key = dst[0];
 #endif
 			ev.syskey = false;
+			InitEventModKeys(&ev);
 
 			m_pActiveDesktop->dispatchEvent(ev);
 
@@ -332,38 +386,42 @@ namespace gui
 		case WM_LBUTTONDBLCLK:
 		case WM_LBUTTONDOWN:
 			ev.type = GUI_EVENT_TYPE_MOUSEDOWN;
-			ev.clientX = GET_X_LPARAM(lParam);
-			ev.clientY = GET_Y_LPARAM(lParam);
+			ev.clientX = _GET_X_LPARAM(lParam);
+			ev.clientY = _GET_Y_LPARAM(lParam);
 			ev.key = KEY_LBUTTON;
 			CKeyMap::keyDown(KEY_LBUTTON);
+			InitEventModKeys(&ev);
 			m_pActiveDesktop->dispatchEvent(ev);
-
 			break;
 
 		case WM_LBUTTONUP:
 			ev.type = GUI_EVENT_TYPE_MOUSEUP;
-			ev.clientX = GET_X_LPARAM(lParam);
-			ev.clientY = GET_Y_LPARAM(lParam);
+			ev.clientX = _GET_X_LPARAM(lParam);
+			ev.clientY = _GET_Y_LPARAM(lParam);
 			ev.key = KEY_LBUTTON;
 			CKeyMap::keyUp(KEY_LBUTTON);
+			InitEventModKeys(&ev);
 			m_pActiveDesktop->dispatchEvent(ev);
 			break;
 
 		case WM_RBUTTONDBLCLK:
 		case WM_RBUTTONDOWN:
 			ev.type = GUI_EVENT_TYPE_MOUSEDOWN;
-			ev.clientX = GET_X_LPARAM(lParam);
-			ev.clientY = GET_Y_LPARAM(lParam);
+			ev.clientX = _GET_X_LPARAM(lParam);
+			ev.clientY = _GET_Y_LPARAM(lParam);
 			ev.key = KEY_RBUTTON;
 			CKeyMap::keyDown(KEY_RBUTTON);
-			m_pActiveDesktop->dispatchEvent(ev); break;
+			InitEventModKeys(&ev);
+			m_pActiveDesktop->dispatchEvent(ev);
+			break;
 
 		case WM_RBUTTONUP:
 			ev.type = GUI_EVENT_TYPE_MOUSEUP;
-			ev.clientX = GET_X_LPARAM(lParam);
-			ev.clientY = GET_Y_LPARAM(lParam);
+			ev.clientX = _GET_X_LPARAM(lParam);
+			ev.clientY = _GET_Y_LPARAM(lParam);
 			ev.key = KEY_RBUTTON;
 			CKeyMap::keyUp(KEY_RBUTTON);
+			InitEventModKeys(&ev);
 			m_pActiveDesktop->dispatchEvent(ev);
 			break;
 
@@ -372,18 +430,21 @@ namespace gui
 		case WM_MBUTTONDBLCLK:
 		case WM_MBUTTONDOWN:
 			ev.type = GUI_EVENT_TYPE_MOUSEDOWN;
-			ev.clientX = GET_X_LPARAM(lParam);
-			ev.clientY = GET_Y_LPARAM(lParam);
+			ev.clientX = _GET_X_LPARAM(lParam);
+			ev.clientY = _GET_Y_LPARAM(lParam);
 			ev.key = KEY_MBUTTON;
 			CKeyMap::keyDown(KEY_MBUTTON);
-			m_pActiveDesktop->dispatchEvent(ev); break;
+			InitEventModKeys(&ev);
+			m_pActiveDesktop->dispatchEvent(ev);
+			break;
 
 		case WM_MBUTTONUP:
 			ev.type = GUI_EVENT_TYPE_MOUSEUP;
-			ev.clientX = GET_X_LPARAM(lParam);
-			ev.clientY = GET_Y_LPARAM(lParam);
+			ev.clientX = _GET_X_LPARAM(lParam);
+			ev.clientY = _GET_Y_LPARAM(lParam);
 			ev.key = KEY_MBUTTON;
 			CKeyMap::keyUp(KEY_MBUTTON);
+			InitEventModKeys(&ev);
 			m_pActiveDesktop->dispatchEvent(ev);
 			break;
 
@@ -392,30 +453,34 @@ namespace gui
 		case WM_XBUTTONDBLCLK:
 		case WM_XBUTTONDOWN:
 			ev.type = GUI_EVENT_TYPE_MOUSEDOWN;
-			ev.clientX = GET_X_LPARAM(lParam);
-			ev.clientY = GET_Y_LPARAM(lParam);
+			ev.clientX = _GET_X_LPARAM(lParam);
+			ev.clientY = _GET_Y_LPARAM(lParam);
 			ev.key = GET_XBUTTON_WPARAM(wParam);
 			CKeyMap::keyDown(GET_XBUTTON_WPARAM(wParam));
-			m_pActiveDesktop->dispatchEvent(ev); break;
+			InitEventModKeys(&ev);
+			m_pActiveDesktop->dispatchEvent(ev);
+			break;
 
 		case WM_XBUTTONUP:
 			ev.type = GUI_EVENT_TYPE_MOUSEUP;
-			ev.clientX = GET_X_LPARAM(lParam);
-			ev.clientY = GET_Y_LPARAM(lParam);
+			ev.clientX = _GET_X_LPARAM(lParam);
+			ev.clientY = _GET_Y_LPARAM(lParam);
 			ev.key = GET_XBUTTON_WPARAM(wParam);
 			CKeyMap::keyUp(GET_XBUTTON_WPARAM(wParam));
+			InitEventModKeys(&ev);
 			m_pActiveDesktop->dispatchEvent(ev);
 			break;
 
 		case WM_MOUSEMOVE:
 			ev.type = GUI_EVENT_TYPE_MOUSEMOVE;
-			ev.clientX = GET_X_LPARAM(lParam);
-			ev.clientY = GET_Y_LPARAM(lParam);
+			ev.clientX = _GET_X_LPARAM(lParam);
+			ev.clientY = _GET_Y_LPARAM(lParam);
+			InitEventModKeys(&ev);
 			m_pActiveDesktop->dispatchEvent(ev);
 			break;
 		}
 		//OutputDebugStringA("putMessage():return(true);\n");
-		return(TRUE);
+		return(ev.propagate);
 	}
 
 	void CDesktopStack::render()
@@ -447,7 +512,7 @@ namespace gui
 		pCtx->setBlendState(m_pGUI->getBlendStates()->m_pDefault);
 		m_pTextureManager->bindTexture(m_pDefaultWhite);
 
-		SGCore_ShaderBind(m_pGUI->getShaders()->m_baseTexturedColored.m_idShaderKit);
+		m_pRender->bindShader(pCtx, m_pGUI->getShaders()->m_baseTexturedColored.m_idShaderKit);
 /*
 		SMMATRIX m(
 			2.0f / (float)m_iScreenWidth, 0.0f, 0.0f, 0.0f,
@@ -504,6 +569,9 @@ namespace gui
 			}
 		}
 		m_pActiveDesktop->render(fTimeDelta);
+
+		m_pTextureManager->onNewFrame();
+
 #if 0
 		struct point
 		{
@@ -542,6 +610,12 @@ namespace gui
 	
 	IDesktop* CDesktopStack::createDesktopA(const char *name, const char *file)
 	{
+		IDesktop *pOldDesk = getDesktopA(name);
+		if(pOldDesk)
+		{
+			mem_release(pOldDesk);
+		}
+
 		IDesktop *d = new CDesktop(this, StringW(CMB2WC(name)));
 		d->setWidth(m_iScreenWidth);
 		d->setHeight(m_iScreenHeight);
@@ -553,6 +627,12 @@ namespace gui
 
 	IDesktop* CDesktopStack::createDesktopW(const wchar_t *name, const wchar_t *file)
 	{
+		IDesktop *pOldDesk = getDesktopW(name);
+		if(pOldDesk)
+		{
+			mem_release(pOldDesk);
+		}
+
 		IDesktop * d = new CDesktop(this, StringW(name));
 		d->setWidth(m_iScreenWidth);
 		d->setHeight(m_iScreenHeight);
@@ -565,7 +645,11 @@ namespace gui
 
 	void CDesktopStack::setActiveDesktop(IDesktop *d, BOOL clearStack)
 	{
+		IDesktop *pDp = m_pActiveDesktop;
 		m_pActiveDesktop = d;
+		add_ref(d);
+		mem_release(pDp);
+
 		CKeyMap::releaseKeys();
 		if(d)
 		{
@@ -573,6 +657,10 @@ namespace gui
 		}
 		if(clearStack)
 		{
+			fora(i, m_mDesktopStack)
+			{
+				mem_release(m_mDesktopStack[i]);
+			}
 			m_mDesktopStack.clear();
 		}
 	}
@@ -711,11 +799,11 @@ namespace gui
 
 	UINT CDesktopStack::getScreenWidth()
 	{
-		return(m_iScreenWidth);
+		return((UINT)((float)m_iScreenWidth / m_fScale));
 	}
 	UINT CDesktopStack::getScreenHeight()
 	{
-		return(m_iScreenHeight);
+		return((UINT)((float)m_iScreenHeight / m_fScale));
 	}
 
 	void CDesktopStack::destroyDesktop(IDesktop *dp)
@@ -728,7 +816,8 @@ namespace gui
 		{
 			if(dp == *(i.second))
 			{
-				*(i.second) = NULL;
+				m_mDesktops.erase(*(i.first));
+				break;
 			}
 		}
 		if(getActiveDesktop() == dp)
@@ -802,6 +891,7 @@ namespace gui
 	{
 		if(m_pActiveDesktop)
 		{
+			add_ref(m_pActiveDesktop);
 			m_mDesktopStack.push_back(m_pActiveDesktop);
 			m_pActiveDesktop->getDocument()->getElementsByTag(L"body")[0][0]->addPseudoclass(css::ICSSrule::PSEUDOCLASS_DISABLED);
 		}
@@ -817,6 +907,7 @@ namespace gui
 		IDesktop * ret = m_pActiveDesktop;
 		setActiveDesktop(m_mDesktopStack[s - 1], FALSE);
 		m_pActiveDesktop->getDocument()->getElementsByTag(L"body")[0][0]->removePseudoclass(css::ICSSrule::PSEUDOCLASS_DISABLED);
+		mem_release(m_mDesktopStack[s - 1]);
 		m_mDesktopStack.erase(s - 1);
 		return(ret);
 	}
@@ -852,10 +943,20 @@ namespace gui
 	{
 		return(m_pFontManager->getFont(szName, size, style, iBlurRadius));
 	}
+
+	bool CDesktopStack::getKeyState(int iKey)
+	{
+		return(CKeyMap::keyState(iKey));
+	}
+
+	void CDesktopStack::setScale(float fScale)
+	{
+		m_fScale = fScale;
+	}
 };
 
 
-gui::IGUI* InitInstance(IGXDevice *pDev, IXMaterialSystem *pMaterialSystem, IFileSystem *pFileSystem)
+gui::IGUI* InitInstance(IXRender *pRender, IXMaterialSystem *pMaterialSystem, IFileSystem *pFileSystem)
 {
 	if(gui::g_pGUI)
 	{
@@ -864,7 +965,7 @@ gui::IGUI* InitInstance(IGXDevice *pDev, IXMaterialSystem *pMaterialSystem, IFil
 
 	Core_SetOutPtr();
 
-	gui::CGUI *pGui = new gui::CGUI(pDev, pMaterialSystem, pFileSystem);
+	gui::CGUI *pGui = new gui::CGUI(pRender, pMaterialSystem, pFileSystem);
 
 	return(pGui);
 }

@@ -28,11 +28,18 @@ See the license in LICENSE
 #		define SXCORE_API __declspec(dllexport)
 #	else
 #		define SXCORE_API __declspec(dllimport)
+#		if defined(_DEBUG)
+#			pragma comment(lib, "sxcore_d.lib")
+#		else
+#			pragma comment(lib, "sxcore.lib")
+#		endif
 #	endif
 #else
 #	define SXCORE_API
 #endif
 #define EXTERN_C extern "C"
+
+
 
 #include <io.h>
 #include <fcntl.h>
@@ -42,7 +49,7 @@ See the license in LICENSE
 #include <common/Math.h>
 #include <xcommon/IXCore.h>
 #include <xcommon/IPluginManager.h>
-
+#include <GRegisterIndex.h>
 #include <xcommon/IFileSystem.h>
 
 //! тип функции для обработки в менеджере задач
@@ -187,13 +194,6 @@ SX_LIB_API XDEPRECATED void Core_RFloatSet(int id, float32_t val);
 
 //! получение значения из регистра float32_t типа
 SX_LIB_API XDEPRECATED float32_t Core_RFloatGet(int id);
-
-
-//! установка значения в регистр float4x4 типа
-SX_LIB_API XDEPRECATED void Core_RMatrixSet(int id, float4x4* val);
-
-//! получение значения из регистра float4x4 типа
-SX_LIB_API XDEPRECATED void Core_RMatrixGet(int id, float4x4* val);
 
 
 //! установка значения в регистр float3 типа

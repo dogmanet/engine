@@ -1,6 +1,7 @@
 #include "PropertyWindow.h"
 #include "resource.h"
 #include <xcommon/resource/IXResourceManager.h>
+#include <core/sxcore.h>
 
 #include <windowsx.h>
 #include <commctrl.h>
@@ -96,6 +97,7 @@ void CPropertyWindow::hide()
 {
 	ShowWindow(m_hDlgWnd, SW_HIDE);
 	ShowWindow(m_phEditors[m_editorActive], SW_HIDE);
+	m_resourceBrowserCallback.cancel();
 }
 bool CPropertyWindow::isVisible()
 {
@@ -299,7 +301,8 @@ INT_PTR CALLBACK CPropertyWindow::dlgProc(HWND hWnd, UINT msg, WPARAM wParam, LP
 			break;
 		}
 	case WM_CLOSE:
-		ShowWindow(hWnd, SW_HIDE);
+		//ShowWindow(hWnd, SW_HIDE);
+		hide();
 		if(m_pCallback)
 		{
 			m_pCallback->onApply();
@@ -412,6 +415,22 @@ INT_PTR CALLBACK CPropertyWindow::dlgProc(HWND hWnd, UINT msg, WPARAM wParam, LP
 
 		if(LOWORD(wParam) == IDC_OPE_FILE_SELECT)
 		{
+			IXEditorResourceBrowser *pBrowser;
+			if(g_pEditor->getResourceBrowserForType(szCurrentFileType, &pBrowser))
+			{
+				HWND hEditWnd = GetDlgItem(m_phEditors[m_editorActive], IDC_OPE_FILE);
+				int iTextLen = GetWindowTextLengthW(hEditWnd);
+				wchar_t *wszText = (wchar_t*)alloca(sizeof(wchar_t) * (iTextLen + 1));
+				GetWindowTextW(hEditWnd, wszText, iTextLen);
+
+				//EnableWindow(hWnd, FALSE);
+				m_resourceBrowserCallback.init(hWnd, hEditWnd, pBrowser);
+
+				pBrowser->browse(szCurrentFileType, CWC2MB(wszText), &m_resourceBrowserCallback);
+				mem_release(pBrowser);
+				break;
+			}
+
 			OPENFILENAMEW ofn;
 			wchar_t szFile[1024], szFilter[1024];
 			memset(szFile, 0, sizeof(szFile));
@@ -419,7 +438,12 @@ INT_PTR CALLBACK CPropertyWindow::dlgProc(HWND hWnd, UINT msg, WPARAM wParam, LP
 			szFilter[0] = 0;
 			wchar_t *szTmp = szFilter;
 
-			if(!fstrcmp(szCurrentFileType, "model"))
+			if(!szCurrentFileType)
+			{
+				szTmp += swprintf(szTmp, L"All files") + 1;
+				szTmp += swprintf(szTmp, L"*.*") + 1;
+			}
+			else if(!fstrcmp(szCurrentFileType, "model"))
 			{
 				auto pMgr = Core_GetIXCore()->getResourceManager();
 				UINT uFormatCount = pMgr->getModelSupportedFormats();
@@ -709,6 +733,7 @@ void CPropertyWindow::filterClassList(const char *szFilter)
 
 void CPropertyWindow::clearProps()
 {
+	m_resourceBrowserCallback.cancel();
 	ShowWindow(m_phEditors[m_editorActive], SW_HIDE);
 	ListView_DeleteAllItems(m_hPropListWnd);
 	m_aPropFields.clear();
@@ -774,6 +799,7 @@ void CPropertyWindow::initEditor(X_PROP_EDITOR_TYPE type, const void *pData, con
 	if(m_editorActive != XPET__LAST)
 	{
 		ShowWindow(m_phEditors[m_editorActive], SW_HIDE);
+		m_resourceBrowserCallback.cancel();
 	}
 	m_editorActive = type;
 	HWND hEditorDlg = m_phEditors[m_editorActive];
@@ -875,4 +901,38 @@ UINT CPropertyWindow::getCustomTabCount()
 IXEditorPropertyTab* CPropertyWindow::getCustomTab(UINT idx)
 {
 	return(m_aCustomTabs[idx]->getTab());
+}
+
+//##########################################################################
+
+void CEditorResourceBrowserCallback::init(HWND hDlgWnd, HWND hEditWnd, IXEditorResourceBrowser *pBrowser)
+{
+	if(m_pBrowser)
+	{
+		m_pBrowser->cancel();
+	}
+	assert(!m_pBrowser);
+	m_hEditWnd = hEditWnd;
+	m_hDlgWnd = hDlgWnd;
+	add_ref(pBrowser);
+	m_pBrowser = pBrowser;
+}
+
+void XMETHODCALLTYPE CEditorResourceBrowserCallback::onSelected(const char *szFile)
+{
+	//EnableWindow(m_hDlgWnd, TRUE);
+	SetWindowTextW(m_hEditWnd, CMB2WC(szFile));
+	SendMessage(m_hDlgWnd, WM_COMMAND, MAKEWPARAM(IDC_OPE_FILE, EN_KILLFOCUS), (LPARAM)m_hEditWnd);
+	mem_release(m_pBrowser);
+}
+
+void XMETHODCALLTYPE CEditorResourceBrowserCallback::onCancelled()
+{
+	//EnableWindow(m_hDlgWnd, TRUE);
+	mem_release(m_pBrowser);
+}
+
+void CEditorResourceBrowserCallback::cancel()
+{
+	SAFE_CALL(m_pBrowser, cancel);
 }

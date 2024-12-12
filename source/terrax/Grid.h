@@ -1,7 +1,7 @@
 #ifndef _GRID_H_
 #define _GRID_H_
 
-#include <gcore/sxgcore.h>
+#include <xcommon/render/IXRender.h>
 
 enum GRID_STEP
 {
@@ -35,10 +35,10 @@ enum GRID_STEP
 class CGrid
 {
 public:
-	CGrid(UINT uSize = 1000);
+	CGrid(IXRender *pRender, UINT uSize = 1000);
 	~CGrid();
 
-	void render(GRID_STEP step = GRID_STEP_1CM);
+	void render(const SMMATRIX &mWorld, IXCamera *pCamera, GRID_STEP step = GRID_STEP_1CM);
 	void setOpacity(float fOpacity);
 	void setDottedMode(bool isDotted);
 
@@ -46,7 +46,8 @@ public:
 	static GRID_STEP GetMinStepForScale(float fScale);
 
 protected:
-	IGXDevice *m_pDevice;
+	IXRender *m_pRender = NULL;
+	IGXDevice *m_pDevice = NULL;
 	IGXRenderBuffer *m_pRenderBuffer;
 	struct
 	{

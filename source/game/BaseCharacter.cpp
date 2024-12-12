@@ -75,7 +75,8 @@ void CBaseCharacter::onPostLoad()
 	//m_pCharacter->setJumpSpeed(3.5f);
 	m_pCharacter->setGravity(float3(0, -10.0f, 0));
 	//m_pCharacter->setGravity(1.0f);
-	m_pCharacter->setFallSpeed(300.0f);
+	// Для парашютистов, например, предельная скорость составляет от 190 км/ч при максимальном сопротивлении воздуха, когда они падают плашмя, раскинув руки, до 240 км/ч при нырянии «рыбкой» или «солдатиком».
+	m_pCharacter->setFallSpeed(53.0f);
 	//m_pCharacter->setFallSpeed(30.0f);
 	m_pCharacter->setMaxPenetrationDepth(0.1f);
 	//m_pGhostObject->setWorldTransform(startTransform);
@@ -201,6 +202,17 @@ void CBaseCharacter::nextFireMode()
 	{
 		((CBaseWeapon*)m_pActiveTool)->nextFireMode();
 	}
+}
+
+void CBaseCharacter::dropItem(CBaseItem *pItem)
+{
+	m_pInventory->takeItem(pItem);
+
+	//TODO: Добавить проверку на стены и не только
+	pItem->setPos(getPos() + (SMQuaternion(m_vPitchYawRoll.y, 'y') * float3(0.0f, 0.0f, 3.0f)));
+	pItem->setOwner(NULL);
+	pItem->setParent(NULL);
+	pItem->setMode(IIM_WORLD);
 }
 
 bool CBaseCharacter::onGround()
@@ -332,63 +344,73 @@ void CBaseCharacter::initHitboxes()
 	int l = pAnimatedModel->getHitboxCount();
 	m_pHitboxBodies = new IXRigidBody*[l];
 
-	const XResourceModelHitbox * hb;
-	for(int i = 0; i < l; ++i)
+
+	for(UINT i = 0; i < l; ++i)
 	{
-		hb = pAnimatedModel->getHitbox(i);
-		IXCollisionShape *pShape;
-		switch(hb->type)
+		auto pPhysbox = pAnimatedModel->getHitbox(i);
+		IXCollisionShape *pLocalShape = NULL;
+		switch(pPhysbox->getType())
 		{
-		case XHT_BOX:
+		case XPBT_BOX:
 			IXBoxShape *pBox;
-			GetPhysics()->newBoxShape(hb->lwh * 0.5f, &pBox);
-			pShape = pBox;
+			GetPhysics()->newBoxShape(pPhysbox->asBox()->getSize(), &pBox);
+			pLocalShape = pBox;
 			break;
-		case XHT_CAPSULE:
-			IXCapsuleShape *pCaps;
-			GetPhysics()->newCapsuleShape(hb->lwh.y * 0.5f, hb->lwh.z, &pCaps);
-			pShape = pCaps;
-			break;
-		case XHT_CYLINDER:
-			IXCylinderShape *pCyl;
-			GetPhysics()->newCylinderShape(hb->lwh.x * 0.5f, hb->lwh.y * 0.5f, &pCyl);
-			pShape = pCyl;
-			break;
-		case XHT_SPHERE:
+		case XPBT_SPHERE:
 			IXSphereShape *pSphere;
-			GetPhysics()->newSphereShape(hb->lwh.x, &pSphere);
-			pShape = pSphere;
+			GetPhysics()->newSphereShape(pPhysbox->asSphere()->getRadius(), &pSphere);
+			pLocalShape = pSphere;
 			break;
-		default:
-			assert(!"Not supported here!");
+		case XPBT_CAPSULE:
+			IXCapsuleShape *pCaps;
+			GetPhysics()->newCapsuleShape(pPhysbox->asCapsule()->getRadius(), pPhysbox->asCapsule()->getHeight(), &pCaps);
+			pLocalShape = pCaps;
+			break;
+		case XPBT_CYLINDER:
+			IXCylinderShape *pCyl;
+			GetPhysics()->newCylinderShape(pPhysbox->asCylinder()->getRadius(), pPhysbox->asCylinder()->getHeight(), &pCyl);
+			pLocalShape = pCyl;
+			break;
+		case XPBT_CONVEX:
+			IXConvexHullShape *pConvexHull;
+			GetPhysics()->newConvexHullShape(pPhysbox->asConvex()->getVertexCount(), pPhysbox->asConvex()->getData(), &pConvexHull);
+			pLocalShape = pConvexHull;
+			break;
 		}
-		
-		const float fMass = 1.0f;
 
-		XRIDIGBODY_DESC desc;
-		desc.fMass = fMass;
-		desc.vLocalInertia = pShape->calculateLocalInertia(fMass);
-		desc.pCollisionShape = pShape;
-		
-		IXRigidBody *pRigidBody;
-		GetPhysics()->newRigidBody(desc, &pRigidBody);
+		if(pLocalShape)
+		{
+			//pShape->addChildShape(pLocalShape, pPhysbox->getPosition(), pPhysbox->getOrientation());
 
-		pRigidBody->setUserPointer(this);
-		pRigidBody->setUserTypeId(1);
 
-		pRigidBody->setAngularFactor(0.0f);
-		pRigidBody->setLinearFactor(float3(0.0f, 0.0f, 0.0f));
 
-		pRigidBody->setCollisionFlags(pRigidBody->getCollisionFlags() | XCF_DISABLE_VISUALIZE_OBJECT);
+			const float fMass = 1.0f;
 
-		GetPhysWorld()->addCollisionObject(pRigidBody, CG_HITBOX, CG_BULLETFIRE);
-		m_pHitboxBodies[i] = pRigidBody;
+			XRIDIGBODY_DESC desc;
+			desc.fMass = fMass;
+			desc.vLocalInertia = pLocalShape->calculateLocalInertia(fMass);
+			desc.pCollisionShape = pLocalShape;
+
+			IXRigidBody *pRigidBody;
+			GetPhysics()->newRigidBody(desc, &pRigidBody);
+
+			pRigidBody->setUserPointer(this);
+			pRigidBody->setUserTypeId(1);
+
+			pRigidBody->setAngularFactor(0.0f);
+			pRigidBody->setLinearFactor(float3(0.0f, 0.0f, 0.0f));
+
+			pRigidBody->setCollisionFlags(pRigidBody->getCollisionFlags()/* | XCF_DISABLE_VISUALIZE_OBJECT*/);
+
+			GetPhysWorld()->addCollisionObject(pRigidBody, CG_HITBOX, CG_BULLETFIRE);
+			m_pHitboxBodies[i] = pRigidBody;
+		}
 	}
 
-	updateHitboxes();
+	updateHitboxes(true);
 }
 
-void CBaseCharacter::updateHitboxes()
+void CBaseCharacter::updateHitboxes(bool bForceUpdate)
 {
 	if(!m_pModel || !m_pHitboxBodies)
 	{
@@ -396,29 +418,21 @@ void CBaseCharacter::updateHitboxes()
 	}
 
 	auto pAnimatedModel = m_pModel->asAnimatedModel();
-	if(!pAnimatedModel || !pAnimatedModel->isPlayingAnimations())
+	if(!pAnimatedModel || (!bForceUpdate && !pAnimatedModel->isPlayingAnimations()))
 	{
 		return;
 	}
-	//@TODO: Reimplement me
-#if 0
-	const XResourceModelHitbox * hb;
+
+	const IModelPhysbox *hb;
 	for(int i = 0, l = pAnimatedModel->getHitboxCount(); i < l; ++i)
 	{
+		int iBone = pAnimatedModel->getHitboxBone(i);
 		hb = pAnimatedModel->getHitbox(i);
-		
-		//SMMATRIX mBone = m_pAnimPlayer->getBoneTransformPos(hb->bone_id);
 
-		//@TODO: Cache hitbox transform
-		m_pHitboxBodies[i]->getWorldTransform().setFromOpenGLMatrix((btScalar*)&(SMMatrixRotationX(hb->rot.x)
-			* SMMatrixRotationY(hb->rot.y)
-			* SMMatrixRotationZ(hb->rot.z)
-			* SMMatrixTranslation(hb->pos)
-			* pAnimatedModel->getBoneTransform(hb->bone_id, true)
-			* getWorldTM()
-			));
+		SMQuaternion q = pAnimatedModel->getBoneTransformRot(iBone, XMBT_RENDER);
+		m_pHitboxBodies[i]->setPosition(pAnimatedModel->getBoneTransformPos(iBone, XMBT_RENDER) + q * hb->getPosition());
+		m_pHitboxBodies[i]->setRotation(hb->getOrientation() * q);
 	}
-#endif
 }
 
 void CBaseCharacter::releaseHitboxes()
@@ -567,5 +581,49 @@ void CBaseCharacter::onInventoryChanged()
 	if(m_pActiveTool)
 	{
 		m_pActiveTool->updateHUDinfo();
+	}
+}
+
+void CBaseCharacter::renderEditor(bool is3D, bool bRenderSelection, IXGizmoRenderer *pRenderer)
+{
+	BaseClass::renderEditor(is3D, bRenderSelection, pRenderer);
+
+	if(is3D && bRenderSelection && pRenderer)
+	{
+
+		if(m_pModel && m_pHitboxBodies)
+		{
+			auto pAnimatedModel = m_pModel->asAnimatedModel();
+			if(pAnimatedModel)
+			{
+				updateHitboxes();
+#if 0
+				pRenderer->setColor(float4(1.0f, 0.0f, 1.0f, 1.0f));
+				for(int i = 0, l = pAnimatedModel->getHitboxCount(); i < l; ++i)
+				{
+					int iBone = pAnimatedModel->getHitboxBone(i);
+					float3 vBonePos = pAnimatedModel->getBoneTransformPos(iBone);
+
+					float3 vP = pAnimatedModel->getBoneTransformPos(iBone, XMBT_RENDER);
+					SMQuaternion qR = pAnimatedModel->getBoneTransformRot(iBone, XMBT_RENDER);
+
+					const IModelPhysboxConvex *pConvex = pAnimatedModel->getHitbox(i)->asConvex();
+					if(pConvex)
+					{
+						const float3_t *pVertices = pConvex->getData();
+						for(UINT j = 0, jl = pConvex->getVertexCount(); j < jl; ++j)
+						{
+							pRenderer->jumpTo(vBonePos);
+							pRenderer->lineTo(qR * pVertices[j] + vP);
+						}
+					}
+
+					//m_pHitboxBodies[i]->setPosition(pAnimatedModel->getBoneTransformPos(iBone, XMBT_RENDER)/* + hb->pos*/);
+					//m_pHitboxBodies[i]->setRotation(pAnimatedModel->getBoneTransformRot(iBone, XMBT_RENDER)/* * hb->rot.Conjugate()*/);
+					//m_pHitboxBodies[i]->getCollisionShape()->asConvexHull()->
+				}
+#endif
+			}
+		}
 	}
 }

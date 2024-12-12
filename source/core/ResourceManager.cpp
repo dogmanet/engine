@@ -61,7 +61,9 @@ void CResourceManager::initPlugins()
 					AAString sExt;
 					sExt.setName(pLoader->getExt(i));
 					strlwr(const_cast<char*>(sExt.getName()));
-					m_mapTextureLoaders[sExt].push_back(pLoader);
+					auto &arr = m_mapTextureLoaders[sExt];
+					TextureLoader &loader = arr[arr.size()];
+					loader.pLoader = pLoader;
 					m_aTextureExts.push_back({pLoader->getExtText(i), pLoader->getExt(i)});
 					LibReport(REPORT_MSG_LEVEL_NOTICE, " Ext: " COLOR_LCYAN "%s" COLOR_RESET ": " COLOR_WHITE "%s" COLOR_RESET "\n", pLoader->getExt(i), pLoader->getExtText(i));
 				}
@@ -119,8 +121,7 @@ bool XMETHODCALLTYPE CResourceManager::getModel(const char *szName, IXResourceMo
 	if(m_mapModelLoaders.KeyExists(AAString(szLowcaseExt), &pNode))
 	{
 		auto &aLoaders = *pNode->Val;
-		IFile *pFile = m_pCore->getFileSystem()->openFile(szName);
-		if(!pFile)
+		if(!m_pCore->getFileSystem()->fileExists(szName))
 		{
 			LibReport(REPORT_MSG_LEVEL_ERROR, "File not found '%s'\n", szName);
 			return(false);
@@ -128,7 +129,7 @@ bool XMETHODCALLTYPE CResourceManager::getModel(const char *szName, IXResourceMo
 		for(UINT i = 0, l = aLoaders.size(); i < l; ++i)
 		{
 			IXModelLoader *pLoader = aLoaders[i];
-			if(pLoader->open(pFile))
+			if(pLoader->open(szName))
 			{
 				switch(pLoader->getType())
 				{
@@ -166,10 +167,7 @@ bool XMETHODCALLTYPE CResourceManager::getModel(const char *szName, IXResourceMo
 					break;
 				}
 			}
-			pFile->setPos(0);
 		}
-
-		mem_release(pFile);
 
 		if(pResource)
 		{
@@ -187,6 +185,7 @@ bool XMETHODCALLTYPE CResourceManager::getModel(const char *szName, IXResourceMo
 				if(getModel(pResource->getGibName(i), &pGibResource, bForceReload))
 				{
 					pResource->setGib(i, pGibResource);
+					mem_release(pGibResource);
 				}
 				else
 				{
@@ -205,6 +204,7 @@ bool XMETHODCALLTYPE CResourceManager::getModel(const char *szName, IXResourceMo
 					if(getModel(pModel->getImportName(i), &pImportResource, bForceReload))
 					{
 						pModel->setImport(i, pImportResource);
+						mem_release(pImportResource);
 					}
 					else
 					{
@@ -217,13 +217,14 @@ bool XMETHODCALLTYPE CResourceManager::getModel(const char *szName, IXResourceMo
 				for(UINT i = 0, l = pModel->getPartsCount(); i < l; ++i)
 				{
 					IXResourceModel *pPartResource;
-					if(getModel(pModel->getPartName(i), &pPartResource, bForceReload))
+					if(getModel(pModel->getPartFileName(i), &pPartResource, bForceReload))
 					{
 						pModel->setPart(i, pPartResource);
+						mem_release(pPartResource);
 					}
 					else
 					{
-						LibReport(REPORT_MSG_LEVEL_ERROR, "Unable to load part #%u for model '%s'\n", i, szName);
+						LibReport(REPORT_MSG_LEVEL_ERROR, "Unable to load part #%u (%s: %s) for model '%s'\n", i, pModel->getPartName(i), pModel->getPartFileName(i), szName);
 						mem_release(pResource);
 						return(false);
 					}
@@ -291,8 +292,7 @@ bool XMETHODCALLTYPE CResourceManager::getModelInfo(const char *szName, XModelIn
 	if(m_mapModelLoaders.KeyExists(AAString(szLowcaseExt), &pNode))
 	{
 		auto &aLoaders = *pNode->Val;
-		IFile *pFile = m_pCore->getFileSystem()->openFile(szName);
-		if(!pFile)
+		if(!m_pCore->getFileSystem()->fileExists(szName))
 		{
 			LibReport(REPORT_MSG_LEVEL_ERROR, "File not found '%s'\n", szName);
 			return(false);
@@ -302,7 +302,7 @@ bool XMETHODCALLTYPE CResourceManager::getModelInfo(const char *szName, XModelIn
 		for(UINT i = 0, l = aLoaders.size(); i < l; ++i)
 		{
 			IXModelLoader *pLoader = aLoaders[i];
-			if(pLoader->open(pFile))
+			if(pLoader->open(szName))
 			{
 				pLoader->getInfo(pInfo);
 
@@ -311,10 +311,7 @@ bool XMETHODCALLTYPE CResourceManager::getModelInfo(const char *szName, XModelIn
 				pLoader->close();
 				break;
 			}
-			pFile->setPos(0);
 		}
-
-		mem_release(pFile);
 
 		if(isSuccess)
 		{
@@ -415,14 +412,18 @@ bool XMETHODCALLTYPE CResourceManager::getTexture(const char *szName, IXResource
 	char *szLowcaseExt = strdupa(szExt);
 	strlwr(szLowcaseExt);
 
-	const Map<AAString, Array<IXTextureLoader*>>::Node *pNode;
+	const Map<AAString, Array<TextureLoader>>::Node *pNode;
 	if(m_mapTextureLoaders.KeyExists(AAString(szLowcaseExt), &pNode))
 	{
 		auto &aLoaders = *pNode->Val;
 		IXResourceTexture *pResource = NULL;
 		for(UINT i = 0, l = aLoaders.size(); i < l; ++i)
 		{
-			IXTextureLoader *pLoader = aLoaders[i];
+			TextureLoader &loader = aLoaders[i];
+			IXTextureLoader *pLoader = loader.pLoader;
+
+			ScopedSpinLock lock(loader.slock);
+
 			if(pLoader->open(szFileName, szArg))
 			{
 				switch(pLoader->getType())
@@ -432,6 +433,7 @@ bool XMETHODCALLTYPE CResourceManager::getTexture(const char *szName, IXResource
 						CResourceTexture2D *pTexture = new CResourceTexture2D(this);
 						if(pLoader->loadAs2D(pTexture))
 						{
+							pTexture->genMipmaps();
 							pResource = pTexture;
 						}
 						else
@@ -542,14 +544,18 @@ bool XMETHODCALLTYPE CResourceManager::getTextureInfo(const char *szName, XTextu
 	char *szLowcaseExt = strdupa(szExt);
 	strlwr(szLowcaseExt);
 
-	const Map<AAString, Array<IXTextureLoader*>>::Node *pNode;
+	const Map<AAString, Array<TextureLoader>>::Node *pNode;
 	if(m_mapTextureLoaders.KeyExists(AAString(szLowcaseExt), &pNode))
 	{
 		auto &aLoaders = *pNode->Val;
 		bool isSuccess = false;
 		for(UINT i = 0, l = aLoaders.size(); i < l; ++i)
 		{
-			IXTextureLoader *pLoader = aLoaders[i];
+			TextureLoader &loader = aLoaders[i];
+			IXTextureLoader *pLoader = loader.pLoader;
+
+			ScopedSpinLock lock(loader.slock);
+
 			if(pLoader->open(szFileName, szArg))
 			{
 				pLoader->getInfo(pInfo);

@@ -1,7 +1,19 @@
 #include "CommandMove.h"
+#include "UndoManager.h"
+
+CCommandMove::CCommandMove(bool bClone)
+{
+	if(bClone)
+	{
+		extern CUndoManager *g_pUndoManager;
+		m_pDuplicateCommand = new CCommandDuplicate();
+		g_pUndoManager->execCommand(m_pDuplicateCommand, false);
+	}
+}
 
 CCommandMove::~CCommandMove()
 {
+	mem_release(m_pDuplicateCommand);
 	for(UINT i = 0, l = m_aObjects.size(); i < l; ++i)
 	{
 		mem_release(m_aObjects[i].pObj);
@@ -10,6 +22,10 @@ CCommandMove::~CCommandMove()
 
 bool XMETHODCALLTYPE CCommandMove::exec()
 {
+	if(m_pDuplicateCommand && !m_pDuplicateCommand->exec())
+	{
+		return(false);
+	}
 	_move_obj *pObj;
 	bool moved = false;
 	for(UINT i = 0, l = m_aObjects.size(); i < l; ++i)
@@ -28,6 +44,10 @@ bool XMETHODCALLTYPE CCommandMove::undo()
 	{
 		pObj = &m_aObjects[i];
 		pObj->pObj->setPos(pObj->vStartPos);
+	}
+	if(m_pDuplicateCommand && !m_pDuplicateCommand->undo())
+	{
+		return(false);
 	}
 	XUpdatePropWindow();
 	return(true);
@@ -60,4 +80,15 @@ void CCommandMove::setCurrentPos(const float3 &vPos)
 		pObj->pObj->setPos(pObj->vEndPos);
 	}
 	//XUpdatePropWindow();
+}
+
+void CCommandMove::setReferenceBound(const float3_t &vBoundMin, const float3_t &vBoundMax)
+{
+	m_vRefBoundMin = vBoundMin;
+	m_vRefBoundMax = vBoundMax;
+}
+void CCommandMove::getReferenceBound(float3_t *pvBoundMin, float3_t *pvBoundMax)
+{
+	*pvBoundMin = m_vRefBoundMin;
+	*pvBoundMax = m_vRefBoundMax;
 }

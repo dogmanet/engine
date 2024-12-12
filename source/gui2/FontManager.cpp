@@ -27,6 +27,7 @@ CFontManager::~CFontManager()
 {
 	if(m_pFT)
 	{
+		m_mFonts.clear();
 		FT_Done_FreeType(m_pFT);
 		m_pFT = NULL;
 	}

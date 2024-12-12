@@ -5,6 +5,8 @@
 #include <common/memalloc.h>
 #include "light.h"
 #include "ShadowCache.h"
+#include "GIGraphNodeData.h"
+#include "TonemappingGraphNodeData.h"
 
 #define LPV_CASCADES_COUNT 3
 #define LPV_GRID_SIZE 32
@@ -15,7 +17,7 @@
 
 class CLevelLoadListener;
 class CSkyboxChangedListener;
-class CLightSystem: public IXUnknownImplementation<IXLightSystem>
+class CLightSystem final: public IXUnknownImplementation<IXLightSystem>
 {
 public:
 	CLightSystem(IXCore *pCore);
@@ -35,20 +37,18 @@ public:
 	UINT XMETHODCALLTYPE getCount() override;
 	IXLight* XMETHODCALLTYPE getLight(ID id) override;
 
-	IMesh* getShapeSphere();
-	IMesh* getShapeCone();
+	IXMesh* getShapeSphere();
+	IXMesh* getShapeCone();
 
-	void XMETHODCALLTYPE updateVisibility() override;
+	void updateVisibility(IXCamera *pCamera);
 
-	void XMETHODCALLTYPE setFrameObserverCamera(ICamera *pMainCamera) override;
+	void setFrameObserverCamera(IXCamera *pMainCamera);
 
 	void setLevelSize(const float3 &vMin, const float3 &vMax);
 
-	void XMETHODCALLTYPE setGBuffer(IGXTexture2D *pColor, IGXTexture2D *pNormals, IGXTexture2D *pParams, IGXTexture2D *pDepth) override;
-	void XMETHODCALLTYPE setRenderPipeline(IXRenderPipeline *pRenderPipeline) override;
-	void XMETHODCALLTYPE renderGI(IGXTexture2D *pLightTotal, IGXTexture2D *pTempBuffer) override;
-	void XMETHODCALLTYPE renderToneMapping(IGXTexture2D *pSourceLight) override;
-	void XMETHODCALLTYPE renderDebug() override;
+	void renderGI(CGIGraphNodeData *pNodeData, IXRenderTarget *pFinalTarget);
+	void renderToneMapping(IGXBaseTexture *pSourceLight, CTonemappingGraphNodeData *pNodeData, IXRenderTarget *pFinalTarget);
+	void renderDebug();
 
 	void setEnabled(bool set)
 	{
@@ -57,7 +57,14 @@ public:
 
 	void setSkybox(IXTexture *pTexture);
 
-protected:
+	IXRender* getRender()
+	{
+		return(m_pRender);
+	}
+
+	void sync();
+
+private:
 	void showGICubes();
 
 	void buildSkyLightMasks();
@@ -66,19 +73,20 @@ protected:
 
 	void updateSkylightGrid();
 
-protected:
+	void initShaders();
+private:
 	CXLightSun *m_pSun = NULL;
 	MemAlloc<CXLightPoint, 256, 16, 16> m_poolPoint;
 	MemAlloc<CXLightSpot, 256, 16, 16> m_poolSpot;
 
 	IXCore *m_pCore;
-	IXRenderPipeline *m_pRenderPipeline = NULL;
+	IXRender *m_pRender = NULL;
 	IXMaterialSystem *m_pMaterialSystem = NULL;
 	IGXDevice *m_pDevice = NULL;
 
-	CShadowCache *m_pShadowCache = NULL;
+	XRenderPassHandler *m_pRenderPassIllumination = NULL;
 
-	ICamera *m_pMainCamera = NULL;
+	CShadowCache *m_pShadowCache = NULL;
 
 	float3_t m_vLevelMin, m_vLevelMax;
 	float m_fLevelDimensions = 0.0f;
@@ -93,19 +101,13 @@ protected:
 
 	void _deleteLight(CXLight *pLight);
 
-	IMesh *m_pShapeSphere = NULL;
-	IMesh *m_pShapeCone = NULL;
+	IXMesh *m_pShapeSphere = NULL;
+	IXMesh *m_pShapeCone = NULL;
 
 
 	IGXRenderBuffer *m_pGICubesRB = NULL;
 	UINT m_uGICubesCount = 0;
 	ID m_idGICubesShader = -1;
-
-	//! G-Buffer
-	IGXTexture2D *m_pGBufferColor = NULL;
-	IGXTexture2D *m_pGBufferNormals = NULL;
-	IGXTexture2D *m_pGBufferParams = NULL;
-	IGXTexture2D *m_pGBufferDepth = NULL;
 
 	//###################################
 
@@ -155,6 +157,10 @@ protected:
 	ID m_idLightBoundShader = -1;
 	ID m_idLPVPropagateShader = -1;
 	ID m_idLuminanceReductionShader = -1;
+	ID m_idLuminanceReductionMaskedShader = -1;
+	ID m_idBloomShader = -1;
+	ID m_idGaussShader[2];
+
 	struct
 	{
 		struct
@@ -192,9 +198,7 @@ protected:
 	IGXTexture2D *m_pLightLuminance = NULL;
 	IGXTexture2D *m_pLightLuminance32 = NULL;
 	IGXTexture2D *m_pLightLuminance1 = NULL;
-	IGXTexture2D *m_pAdaptedLuminance[2];
-	UINT m_uCurrAdaptedLuminanceTarget = 0;
-
+	
 	bool m_isEnabled = true;
 
 	//###################################
@@ -228,10 +232,9 @@ protected:
 	//###################################
 
 	ID m_idSSAOShader[3];
+	ID m_idSSAOBlendShader = -1;
 
 	IGXTexture2D *m_pRndTexture = NULL;
-	IGXTexture2D *m_pSSAOTexture = NULL;
-
 	IGXConstantBuffer *m_pSSAOrndCB = NULL;
 };
 

@@ -22,7 +22,7 @@ See the license in LICENSE
 
 GX_ENABLE_HIGH_PERFORMANCE_DUAL_GPU();
 
-class CWindowCallback: public IXWindowCallback
+class CWindowCallback: public IXUnknownImplementation<IXWindowCallback>
 {
 public:
 	CWindowCallback(IXEngine *pEngine):
@@ -56,7 +56,7 @@ public:
 			{
 				return(0);
 			}
-			break;
+			//no break!
 
 		default:
 			return(pWindow->runDefaultCallback(msg, wParam, lParam));
@@ -78,19 +78,19 @@ public:
 	void XMETHODCALLTYPE onGraphicsResize(UINT uWidth, UINT uHeight, bool isFullscreen, bool isBorderless, IXEngine *pEngine) override
 	{
 		XWINDOW_DESC wdesc = *m_pWindow->getDesc();
-		if(isFullscreen || isBorderless)
+		/*if(isFullscreen || isBorderless)
 		{
 			wdesc.iPosX = 0;
 			wdesc.iPosY = 0;
 		}
 		else if(wdesc.iPosX == 0 && wdesc.iPosY == 0)
-		{
+		{*/
 			wdesc.iPosX = XCW_CENTER;
 			wdesc.iPosY = XCW_CENTER;
-		}
+		//}
 		wdesc.iSizeX = (int)uWidth;
 		wdesc.iSizeY = (int)uHeight;
-		wdesc.flags = XWF_BUTTON_CLOSE | XWF_BUTTON_MINIMIZE | XWF_NORESIZE;
+		wdesc.flags = XWF_BUTTON_CLOSE | XWF_BUTTON_MINIMIZE | XWF_NORESIZE | XWF_NOAUTOSCALE;
 
 		if(isFullscreen || isBorderless)
 		{
@@ -109,7 +109,7 @@ public:
 		return(m_pWindowSystem->processMessages());
 	}
 
-	ICamera* XMETHODCALLTYPE getCameraForFrame() override
+	IXCamera* XMETHODCALLTYPE getCameraForFrame() override
 	{
 		return(SGame_GetActiveCamera());
 	}

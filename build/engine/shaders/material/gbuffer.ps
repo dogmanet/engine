@@ -11,10 +11,14 @@ gbuffer.ps
 
 //##########################################################################
 
-PSO_Gbuffer main(PSI_XMaterial IN)
+PSO_Gbuffer main(PSI_XMaterial IN, bool isFrontFace:SV_IsFrontFace)
 {
 	// ClipFar(IN.vPos.z, g_vNearFarLayers.y);
 	IN.vNormal = normalize(IN.vNormal);
+	
+	if(!isFrontFace){
+		IN.vNormal *= -1.0f;
+	}
 	
 #ifndef WANT_WRITE_DEPTH
 	float fDepth = 1.0f - (IN.vPos.z / g_vNearFar.x);

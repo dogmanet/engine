@@ -15,7 +15,7 @@ public:
 	const char *getUndoText();
 	const char *getRedoText();
 
-	bool execCommand(IXEditorCommand *pCommand);
+	bool execCommand(IXEditorCommand *pCommand, bool bSaveForUndo = true);
 	void attachCommand(IXEditorCommand *pCommand);
 	bool undo();
 	bool redo();

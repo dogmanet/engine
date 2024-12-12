@@ -15,9 +15,10 @@ CMainMenuGameState::CMainMenuGameState()
 
 	gui::dom::IDOMnode *pNode = m_pDesktop->getDocument()->getElementById(L"engine_version");
 	static const char **pszVersion = GET_PCVAR_STRING("engine_version");
+	static const char **pszBuild = GET_PCVAR_STRING("engine_build");
 	if(pNode && pszVersion)
 	{
-		pNode->setText(StringW(L"SkyXEngine ") + StringW(String(*pszVersion)), TRUE);
+		pNode->setText(StringW(L"SkyXEngine ") + StringW(String(*pszVersion)) + StringW(pszBuild ? (StringW(L"+") + String(*pszBuild)) : L""), TRUE);
 	}
 }
 
@@ -64,9 +65,10 @@ CIngameMenuGameState::CIngameMenuGameState()
 
 	gui::dom::IDOMnode *pNode = m_pDesktop->getDocument()->getElementById(L"engine_version");
 	static const char **pszVersion = GET_PCVAR_STRING("engine_version");
+	static const char **pszBuild = GET_PCVAR_STRING("engine_build");
 	if(pNode && pszVersion)
 	{
-		pNode->setText(StringW(L"SkyXEngine ") + StringW(String(*pszVersion)), TRUE);
+		pNode->setText(StringW(L"SkyXEngine ") + StringW(String(*pszVersion)) + StringW(pszBuild ? (StringW(L"+") + String(*pszBuild)) : L""), TRUE);
 	}
 }
 

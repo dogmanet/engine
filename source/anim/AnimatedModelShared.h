@@ -28,13 +28,15 @@ public:
 
 
 	UINT getPartsCount() const;
-	const char *getPartName(UINT uIndex) const;
+	const char* getPartName(UINT uIndex) const;
 	UINT getPartIndex(const char *szName);
 	XMODEL_PART_FLAGS getPartFlags(UINT uIndex) const;
 
 
 	UINT getHitboxCount(UINT uPartIndex = 0) const;
-	const XResourceModelHitbox *getHitbox(UINT id, UINT uPartIndex = 0) const;
+	const IModelPhysbox* getHitbox(UINT id, UINT uPartIndex = 0) const;
+	int getHitboxBone(UINT id, UINT uPartIndex = 0) const;
+	XHITBOXBODYPART getHitboxBodyPart(UINT id, UINT uPartIndex = 0) const;
 
 
 	int getBoneId(const char *szName);
@@ -60,7 +62,7 @@ public:
 	float3 getLocalBoundMax() const;
 	SMAABB getLocalBound() const;
 
-	void render(UINT uSkin, UINT uLod, const float4_t &vColor);
+	void render(UINT uSkin, UINT uLod);
 
 	void initGPUresources();
 
@@ -103,6 +105,13 @@ protected:
 		int iBone;
 	};
 
+	struct Hitbox
+	{
+		const IModelPhysbox *pPhysbox = NULL;
+		int iBone = -1;
+		XHITBOXBODYPART part = XHBP_DEFAULT;
+	};
+
 	float3_t m_vLocalMin;
 	float3_t m_vLocalMax;
 
@@ -118,7 +127,7 @@ protected:
 	{
 		const char *szName;
 		XMODEL_PART_FLAGS flags;
-		Array<const XResourceModelHitbox*> aHitboxes;
+		Array<Hitbox> aHitboxes;
 		Array<physbox_s> aPhysboxes;
 
 		Array<Array<subset_t>> aLods;

@@ -1,17 +1,6 @@
 #include "DynamicModelProvider.h"
 #include <xcommon/IPluginManager.h>
-#include <chrono>
-
-/*
-#if 1
-#	include <core/sxcore.h>
-#	ifdef _DEBUG
-#		pragma comment(lib, "sxcore_d.lib")
-#	else
-#		pragma comment(lib, "sxcore.lib")
-#	endif
-#endif
-*/
+#include <core/sxcore.h>
 
 CMaterialChangedEventListener::CMaterialChangedEventListener(CDynamicModelProvider *pProvider):
 	m_pProvider(pProvider)
@@ -409,11 +398,13 @@ void CDynamicModelProvider::render(bool isTransparent, CRenderableVisibility *pV
 		return;
 	}
 
+	XPROFILE_FUNCTION();
+
 	render(pVisibility->getRenderList(), MF_OPAQUE);
 
 	if(isTransparent)
 	{
-		render(pVisibility->getSelfillumList(), MF_TRANSPARENT);
+		render(pVisibility->getTransparentList(), MF_TRANSPARENT);
 	}
 
 #if 0
@@ -546,15 +537,33 @@ void CDynamicModelProvider::renderEmissive(CRenderableVisibility *pVisibility)
 	render(pVisibility->getSelfillumList(), MF_SELFILLUM);
 }
 
-void CDynamicModelProvider::computeVisibility(const IXFrustum *pFrustum, const float3 &vHintDir, CRenderableVisibility *pVisibility, CRenderableVisibility *pReference)
+void CDynamicModelProvider::computeVisibility(const IXFrustum *pFrustum, const float3 &vHintDir, CRenderableVisibility *pVisibility, UINT bmLayerMask, CRenderableVisibility *pReference, IXCamera *pCamera)
 {
+	XPROFILE_FUNCTION();
+
+	if(pCamera && pCamera->getProjectionMode() == XCPM_PERSPECTIVE)
+	{
+		FIXME("Use actual target width!");
+		FIXME("Support for ortogonal camera too!");
+		static const int *r_win_width = GET_PCVAR_INT("r_win_width");
+		//static const float *r_default_fov = GET_PCVAR_FLOAT("r_default_fov");
+		m_pOpaqueQuery->setScreenSizeCulling(pCamera->getPosition(), pCamera->getEffectiveFOV(), *r_win_width, 4.0f);
+	}
+	else
+	{
+		m_pOpaqueQuery->unsetScreenSizeCulling();
+	}
+
 	void **ppData;
+	m_pOpaqueQuery->setLayerMask(bmLayerMask);
 	UINT uCount = m_pOpaqueQuery->execute(pFrustum, vHintDir, &ppData, pVisibility->getCuller());
 	pVisibility->setRenderList(ppData, uCount);
 
+	m_pSelfillumQuery->setLayerMask(bmLayerMask);
 	uCount = m_pSelfillumQuery->execute(pFrustum, vHintDir, &ppData, pVisibility->getCuller());
 	pVisibility->setSelfillumList(ppData, uCount);
 
+	m_pTransparentQuery->setLayerMask(bmLayerMask);
 	uCount = m_pTransparentQuery->execute(pFrustum, vHintDir, &ppData, pVisibility->getCuller());
 	pVisibility->setTransparentList(ppData, uCount);
 
@@ -668,13 +677,15 @@ void CDynamicModelProvider::update()
 	typedef std::chrono::high_resolution_clock::time_point time_point;
 	time_point tStart = std::chrono::high_resolution_clock::now();
 
+	UINT uCnt = 0;
+
 	CDynamicModelShared *pShared;
 	while(m_queueGPUinitShared.pop(&pShared))
 	{
 		pShared->initGPUresources();
 		mem_release(pShared);
 
-		if(((float)std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - tStart).count() / 1000000.0f) > 0.0001f)
+		if((++uCnt & 0xff) == 0 && ((float)std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - tStart).count() / 1000000.0f) > 0.0001f)
 		{
 			break;
 		}
@@ -686,7 +697,7 @@ void CDynamicModelProvider::update()
 		pModel->initGPUresources();
 		mem_release(pModel);
 
-		if(((float)std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - tStart).count() / 1000000.0f) > 0.0001f)
+		if((++uCnt & 0xff) == 0 && ((float)std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - tStart).count() / 1000000.0f) > 0.0001f)
 		{
 			break;
 		}

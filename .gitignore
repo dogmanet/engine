@@ -9,9 +9,11 @@
 # Build results
 [Dd]ebug/
 [Dd]ebug Singlethreaded/
+[Dd]ebug Library/
 [Dd]ebugPublic/
 [Rr]elease/
 [Rr]elease Singlethreaded/
+[Rr]elease Library/
 x64/
 # build/
 bld/
@@ -189,6 +191,8 @@ FakesAssemblies/
 GeneratedArtifacts/
 _Pvt_Extensions/
 ModelManifest.xml
+
+.vs/
 
 *.phpt
 libs/

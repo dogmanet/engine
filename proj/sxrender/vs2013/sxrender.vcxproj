@@ -68,23 +68,23 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>../../../build/bin/</OutDir>
-    <TargetName>$(ProjectName)_d</TargetName>
+    <OutDir>../../../build/bin/plugins/</OutDir>
+    <TargetName>$(ProjectName)</TargetName>
     <SourcePath>$(VC_SourcePath);../../../source</SourcePath>
     <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSdk_LibraryPath_x86);../../../libs</LibraryPath>
     <IncludePath>$(VC_IncludePath);../../../sdks/;$(WindowsSDK_IncludePath);../../../source;../../../sdks/bullet3/src</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <TargetName>$(ProjectName)_d</TargetName>
+    <TargetName>$(ProjectName)</TargetName>
     <SourcePath>$(VC_SourcePath);../../../source</SourcePath>
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSdk_LibraryPath_x64);../../../libs64</LibraryPath>
     <IncludePath>$(VC_IncludePath);../../../sdks/;$(WindowsSDK_IncludePath);../../../source;../../../sdks/bullet3/src</IncludePath>
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>../../../build/bin64/</OutDir>
+    <OutDir>../../../build/bin64/plugins/</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>../../../build/bin/</OutDir>
+    <OutDir>../../../build/bin/plugins/</OutDir>
     <IncludePath>$(VC_IncludePath);../../../sdks/;$(WindowsSDK_IncludePath);../../../source;../../../sdks/bullet3/src</IncludePath>
     <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSdk_LibraryPath_x86);../../../libs</LibraryPath>
     <SourcePath>$(VC_SourcePath);../../../source</SourcePath>
@@ -94,7 +94,7 @@
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSdk_LibraryPath_x64);../../../libs64</LibraryPath>
     <SourcePath>$(VC_SourcePath);../../../source</SourcePath>
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>../../../build/bin64/</OutDir>
+    <OutDir>../../../build/bin64/plugins/</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -115,6 +115,9 @@
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <Profile>true</Profile>
     </Link>
+    <PostBuildEvent>
+      <Command>copy /y ..\..\..\sdks\graphix\build\bin\gxgapidx11.dll ..\..\..\build\bin\ &amp;&amp; copy /y ..\..\..\sdks\graphix\build\bin\gxgapidx11.pdb ..\..\..\pdb\</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -135,6 +138,9 @@
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <Profile>true</Profile>
     </Link>
+    <PostBuildEvent>
+      <Command>copy /y ..\..\..\sdks\graphix\build\bin64\gxgapidx11.dll ..\..\..\build\bin64\ &amp;&amp; copy /y ..\..\..\sdks\graphix\build\bin64\gxgapidx11.pdb ..\..\..\pdb64\</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -156,6 +162,9 @@
       <ImportLibrary>../../../libs/$(TargetName).lib</ImportLibrary>
       <ProgramDatabaseFile>$(ProjectDir)../../../pdb/$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
+    <PostBuildEvent>
+      <Command>copy /y ..\..\..\sdks\graphix\build\bin\gxgapidx11.dll ..\..\..\build\bin\ &amp;&amp; copy /y ..\..\..\sdks\graphix\build\bin\gxgapidx11.pdb ..\..\..\pdb\</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -177,41 +186,74 @@
       <ImportLibrary>../../../libs64/$(TargetName).lib</ImportLibrary>
       <ProgramDatabaseFile>$(ProjectDir)../../../pdb64/$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
+    <PostBuildEvent>
+      <Command>copy /y ..\..\..\sdks\graphix\build\bin64\gxgapidx11.dll ..\..\..\build\bin64\ &amp;&amp; copy /y ..\..\..\sdks\graphix\build\bin64\gxgapidx11.pdb ..\..\..\pdb64\</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\source\common\file_utils.h" />
     <ClInclude Include="..\..\..\source\common\string.h" />
-    <ClInclude Include="..\..\..\source\common\string_utils.h" />
-    <ClInclude Include="..\..\..\source\render\gdata.h" />
+    <ClInclude Include="..\..\..\source\render\BaseTarget.h" />
+    <ClInclude Include="..\..\..\source\render\Camera.h" />
+    <ClInclude Include="..\..\..\source\render\FXAAGraphNode.h" />
+    <ClInclude Include="..\..\..\source\render\FXAAGraphNodeData.h" />
+    <ClInclude Include="..\..\..\source\render\GameUIGraphNode.h" />
+    <ClInclude Include="..\..\..\source\render\GameUIGraphNodeData.h" />
     <ClInclude Include="..\..\..\source\render\GizmoRenderer.h" />
     <ClInclude Include="..\..\..\source\render\LineRenderer.h" />
+    <ClInclude Include="..\..\..\source\render\Mesh.h" />
     <ClInclude Include="..\..\..\source\render\OcclusionCuller.h" />
+    <ClInclude Include="..\..\..\source\render\Render.h" />
     <ClInclude Include="..\..\..\source\render\RenderableVisibility.h" />
-    <ClInclude Include="..\..\..\source\render\RenderPipeline.h" />
+    <ClInclude Include="..\..\..\source\render\RenderGraph.h" />
+    <ClInclude Include="..\..\..\source\render\SceneFinalGraphNode.h" />
+    <ClInclude Include="..\..\..\source\render\SceneFinalGraphNodeData.h" />
+    <ClInclude Include="..\..\..\source\render\GBufferGraphNode.h" />
+    <ClInclude Include="..\..\..\source\render\FinalTarget.h" />
     <ClInclude Include="..\..\..\source\render\RenderUtils.h" />
-    <ClInclude Include="..\..\..\source\render\render_func.h" />
     <ClInclude Include="..\..\..\source\render\Scene.h" />
-    <ClInclude Include="..\..\..\source\render\sxrender.h" />
+    <ClInclude Include="..\..\..\source\render\GBufferGraphNodeData.h" />
+    <ClInclude Include="..\..\..\source\render\ShaderManager.h" />
+    <ClInclude Include="..\..\..\source\render\ShaderPreprocessor.h" />
+    <ClInclude Include="..\..\..\source\render\TextureTarget.h" />
+    <ClInclude Include="..\..\..\source\render\TransparentGraphNode.h" />
+    <ClInclude Include="..\..\..\source\render\TransparentGraphNodeData.h" />
     <ClInclude Include="..\..\..\source\render\Updatable.h" />
     <ClInclude Include="..\..\..\source\xcommon\IXRenderable.h" />
-    <ClInclude Include="..\..\..\source\xcommon\IXRenderPipeline.h" />
+    <ClInclude Include="..\..\..\source\xcommon\render\IXRender.h" />
+    <ClInclude Include="..\..\..\source\xcommon\render\IXRenderUtils.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\source\common\file_utils.cpp" />
+    <ClCompile Include="..\..\..\source\common\guid.cpp" />
     <ClCompile Include="..\..\..\source\common\string.cpp" />
     <ClCompile Include="..\..\..\source\common\string_utils.cpp" />
-    <ClCompile Include="..\..\..\source\render\gdata.cpp" />
+    <ClCompile Include="..\..\..\source\render\BaseTarget.cpp" />
+    <ClCompile Include="..\..\..\source\render\Camera.cpp" />
+    <ClCompile Include="..\..\..\source\render\FXAAGraphNode.cpp" />
+    <ClCompile Include="..\..\..\source\render\FXAAGraphNodeData.cpp" />
+    <ClCompile Include="..\..\..\source\render\GameUIGraphNode.cpp" />
+    <ClCompile Include="..\..\..\source\render\GameUIGraphNodeData.cpp" />
     <ClCompile Include="..\..\..\source\render\GizmoRenderer.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
     </ClCompile>
     <ClCompile Include="..\..\..\source\render\LineRenderer.cpp" />
+    <ClCompile Include="..\..\..\source\render\Mesh.cpp" />
     <ClCompile Include="..\..\..\source\render\OcclusionCuller.cpp" />
+    <ClCompile Include="..\..\..\source\render\plugin_main.cpp" />
+    <ClCompile Include="..\..\..\source\render\Render.cpp" />
     <ClCompile Include="..\..\..\source\render\RenderableVisibility.cpp" />
-    <ClCompile Include="..\..\..\source\render\RenderPipeline.cpp" />
+    <ClCompile Include="..\..\..\source\render\RenderGraph.cpp" />
+    <ClCompile Include="..\..\..\source\render\SceneFinalGraphNode.cpp" />
+    <ClCompile Include="..\..\..\source\render\SceneFinalGraphNodeData.cpp" />
+    <ClCompile Include="..\..\..\source\render\GBufferGraphNode.cpp" />
+    <ClCompile Include="..\..\..\source\render\FinalTarget.cpp" />
     <ClCompile Include="..\..\..\source\render\RenderUtils.cpp" />
-    <ClCompile Include="..\..\..\source\render\render_func.cpp" />
     <ClCompile Include="..\..\..\source\render\Scene.cpp" />
-    <ClCompile Include="..\..\..\source\render\sxrender.cpp" />
+    <ClCompile Include="..\..\..\source\render\GBufferGraphNodeData.cpp" />
+    <ClCompile Include="..\..\..\source\render\ShaderManager.cpp" />
+    <ClCompile Include="..\..\..\source\render\ShaderPreprocessor.cpp" />
+    <ClCompile Include="..\..\..\source\render\TextureTarget.cpp" />
+    <ClCompile Include="..\..\..\source\render\TransparentGraphNode.cpp" />
+    <ClCompile Include="..\..\..\source\render\TransparentGraphNodeData.cpp" />
     <ClCompile Include="..\..\..\source\render\Updatable.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -29,6 +29,7 @@ CDynamicModel::~CDynamicModel()
 	m_pProvider->onModelRelease(this);
 	mem_release(m_pShared);
 	mem_release(m_pWorldBuffer);
+	mem_release(m_pColorBuffer);
 	mem_release(m_pSceneObject);
 }
 
@@ -39,6 +40,7 @@ void CDynamicModel::initGPUresources()
 		return;
 	}
 	m_pWorldBuffer = m_pDevice->createConstantBuffer(sizeof(SMMATRIX));
+	m_pColorBuffer = m_pDevice->createConstantBuffer(sizeof(float4));
 
 	m_pProvider->notifyModelChanged(this, XEventModelChanged::TYPE_CREATED);
 }
@@ -223,6 +225,7 @@ float4 XMETHODCALLTYPE CDynamicModel::getColor() const
 void XMETHODCALLTYPE CDynamicModel::setColor(const float4 &vColor)
 {
 	m_vColor = vColor;
+	m_isColorDirty = true;
 }
 
 UINT XMETHODCALLTYPE CDynamicModel::getPhysboxCount(UINT uPartIndex) const
@@ -263,10 +266,17 @@ void XMETHODCALLTYPE CDynamicModel::render(UINT uLod, XMODEL_FEATURE bmFeatures)
 			m_isWorldDirty = false;
 		}
 
+		if(m_isColorDirty)
+		{
+			m_pColorBuffer->update(&m_vColor);
+			m_isColorDirty = false;
+		}
+
 		m_pProvider->bindVertexFormat();
 
 		m_pDevice->getThreadContext()->setVSConstant(m_pWorldBuffer, 1 /* SCR_OBJECT */);
-		m_pShared->render(m_uSkin, uLod, m_vColor, bmFeatures);
+		m_pDevice->getThreadContext()->setPSConstant(m_pColorBuffer, 8);
+		m_pShared->render(m_uSkin, uLod, bmFeatures);
 	}
 }
 
@@ -445,4 +455,14 @@ bool XMETHODCALLTYPE CDynamicModel::rayTest(const float3 &vStart, const float3 &
 	}
 	
 	return(false);
+}
+
+void XMETHODCALLTYPE CDynamicModel::setLayer(UINT uLayer)
+{
+	m_uLayer = uLayer;
+	m_pSceneObject->setLayer(uLayer);
+}
+UINT XMETHODCALLTYPE CDynamicModel::getLayer()
+{
+	return(m_uLayer);
 }

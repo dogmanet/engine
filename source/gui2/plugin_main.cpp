@@ -1,4 +1,5 @@
 #include <xcommon/IXPlugin.h>
+#include <xcommon/render/IXRender.h>
 #include "GUI.h"
 #include <gui2/CSSLexer.h>
 
@@ -39,21 +40,24 @@ public:
 		}
 		return(&s_guid);
 	}
-	IXUnknown* XMETHODCALLTYPE getInterface(const XGUID &guid) override
+	void XMETHODCALLTYPE getInterface(UINT id, void **ppOut) override
 	{
-		if(guid == IXGUI_GUID)
+		switch(id)
 		{
-			return(new CGUI());
+		case 0:
+			{
+				IXRender *pRender = (IXRender*)m_pCore->getPluginManager()->getInterface(IXRENDER_GUID);
+				IGXDevice *pDev = pRender->getDevice();
+				*ppOut = new CFontManager(m_pCore, pDev, m_pCore->getFileSystem());
+			}
+			break;
+		case 1:
+			*ppOut = new CGUI();
+			break;
+
+		default:
+			*ppOut = NULL;
 		}
-		if(guid == IXFONTMANAGER_GUID)
-		{
-			IXRenderPipeline *pRP;
-			m_pCore->getRenderPipeline(&pRP);
-			IGXDevice *pDev = pRP->getDevice();
-			mem_release(pRP);
-			return(new CFontManager(m_pCore, pDev, m_pCore->getFileSystem()));
-		}
-		return(NULL);
 	}
 
 protected:

@@ -8,19 +8,19 @@
 
 XENUM(XDOM_NODE_TYPE,
 	XNODE_TYPE_ELEMENT = 1,
-	XNODE_TYPE_ATTRIBUTE = 2, // obsolete
+	//XNODE_TYPE_ATTRIBUTE = 2, // obsolete
 	XNODE_TYPE_TEXT = 3,
 	XNODE_TYPE_CDATASECTION = 4,
-	XNODE_TYPE_ENTITYREFERENCE = 5, // historical
-	XNODE_TYPE_ENTITY = 6, // historical
-	XNODE_TYPE_PROCESSINGINSTRUCTION = 7,
+	//XNODE_TYPE_ENTITYREFERENCE = 5, // historical
+	//XNODE_TYPE_ENTITY = 6, // historical
+	//XNODE_TYPE_PROCESSINGINSTRUCTION = 7, // xml only
 	XNODE_TYPE_COMMENT = 8,
 	XNODE_TYPE_DOCUMENT = 9,
 	XNODE_TYPE_DOCUMENTTYPE = 10,
 	XNODE_TYPE_DOCUMENTFRAGMENT = 11,
-	XNODE_TYPE_NOTATION = 12, // historical
-	XNODE_TYPE_BASE = 21,
-	XNODE_TYPE_CHARACTERDATA = 22
+	//XNODE_TYPE_NOTATION = 12, // historical
+	XNODE_TYPE_BASE = 21//,
+	//XNODE_TYPE_CHARACTERDATA = 22 // abstract
 	);
 
 XENUM(XDOM_ELEMENT_POSITION,
@@ -49,16 +49,16 @@ public:
 
 	virtual bool XMETHODCALLTYPE isAttr() const = 0;
 	virtual bool XMETHODCALLTYPE isCDATASection() const = 0;
-	virtual bool XMETHODCALLTYPE isCharacterData() const = 0;
+	//virtual bool XMETHODCALLTYPE isCharacterData() const = 0;
 	virtual bool XMETHODCALLTYPE isComment() const = 0;
 	virtual bool XMETHODCALLTYPE isDocument() const = 0;
 	virtual bool XMETHODCALLTYPE isDocumentFragment() const = 0;
 	virtual bool XMETHODCALLTYPE isDocumentType() const = 0;
 	virtual bool XMETHODCALLTYPE isElement() const = 0;
-	virtual bool XMETHODCALLTYPE isEntity() const = 0;
-	virtual bool XMETHODCALLTYPE isEntityReference() const = 0;
-	virtual bool XMETHODCALLTYPE isNotation() const = 0;
-	virtual bool XMETHODCALLTYPE isProcessingInstruction() const = 0;
+	//virtual bool XMETHODCALLTYPE isEntity() const = 0;
+	//virtual bool XMETHODCALLTYPE isEntityReference() const = 0;
+	//virtual bool XMETHODCALLTYPE isNotation() const = 0;
+	//virtual bool XMETHODCALLTYPE isProcessingInstruction() const = 0;
 	virtual bool XMETHODCALLTYPE isText() const = 0;
 
 	virtual XDOM_NODE_TYPE XMETHODCALLTYPE getNodeType() const = 0;
@@ -157,7 +157,7 @@ public:
 	virtual UINT XMETHODCALLTYPE getScrollTop() = 0;
 	virtual void XMETHODCALLTYPE setScrollTop(UINT uVal) = 0;
 
-	virtual void XMETHODCALLTYPE getHTMLElement(IXHTMLElement **ppOut);
+	virtual void XMETHODCALLTYPE getHTMLElement(IXHTMLElement **ppOut) = 0;
 };
 
 class IXDOMText: public IXDOMNode

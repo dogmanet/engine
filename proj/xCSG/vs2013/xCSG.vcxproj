@@ -29,6 +29,7 @@
     <ClCompile Include="..\..\..\source\xcsg\CommandClip.cpp" />
     <ClCompile Include="..\..\..\source\xcsg\CommandCreate.cpp" />
     <ClCompile Include="..\..\..\source\xcsg\CommandFaceEdit.cpp" />
+    <ClCompile Include="..\..\..\source\xcsg\CommandMorph.cpp" />
     <ClCompile Include="..\..\..\source\xCSG\dllmain.cpp" />
     <ClCompile Include="..\..\..\source\xcsg\Editable.cpp" />
     <ClCompile Include="..\..\..\source\xcsg\EditorExtension.cpp" />
@@ -41,6 +42,7 @@
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
     </ClCompile>
     <ClCompile Include="..\..\..\source\xCSG\plugin_main.cpp" />
+    <ClCompile Include="..\..\..\source\xcsg\VertexTool.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\source\xcsg\BrushCreatorBox.h" />
@@ -51,6 +53,7 @@
     <ClInclude Include="..\..\..\source\xcsg\CommandClip.h" />
     <ClInclude Include="..\..\..\source\xcsg\CommandCreate.h" />
     <ClInclude Include="..\..\..\source\xcsg\CommandFaceEdit.h" />
+    <ClInclude Include="..\..\..\source\xcsg\CommandMorph.h" />
     <ClInclude Include="..\..\..\source\xcsg\Editable.h" />
     <ClInclude Include="..\..\..\source\xcsg\EditorExtension.h" />
     <ClInclude Include="..\..\..\source\xcsg\EditorModel.h" />
@@ -61,6 +64,7 @@
     <ClInclude Include="..\..\..\source\xcsg\IBrushCreator.h" />
     <ClInclude Include="..\..\..\source\xcsg\Outline.h" />
     <ClInclude Include="..\..\..\source\xcsg\resource.h" />
+    <ClInclude Include="..\..\..\source\xcsg\VertexTool.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\..\..\source\xcsg\xcsg.rc" />
@@ -71,10 +75,12 @@
     <Image Include="..\..\..\source\xcsg\resource\ab_block2.bmp" />
     <Image Include="..\..\..\source\xcsg\resource\ab_cut.bmp" />
     <Image Include="..\..\..\source\xcsg\resource\ab_face_edit.bmp" />
+    <Image Include="..\..\..\source\xcsg\resource\ab_vertex.bmp" />
     <Image Include="resource\ab_block.bmp" />
     <Image Include="resource\ab_block2.bmp" />
     <Image Include="resource\ab_cut.bmp" />
     <Image Include="resource\ab_face_edit.bmp" />
+    <Image Include="resource\ab_vertex.bmp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{CD470440-2CC2-42BA-8B94-2B1C72125FE3}</ProjectGuid>

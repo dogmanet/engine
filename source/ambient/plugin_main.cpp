@@ -6,10 +6,10 @@
 class CLevelLoadListener: public IEventListener<XEventLevel>
 {
 public:
-	CLevelLoadListener(IXCore *pCore, ID idPlugin, CSkyBox *pSkyBox):
+	CLevelLoadListener(IXCore *pCore, ID idPlugin, CAmbient *pAmbient):
 		m_pCore(pCore),
 		m_idPlugin(idPlugin),
-		m_pSkyBox(pSkyBox)
+		m_pAmbient(pAmbient)
 	{
 		//m_pCore->getRenderPipeline();
 		//IXRenderPipeline *pPipeline;
@@ -17,31 +17,33 @@ public:
 	}
 	void onEvent(const XEventLevel *pData) override
 	{
-		char szPathLevel[1024];
+		//char szPathLevel[1024];
 
 		switch(pData->type)
 		{
 		case XEventLevel::TYPE_LOAD:
-			sprintf(szPathLevel, "levels/%s/%s.env", pData->szLevelName, pData->szLevelName);
-			LibReport(REPORT_MSG_LEVEL_NOTICE, "loading level\n");
-			//if(FileExistsFile(szPathLevel))
-			{
-				IEventChannel<XEventLevelProgress> *pProgressChannel = m_pCore->getEventChannel<XEventLevelProgress>(EVENT_LEVEL_PROGRESS_GUID);
-				XEventLevelProgress levelProgress;
-				levelProgress.idPlugin = m_idPlugin;
-				levelProgress.fProgress = 0.0f;
-				levelProgress.szLoadingText = "Загрузка окружения";
-				levelProgress.type = XEventLevelProgress::TYPE_PROGRESS_BEGIN;
-				pProgressChannel->broadcastEvent(&levelProgress);
-
-				m_pSkyBox->setTexture("sky_hdr_hl2");
-
-				levelProgress.fProgress = 1.0f;
-				levelProgress.type = XEventLevelProgress::TYPE_PROGRESS_END;
-				pProgressChannel->broadcastEvent(&levelProgress);
-			}
+			//sprintf(szPathLevel, "levels/%s/%s.env", pData->szLevelName, pData->szLevelName);
+			//LibReport(REPORT_MSG_LEVEL_NOTICE, "loading level\n");
+			////if(FileExistsFile(szPathLevel))
+			//{
+			//	IEventChannel<XEventLevelProgress> *pProgressChannel = m_pCore->getEventChannel<XEventLevelProgress>(EVENT_LEVEL_PROGRESS_GUID);
+			//	XEventLevelProgress levelProgress;
+			//	levelProgress.idPlugin = m_idPlugin;
+			//	levelProgress.fProgress = 0.0f;
+			//	levelProgress.szLoadingText = "Загрузка окружения";
+			//	levelProgress.type = XEventLevelProgress::TYPE_PROGRESS_BEGIN;
+			//	pProgressChannel->broadcastEvent(&levelProgress);
+			//
+			//	m_pSkyBox->setTexture("sky_hdr_hl2");
+			//
+			//	levelProgress.fProgress = 1.0f;
+			//	levelProgress.type = XEventLevelProgress::TYPE_PROGRESS_END;
+			//	pProgressChannel->broadcastEvent(&levelProgress);
+			//}
 			break;
 		case XEventLevel::TYPE_UNLOAD:
+			m_pAmbient->setSkybox("sky_default");
+			m_pAmbient->enableSkybox(true);
 			break;
 		case XEventLevel::TYPE_SAVE:
 			break;
@@ -51,7 +53,7 @@ public:
 protected:
 	IXCore *m_pCore;
 	ID m_idPlugin;
-	CSkyBox *m_pSkyBox;
+	CAmbient *m_pAmbient;
 };
 
 class CAmbientPlugin: public IXUnknownImplementation<IXPlugin>
@@ -65,14 +67,14 @@ public:
 		m_pRenderable = new CRenderable(getID(), m_pAmbient);
 		m_pUpdatable = new CUpdatable(m_pAmbient);
 
-	//	m_pEventListener = new CLevelLoadListener(pCore, getID(), m_pSkyBox);
-	//	m_pCore->getEventChannel<XEventLevel>(EVENT_LEVEL_GUID)->addListener(m_pEventListener);
+		m_pEventListener = new CLevelLoadListener(pCore, getID(), m_pAmbient);
+		m_pCore->getEventChannel<XEventLevel>(EVENT_LEVEL_GUID)->addListener(m_pEventListener);
 
 	}
 
 	void XMETHODCALLTYPE shutdown() override
 	{
-	//	m_pCore->getEventChannel<XEventLevel>(EVENT_LEVEL_GUID)->removeListener(m_pEventListener);
+		m_pCore->getEventChannel<XEventLevel>(EVENT_LEVEL_GUID)->removeListener(m_pEventListener);
 		mem_delete(m_pEventListener);
 		mem_delete(m_pRenderable);
 		mem_delete(m_pUpdatable);
@@ -102,21 +104,25 @@ public:
 		}
 		return(&s_guid);
 	}
-	IXUnknown* XMETHODCALLTYPE getInterface(const XGUID &guid) override
+	void XMETHODCALLTYPE getInterface(UINT id, void **ppOut) override
 	{
-		if(guid == IXRENDERABLE_GUID)
+		switch(id)
 		{
-			return(m_pRenderable);
+		case 0:
+			*ppOut = m_pUpdatable;
+			break;
+
+		case 1:
+			*ppOut = m_pRenderable;
+			break;
+
+		case 2:
+			*ppOut = m_pAmbient;
+			break;
+		
+		default:
+			*ppOut = NULL;
 		}
-		if(guid == IXUPDATABLE_GUID)
-		{
-			return(m_pUpdatable);
-		}
-		if(guid == IXAMBIENT_GUID)
-		{
-			return(m_pAmbient);
-		}
-		return(NULL);
 	}
 
 protected:

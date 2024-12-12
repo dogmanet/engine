@@ -1,0 +1,38 @@
+
+/*
+hdr_bloom
+*/
+
+#include <struct.h>
+#include <const.h>
+
+//##########################################################################
+
+SamplerState g_sLinearClamp: register(s0);
+SamplerState g_sPointClamp: register(s1);
+Texture2D g_txScene: register(t0); // full screen texture
+Texture2D g_txLuminance: register(t1); // luminance texture 1x1 px
+
+//##########################################################################
+
+float CalcLuminance(float3 color)
+{
+    return(dot(color, float3(0.2126f, 0.7152f, 0.0722f)));
+}
+
+float4 main(VSO_PP IN):SV_TARGET
+{
+	float fLuminance = g_txLuminance.Sample(g_sPointClamp, IN.vTexUV).x;
+	float4 vColor = g_txScene.Sample(g_sPointClamp, IN.vTexUV);
+	vColor += g_txScene.Sample(g_sPointClamp, IN.vTexUV + float2(g_vNearFar.z, 0.0f));
+	vColor += g_txScene.Sample(g_sPointClamp, IN.vTexUV + g_vNearFar.zw);
+	vColor += g_txScene.Sample(g_sPointClamp, IN.vTexUV + float2(0.0f, g_vNearFar.w));
+	vColor *= 0.25f;
+	
+	// if(CalcLuminance(vColor.xyz) > 1.0f)
+	// if(CalcLuminance(vColor.xyz) > fLuminance * 2.0f)
+	{
+		return(vColor);
+	}
+	return(0.0f);
+}

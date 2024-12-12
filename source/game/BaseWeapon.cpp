@@ -117,29 +117,31 @@ void CBaseWeapon::onPostLoad()
 	{
 		IXSoundLayer *pGameLayer = pSound->findLayer("xGame");
 
-		if(m_szSndDraw[0])
-		{
-			m_pSndDraw = pGameLayer->newSoundPlayer(m_szSndDraw, SOUND_SPACE_3D);
-		}
-		if(m_szSndHolster[0])
-		{
-			m_pSndHolster = pGameLayer->newSoundPlayer(m_szSndHolster, SOUND_SPACE_3D);
-		}
-		if(m_szSndShoot[0])
-		{
-			m_pSndShoot = pGameLayer->newSoundEmitter(m_szSndShoot, SOUND_SPACE_3D);
-		}
-		if(m_szSndEmpty[0])
-		{
-			m_pSndEmpty = pGameLayer->newSoundPlayer(m_szSndEmpty, SOUND_SPACE_3D);
-		}
-		if(m_szSndReload[0])
-		{
-			m_pSndReload = pGameLayer->newSoundPlayer(m_szSndReload, SOUND_SPACE_3D);
-		}
-		if(m_szSndSwitch[0])
-		{
-			m_pSndSwitch = pGameLayer->newSoundPlayer(m_szSndSwitch, SOUND_SPACE_3D);
+		if(pGameLayer){
+			if(m_szSndDraw[0])
+			{
+				m_pSndDraw = pGameLayer->newSoundPlayer(m_szSndDraw, SOUND_SPACE_3D);
+			}
+			if(m_szSndHolster[0])
+			{
+				m_pSndHolster = pGameLayer->newSoundPlayer(m_szSndHolster, SOUND_SPACE_3D);
+			}
+			if(m_szSndShoot[0])
+			{
+				m_pSndShoot = pGameLayer->newSoundEmitter(m_szSndShoot, SOUND_SPACE_3D);
+			}
+			if(m_szSndEmpty[0])
+			{
+				m_pSndEmpty = pGameLayer->newSoundPlayer(m_szSndEmpty, SOUND_SPACE_3D);
+			}
+			if(m_szSndReload[0])
+			{
+				m_pSndReload = pGameLayer->newSoundPlayer(m_szSndReload, SOUND_SPACE_3D);
+			}
+			if(m_szSndSwitch[0])
+			{
+				m_pSndSwitch = pGameLayer->newSoundPlayer(m_szSndSwitch, SOUND_SPACE_3D);
+			}
 		}
 	}
 }

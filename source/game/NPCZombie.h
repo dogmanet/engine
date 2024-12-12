@@ -49,6 +49,8 @@ protected:
 	void msgKnowEnemyHere(inputdata_t *pInputdata);
 	void msgFiringHere(inputdata_t *pInputdata);
 
+	void onPostLoad() override;
+
 	//virtual void initPhysics();
 
 	void randWalk();

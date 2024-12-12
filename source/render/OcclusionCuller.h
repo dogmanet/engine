@@ -37,7 +37,9 @@ public:
 	COcclusionCuller();
 	~COcclusionCuller();
 
-	void XMETHODCALLTYPE update(ICamera *pCamera, float fFOV, float fAspectRatio, float fFarPlane) override;
+	SX_ALIGNED_OP_MEM();
+
+	void XMETHODCALLTYPE update(IXCamera *pCamera, float fFOV, float fAspectRatio, float fFarPlane) override;
 
 	bool XMETHODCALLTYPE isPointVisible(const float3 &vPoint) const override;
 
@@ -55,7 +57,7 @@ private:
 	int classifyPoint(const float3 &vPoint, bool *pisCulledByFrustum = NULL, bool bIgnoreFrustum = false) const;
 
 private:
-	ICamera *m_pCamera = NULL;
+	IXCamera *m_pCamera = NULL;
 	float m_fFOV = 1.0f;
 	float m_fAspectRatio = 1.0f;
 	float m_fFarPlane = 1.0f;

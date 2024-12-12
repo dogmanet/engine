@@ -1,10 +1,11 @@
-﻿
+
 #include <xcommon/IXPlugin.h>
 #include <xcommon/IXUpdatable.h>
 #include "SoundSystem.h"
 #include <Audio.h>
-#include <gcore/sxgcore.h>
+//#include <gcore/sxgcore.h>
 #include <core/ITask.h>
+#include <xcommon/IXCamera.h>
 
 #if defined(_DEBUG)
 #pragma comment(lib, "mital_d.lib")
@@ -192,14 +193,21 @@ public:
 		}
 		return(&s_guid);
 	}
-	IXUnknown* XMETHODCALLTYPE getInterface(const XGUID &guid) override
+	void XMETHODCALLTYPE getInterface(UINT id, void **ppOut) override
 	{
-		if(guid == IXSOUNDSYSTEM_GUID)
-			return(m_pSoundSystem);
-		//if(guid == IXUPDATABLE_GUID)
-		//	return(m_pUpdatableSoundSystem);
+		switch(id)
+		{
+		case 0:
+			*ppOut = m_pSoundSystem;
+			break;
 
-		return(NULL);
+		//case 1:
+		//	*ppOut = m_pUpdatableSoundSystem;
+		//	break;
+
+		default:
+			*ppOut = NULL;
+		}
 	}
 
 protected:

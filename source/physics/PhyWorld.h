@@ -23,7 +23,7 @@ See the license in LICENSE
 #include <gdefines.h>
 
 #include <common/Math.h>
-#include <mtrl/sxmtrl.h>
+#include <xcommon/XEvents.h>
 
 #include <common/queue.h>
 #include "sxphysics.h"
@@ -82,9 +82,15 @@ public:
 		IGXRenderBuffer *m_pRenderBuffer = NULL;
 		IGXConstantBuffer *m_pVSConstantBuffer = NULL;
 		ID m_idShader = -1;
+
+		IGXDevice *m_pDevice = NULL;
+		IXRender *m_pRender = NULL;
+
 	public:
 		CDebugDrawer();
 		~CDebugDrawer();
+
+		void setDevice(IXRender *pRender);
 
 		void drawLine(const btVector3& from, const btVector3& to, const btVector3& color);
 
@@ -142,7 +148,7 @@ public:
 		}
 
 
-		void XMETHODCALLTYPE startup(IGXDevice *pDevice, IXMaterialSystem *pMaterialSystem) override;
+		void XMETHODCALLTYPE startup(IXRender *pRender, IXMaterialSystem *pMaterialSystem) override;
 		void XMETHODCALLTYPE shutdown() override
 		{
 		}
@@ -159,6 +165,8 @@ public:
 	void XMETHODCALLTYPE removeCollisionObject(IXCollisionObject *pCollisionObject) override;
 
 	void XMETHODCALLTYPE rayTest(const float3 &vFrom, const float3 &vTo, IXRayCallback *pCallback, COLLISION_GROUP collisionGroup = CG_DEFAULT, COLLISION_GROUP collisionMask = CG_ALL) override;
+
+	void XMETHODCALLTYPE convexSweepTest(IXConvexShape *pShape, const transform_t &xfFrom, const transform_t &xfTo, IXConvexCallback *pCallback, COLLISION_GROUP collisionGroup = CG_DEFAULT, COLLISION_GROUP collisionMask = CG_ALL) override;
 
 	template<class T>
 	void updateSingleAABB(T *pObj)

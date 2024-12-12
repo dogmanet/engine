@@ -31,7 +31,7 @@ public:
 	float3 getLocalBoundMax() const;
 	SMAABB getLocalBound() const;
 
-	void render(UINT uSkin, UINT uLod, const float4_t &vColor, XMODEL_FEATURE bmFeatures);
+	void render(UINT uSkin, UINT uLod, XMODEL_FEATURE bmFeatures);
 	void renderInstanced(const float3 &vPos, const SMQuaternion &qRot, float fScale, const float4_t &vColor);
 
 	void initGPUresources();
@@ -77,7 +77,12 @@ protected:
 		float4 vPosScale;
 		SMQuaternion qRot;
 	} m_instanceData[MAX_INSTANCES];
+	struct
+	{
+		float4 vColor;
+	} m_instanceColors[MAX_INSTANCES];
 	IGXConstantBuffer *m_pInstanceBuffer = NULL;
+	IGXConstantBuffer *m_pInstanceColorsBuffer = NULL;
 	int m_iInstanceCount = 0;
 	bool m_isInstancingEnabled = false;
 	UINT m_uInstancingSkin = 0;

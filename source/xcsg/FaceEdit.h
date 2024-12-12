@@ -72,8 +72,6 @@ public:
 	CFaceEdit(CEditable *pEditable, IXEditor *pEditor, HINSTANCE hInstance, HWND hMainWnd);
 	~CFaceEdit();
 
-	void initGraphics(IGXDevice *pDev);
-
 	void activate();
 	void deactivate();
 
@@ -96,30 +94,16 @@ private:
 
 	IXEditor *m_pEditor;
 
-	bool m_isDirty = false;
-	//bool m_bDoSwap = false;
-	IGXDevice *m_pDev = NULL;
-	IGXSwapChain *m_pSwapChain = NULL;
-
 	FACE_EDIT_MODE m_editMode = FEM_PICK_SELECT;
 
 	//IGXIndexBuffer *m_pFrameIB = NULL;
 	//IGXRenderBuffer *m_pFrameRB = NULL;
-
-	IXMaterialSystem *m_pMaterialSystem = NULL;
-
-	IGXBlendState *m_pBlendAlpha = NULL;
-
-	ID m_idScreenOutShader = -1;
 
 	Array<FaceDesc> m_aSelectedFaces;
 
 	bool m_isMaskHidden = false;
 
 	CMaterialBrowserCallback m_matBrowserCallback;
-
-	IXMaterial *m_pMat = NULL;
-	IXTexture *m_pTex = NULL;
 
 	BrushFace m_currentSettings;
 	float m_fCurrentAngle = 0.0f;
@@ -134,13 +118,6 @@ private:
 private:
 	INT_PTR dlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 	static INT_PTR CALLBACK DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-
-	void registerClass();
-
-	static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-	LRESULT wndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-
-	void initViewport();
 
 	bool getWorldFace(const float3 &vRayStart, const float3 &vRayDir, FaceDesc *pOut);
 

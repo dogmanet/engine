@@ -111,6 +111,12 @@ public:
 		CEntityFactoryMap::GetInstance()->addFactory(this, szName);
 	}
 
+	CEntityFactory(const CEntityFactory<T> &other)
+	{
+		*this = other;
+		m_vDerivatives.clear();
+	}
+
 	~CEntityFactory()
 	{
 		T::ReleasePropData();

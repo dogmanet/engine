@@ -2,145 +2,42 @@
 
 namespace gui
 {
-	CPITexture CTextureManager::getTexture(const StringW &szTexture)
+	void CTextureManager::getTexture(const StringW &szTexture, IXTexture **ppOut)
 	{
-		if(!m_mTextures.KeyExists(szTexture))
-		{
-			m_mTextures[szTexture] = new CTexture(this);
-			m_mTextures[szTexture]->loadFromFile(szTexture);
-			m_mTextures[szTexture]->m_szName = szTexture;
-		}
-		else
-		{
-			if(!m_mTextures[szTexture]->m_pTexture)
-			{
-				m_mTextures[szTexture]->loadFromFile(szTexture);
-				m_mTextures[szTexture]->m_szName = szTexture;
-			}
-		}
-		if(m_mTextures[szTexture]->m_bFailed)
-		{
-			return(getTexture(L"/dev/error.png"));
-		}
-		return(m_mTextures[szTexture]);
+		String path(szTexture[0] == '!' ? szTexture.substr(1) : getResourceDir() + L"textures/" + szTexture);
+
+		GetGUI()->getMaterialSystem()->loadTexture(path.c_str(), ppOut);
 	}
 	
-	void CTextureManager::unloadTexture(CPITexture tex)
+	void CTextureManager::bindTexture(IXTexture *tex)
 	{
-		const_cast<CTexture*>(tex)->release();
-		m_mTextures.erase(tex->m_szName);
+		GetGUI()->getMaterialSystem()->bindTexture(tex);
 	}
 
-	CTexture* CTextureManager::createTexture(const StringW & szTexture, int w, int h, int bpp, bool isRT, void *pInitData, bool isAutoResizeRT)
+	void CTextureManager::releaseTexture(IXTexture *pTexture)
 	{
-		CTexture *bt = new CTexture(this);
-
-		if(!(bt->m_pTexture = GetGUI()->getDevice()->createTexture2D(w, h, isRT ? 1 : 0, isRT ? GX_TEXFLAG_RENDERTARGET | (isAutoResizeRT ? GX_TEXFLAG_AUTORESIZE : 0) : 0, GXFMT_A8B8G8R8, pInitData)))
+		if(pTexture)
 		{
-			mem_delete(bt);
-			return(NULL);
+			m_aReleasedTextures.push_back(pTexture);
 		}
-
-		
-		bt->m_iHeight = h;
-		bt->m_iWidth = w;
-		bt->m_szName = szTexture;
-		m_mTextures[szTexture] = bt;
-		return(m_mTextures[szTexture]);
-	}
-
-	void CTextureManager::addTexture(const StringW &name, CPITexture tex)
-	{
-		CTexture* ptex = const_cast<CTexture*>(tex);
-		ptex->m_szName = name;
-		m_mTextures[name] = ptex;
-	}
-
-	void CTextureManager::release()
-	{
-		for(AssotiativeArray<StringW, CTexture*>::Iterator i = m_mTextures.begin(); i; ++i)
-		{
-			(*i.second)->release();
-			mem_delete(*i.second);
-		}
-		m_mTextures.clear();
-	}
-
-	void CTextureManager::bindTexture(CPITexture tex)
-	{
-		if(!tex)
-		{
-			//FIXME: Set fallback texture
-			GetGUI()->getDevice()->getThreadContext()->setPSTexture(NULL);
-			m_pCurrentTex = NULL;
-			return;
-		}
-		if(m_pCurrentTex != tex)
-		{
-			m_pCurrentTex = tex;
-			GetGUI()->getDevice()->getThreadContext()->setPSTexture(m_pCurrentTex->m_pTexture);
-		}
-
-
 	}
 		
-	//##########################################################################
-
-	void CTexture::release()
+	IXTexture* CTextureManager::getWhite()
 	{
-		mem_release(m_pTexture);
-	}
-	
-	void CTexture::loadFromMem(byte * pData)
-	{
-		if(!pData)
+		if(!m_pWhite)
 		{
-			return;
+			getTexture(TEX_WHITE, &m_pWhite);
 		}
-		void *pTexData;
-		if(m_pTexture->lock(&pTexData, GXTL_WRITE))
-		{
-			memcpy(pTexData, pData, m_iWidth * m_iHeight * 4);
-			m_pTexture->unlock();
-		}
-		/*if(!FAILED(GetGUI()->GetDevice()->CreateTexture(m_iWidth, m_iHeight, 0, NULL, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, &tex, NULL)))
-		{
-		D3DLOCKED_RECT lr;
-
-		if(!FAILED(DX_CALL(tex->LockRect(0, &lr, NULL, NULL))))
-		{
-		memcpy(lr.pBits, pData, m_iWidth * m_iHeight * 4);
-		tex->UnlockRect(0);
-
-		if(FAILED(GetGUI()->GetDevice()->UpdateTexture(tex, m_pTexture)))
-		{
-		return;
-		}
-		}
-		}
-		SX_SAFE_RELEASE(tex);*/
+		
+		return(m_pWhite);
 	}
 
-	void CTexture::loadFromFile(const StringW &pName)
+	void CTextureManager::onNewFrame()
 	{
-		StringW path = m_pTextureManager->getResourceDir() + L"/textures/" + pName;
-		m_pTexture = GetGUI()->getDevice()->createTexture2DFromFile(String(path).c_str(), 0, true);
-		//if(FAILED(DX_CALL(D3DXCreateTextureFromFileExW(GetGUI()->getDevice(), path.c_str(), D3DX_DEFAULT_NONPOW2, D3DX_DEFAULT_NONPOW2, D3DX_DEFAULT, 0, D3DFMT_FROM_FILE, D3DPOOL_MANAGED, D3DX_DEFAULT, D3DX_DEFAULT, 0, &info, NULL, &m_pTexture))))
-		if(!m_pTexture)
+		fora(i, m_aReleasedTextures)
 		{
-			printf("Unable to load texture \"%s\"\n", String(path).c_str());
-			m_iWidth = m_iHeight = 0;
-			m_bFailed = true;
+			mem_release(m_aReleasedTextures[i]);
 		}
-		else
-		{
-			m_iWidth = m_pTexture->getWidth();
-			m_iHeight = m_pTexture->getHeight();
-		}
-	}
-
-	IGXTexture2D* CTexture::getAPItexture() const
-	{
-		return(m_pTexture);
+		m_aReleasedTextures.clearFast();
 	}
 };

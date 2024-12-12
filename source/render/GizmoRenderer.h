@@ -2,6 +2,7 @@
 #define __GIZMORENDERER_H
 
 #include <xcommon/render/IXRenderUtils.h>
+#include <xcommon/render/IXRender.h>
 #include "LineRenderer.h"
 
 class CRenderUtils;
@@ -9,7 +10,7 @@ class CRenderUtils;
 class CGizmoRenderer final: public IXUnknownImplementation<IXGizmoRenderer>
 {
 public:
-	CGizmoRenderer(CRenderUtils *pRenderUtils, IGXDevice *pDev);
+	CGizmoRenderer(CRenderUtils *pRenderUtils, IXRender *pRender);
 	~CGizmoRenderer();
 
 	void XMETHODCALLTYPE reset() override;
@@ -45,7 +46,18 @@ public:
 		const float4_t &vColorB,
 		const float4_t &vColorC) override;
 
+	void XMETHODCALLTYPE setFont(IXFont *pFont) override;
+
+	void XMETHODCALLTYPE setFontParams(const XGizmoFontParams &params) override;
+
+	void XMETHODCALLTYPE drawString(
+		const char *szText,
+		const float3_t &vRefPoint,
+		UINT uAreaWidth = 0
+	) override;
+
 private:
+	IXRender *m_pRender;
 	IGXDevice *m_pDev;
 	CRenderUtils *m_pRenderUtils;
 
@@ -104,11 +116,37 @@ private:
 	IGXRenderBuffer *m_pTrisRB = NULL;
 	IGXVertexBuffer *m_pTrisVB = NULL;
 
-	IGXConstantBuffer *m_pRightVecCB = NULL;
+	//IGXConstantBuffer *m_pRightVecCB = NULL;
 	static bool s_isShadersLoaded;
 	static ID s_idShaders[2][2][2]; // [isTextured][is3D][isFixed]
 
 	Array<PointVertex> m_aPolyVertices;
+
+	//**************************************************
+
+	IXFont *m_pCurrentFont = NULL;
+	byte m_u8CurrentFont = 0xFF;
+	XGizmoFontParams m_fontParams;
+
+	Array<PointRange> m_aTextRanges;
+
+	struct TextVertex
+	{
+		float4_t vPosTexUV;
+		float4_t vColor;
+		float3_t vRefPos;
+	};
+
+	Array<TextVertex> m_aTextVertices;
+
+	UINT m_uTextVBSize = 0;
+	static IGXVertexDeclaration *s_pTextVD;
+	IGXRenderBuffer *m_pTextRB = NULL;
+	IGXVertexBuffer *m_pTextVB = NULL;
+	IGXIndexBuffer *m_pTextIB = NULL;
+
+	static ID s_idTextShaders[2][2]; // [is3D][isFixed]
+
 private:
 	//void prepareLinesIB();
 	byte getTextureId();

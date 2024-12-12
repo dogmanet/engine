@@ -83,6 +83,11 @@ public:
 		return(false);
 	}
 
+	bool XMETHODCALLTYPE allowUseCamera() override
+	{
+		return(false);
+	}
+
 	void onPosChanged();
 
 	SX_ALIGNED_OP_MEM();

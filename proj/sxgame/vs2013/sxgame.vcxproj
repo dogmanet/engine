@@ -182,12 +182,14 @@
     <ClCompile Include="..\..\..\source\game\BaseHandle.cpp" />
     <ClCompile Include="..\..\..\source\game\BaseLight.cpp" />
     <ClCompile Include="..\..\..\source\game\BaseMag.cpp" />
+    <ClCompile Include="..\..\..\source\game\BaseRecipe.cpp" />
     <ClCompile Include="..\..\..\source\game\BaseScope.cpp" />
     <ClCompile Include="..\..\..\source\game\BaseSilencer.cpp" />
     <ClCompile Include="..\..\..\source\game\BaseWeaponAddon.cpp" />
     <ClCompile Include="..\..\..\source\game\BaseTrigger.cpp" />
     <ClCompile Include="..\..\..\source\game\BaseCharacter.cpp" />
     <ClCompile Include="..\..\..\source\game\CharacterInventory.cpp" />
+    <ClCompile Include="..\..\..\source\game\CraftSystem.cpp" />
     <ClCompile Include="..\..\..\source\game\crosshair.cpp" />
     <ClCompile Include="..\..\..\source\game\CrosshairManager.cpp" />
     <ClCompile Include="..\..\..\source\game\Editable.cpp" />
@@ -204,7 +206,10 @@
     <ClCompile Include="..\..\..\source\game\GameData.cpp" />
     <ClCompile Include="..\..\..\source\game\GameStateManager.cpp" />
     <ClCompile Include="..\..\..\source\game\GameStates.cpp" />
+    <ClCompile Include="..\..\..\source\game\GUICraftController.cpp" />
+    <ClCompile Include="..\..\..\source\game\GUIInventoryController.cpp" />
     <ClCompile Include="..\..\..\source\game\HUDcontroller.cpp" />
+    <ClCompile Include="..\..\..\source\game\InfoParticlePlayer.cpp" />
     <ClCompile Include="..\..\..\source\game\LightDirectional.cpp" />
     <ClCompile Include="..\..\..\source\game\LightPoint.cpp" />
     <ClCompile Include="..\..\..\source\game\LightSun.cpp" />
@@ -251,6 +256,8 @@
     <ClCompile Include="..\..\..\source\game\TriggerHurt.cpp" />
     <ClCompile Include="..\..\..\source\game\TriggerItemUse.cpp" />
     <ClCompile Include="..\..\..\source\game\TriggerTeleport.cpp" />
+    <ClCompile Include="..\..\..\source\game\UICalcContainer.cpp" />
+    <ClCompile Include="..\..\..\source\game\UIDemoContainer.cpp" />
     <ClCompile Include="..\..\..\source\game\ZombieHands.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -261,11 +268,13 @@
     <ClInclude Include="..\..\..\source\game\BaseLight.h" />
     <ClInclude Include="..\..\..\source\game\Baseline.h" />
     <ClInclude Include="..\..\..\source\game\BaseMag.h" />
+    <ClInclude Include="..\..\..\source\game\BaseRecipe.h" />
     <ClInclude Include="..\..\..\source\game\BaseScope.h" />
     <ClInclude Include="..\..\..\source\game\BaseSilencer.h" />
     <ClInclude Include="..\..\..\source\game\BaseWeaponAddon.h" />
     <ClInclude Include="..\..\..\source\game\BaseTrigger.h" />
     <ClInclude Include="..\..\..\source\game\BaseCharacter.h" />
+    <ClInclude Include="..\..\..\source\game\CraftSystem.h" />
     <ClInclude Include="..\..\..\source\game\Editable.h" />
     <ClInclude Include="..\..\..\source\game\EditorExtension.h" />
     <ClInclude Include="..\..\..\source\game\EditorObject.h" />
@@ -278,8 +287,11 @@
     <ClInclude Include="..\..\..\source\game\GameStateManager.h" />
     <ClInclude Include="..\..\..\source\game\CharacterInventory.h" />
     <ClInclude Include="..\..\..\source\game\GameStates.h" />
+    <ClInclude Include="..\..\..\source\game\GUICraftController.h" />
+    <ClInclude Include="..\..\..\source\game\GUIInventoryController.h" />
     <ClInclude Include="..\..\..\source\game\HUDcontroller.h" />
     <ClInclude Include="..\..\..\source\game\IGameState.h" />
+    <ClInclude Include="..\..\..\source\game\InfoParticlePlayer.h" />
     <ClInclude Include="..\..\..\source\game\LightSun.h" />
     <ClInclude Include="..\..\..\source\game\LogicAuto.h" />
     <ClInclude Include="..\..\..\source\game\LogicConsole.h" />
@@ -332,6 +344,8 @@
     <ClInclude Include="..\..\..\source\game\TriggerHurt.h" />
     <ClInclude Include="..\..\..\source\game\TriggerItemUse.h" />
     <ClInclude Include="..\..\..\source\game\TriggerTeleport.h" />
+    <ClInclude Include="..\..\..\source\game\UICalcContainer.h" />
+    <ClInclude Include="..\..\..\source\game\UIDemoContainer.h" />
     <ClInclude Include="..\..\..\source\game\ZombieHands.h" />
     <ClInclude Include="..\..\..\source\game\resource.h" />
   </ItemGroup>

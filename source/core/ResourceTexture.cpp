@@ -48,7 +48,6 @@ void XMETHODCALLTYPE CResourceTexture2D::init(UINT uWidth, UINT uHeight, GXFORMA
 
 	m_format = format;
 	m_uFrameCount = uFrameCount;
-	m_uMipmapCount = uMipmapCount == IXRESOURCE_TEXTURE_AUTO_MIPS ? 1 : uMipmapCount;
 	m_uWidth = uWidth;
 	m_uHeight = uHeight;
 
@@ -70,6 +69,8 @@ void XMETHODCALLTYPE CResourceTexture2D::init(UINT uWidth, UINT uHeight, GXFORMA
 			}
 		}
 	}
+	
+	m_uMipmapCount = uMipmapCount;
 
 	size_t sizeData = uFrameCount * (sizeof(void*) + uMipmapCount * sizeof(XImageMip));
 	UINT uTmpWidth = uWidth;
@@ -162,6 +163,61 @@ void XMETHODCALLTYPE CResourceTexture2D::clone(IXResourceTexture **ppOut) const
 			{
 				memcpy(pDstMip->pData, pSrcMip->pData, pSrcMip->sizeData);
 			}
+		}
+	}
+}
+
+void CResourceTexture2D::genMipmaps()
+{
+	UINT bpp = getTextureBytes(m_format, 1, 1);
+
+	for(UINT i = 0, l = m_uFrameCount; i < l; ++i)
+	{
+		XImageMip *pSrcMip = NULL;
+		UINT uSrcWidth = m_uWidth;
+		UINT uSrcHeight = m_uHeight;
+		
+		for(UINT j = 0, jl = m_uMipmapCount; j < jl; ++j)
+		{
+			XImageMip *pMip = getMip(j, i);
+			if(pSrcMip && !pMip->isWritten)
+			{
+				UINT uDstWidth = max(uSrcWidth >> 1, 1);
+				UINT uDstHeight = max(uSrcHeight >> 1, 1);
+
+				for(UINT y = 0; y < uDstHeight; ++y)
+				{
+					for(UINT x = 0; x < uDstWidth; ++x)
+					{
+						UINT uDst = (y * uDstWidth + x) * bpp;
+						UINT uSrc0 = (y * 2 * uSrcWidth + x * 2) * bpp;
+						UINT uSrc1 = (y * 2 * uSrcWidth + x * 2 + (uSrcWidth == 1 ? 0 : 1))* bpp;
+						UINT uSrc2 = ((y * 2 + (uSrcHeight == 1 ? 0 : 1)) * uSrcWidth + x * 2) * bpp;
+						UINT uSrc3 = ((y * 2 + (uSrcHeight == 1 ? 0 : 1)) * uSrcWidth + x * 2 + (uSrcWidth == 1 ? 0 : 1)) * bpp;
+
+						for(UINT p = 0; p < bpp; ++p)
+						{
+							pMip->pData[uDst + p] = (
+								pSrcMip->pData[uSrc0 + p] +
+								pSrcMip->pData[uSrc1 + p] +
+								pSrcMip->pData[uSrc2 + p] +
+								pSrcMip->pData[uSrc3 + p] + 2
+								) / 4;
+						}
+					}
+				}
+
+				pMip->isWritten = true;
+			}
+
+			if(pSrcMip)
+			{
+				uSrcWidth >>= 1;
+				uSrcHeight >>= 1;
+				uSrcWidth = max(uSrcWidth, 1);
+				uSrcHeight = max(uSrcHeight, 1);
+			}
+			pSrcMip = pMip;
 		}
 	}
 }

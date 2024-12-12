@@ -2,6 +2,7 @@
 #define __EDITOR_H
 
 #include <xcommon/editor/IXEditor.h>
+#include <xcommon/editor/IXEditorExtension.h>
 #include <xcommon/IXCore.h>
 //#include "terrax.h"
 #include "GizmoHandle.h"
@@ -10,6 +11,10 @@
 #include "GizmoRotate.h"
 #include "GizmoScale.h"
 #include "EditorMaterialBrowser.h"
+#include "CurveEditorDialog.h"
+#include "ColorGradientEditorDialog.h"
+#include "ColorPicker.h"
+#include "SceneTreeWindow.h"
 
 #define GIZMO_TYPES() \
 	GTO(Handle)\
@@ -24,7 +29,7 @@ public:
 	CEditor(IXCore *pCore);
 	~CEditor();
 
-	void XMETHODCALLTYPE getCameraForView(X_WINDOW_POS winPos, ICamera **ppCamera) override;
+	void XMETHODCALLTYPE getCameraForView(X_WINDOW_POS winPos, IXCamera **ppCamera) override;
 
 #define GTO(gt) \
 	void XMETHODCALLTYPE newGizmo##gt(IXEditorGizmo##gt **ppOut) override;\
@@ -42,6 +47,8 @@ public:
 	void onMouseMove();
 	bool onMouseDown();
 	void onMouseUp();
+
+	void update(float dt);
 
 	const TerraXState* XMETHODCALLTYPE getState() override;
 
@@ -66,6 +73,24 @@ public:
 
 	bool XMETHODCALLTYPE isKeyPressed(UINT uKey) override;
 
+	void XMETHODCALLTYPE beginFrameSelect() override;
+	bool XMETHODCALLTYPE endFrameSelect(X_2D_VIEW *pxCurView, float2_t *pvStartPos, float2_t *pvEndPos) override;
+	bool XMETHODCALLTYPE isPointInFrame(const float3 &vPos, const float2_t &vFrameStart, const float2_t &vFrameEnd, X_2D_VIEW xCurView) override;
+
+	void registerResourceBrowser(IXEditorResourceBrowser *pResourceBrowser);
+	bool getResourceBrowserForType(const char *szType, IXEditorResourceBrowser **ppResourceBrowser);
+
+	void XMETHODCALLTYPE editMaterial(const char *szMatName) override;
+
+	void onObjectsetChanged();
+	void onObjectNameChanged(IXEditorObject *pObject = NULL);
+	void onObjectAdded(IXEditorObject *pObject);
+	void onObjectRemoved(IXEditorObject *pObject);
+	void onObjectSelected(IXEditorObject *pObject);
+	void onSelectionChanged();
+
+	void showSceneTree();
+
 private:
 #define GTO(gt) Array<CGizmo##gt*> m_aGizmos##gt; CGizmo##gt *m_pSelected##gt = NULL;
 	GIZMO_TYPES();
@@ -82,6 +107,16 @@ private:
 	float3_t m_vOldCamPos;
 
 	CEditorMaterialBrowser m_matBrowser;
+
+	CCurveEditorDialog m_curveEditor;
+
+	Map<AAString, IXEditorResourceBrowser*> m_mapResourceBrowsers;
+
+	CColorGradientEditorDialog m_gradientEditor;
+
+	CColorPicker m_colorPicker;
+
+	CSceneTreeWindow *m_pSceneTreeWindow = NULL;
 };
 
 #endif

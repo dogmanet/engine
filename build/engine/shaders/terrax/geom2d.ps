@@ -6,11 +6,15 @@ gbuffer.ps
 
 // #include <struct.h>
 // #include <mtrl.h>
-// #include <const.h>
+#include <const.h>
+#include <xmat.h>
 
 //##########################################################################
 
-float4 main(): SV_TARGET
+float4 main(PSI_XMaterial IN): SV_TARGET
 {
-	return(float4(0.5f, 0.0f, 0.0f, 1.0f));
+#ifdef IN_uInstanceId
+	return(g_avColors[IN.uInstanceId.x]);
+#endif
+	return(float4(0.5f, 0.5f, 0.0f, 1.0f));
 }

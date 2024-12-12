@@ -124,8 +124,13 @@ namespace gui
 		}
 	}
 
-	void CFont::load(IFontManager *pFontManager, CTextureManager *pTextureManager, const WCHAR * szFont, UINT size, STYLE style, int iBlurRadius)
+	void CFont::load(IFontManager *pFontManager, CTextureManager *pTextureManager, const WCHAR * szFont, UINT size, STYLE style, int iBlurRadius, float fScale)
 	{
+		if(size > 160)
+		{
+			size = 160;
+		}
+		m_fScale = fScale;
 		m_pFontManager = pFontManager;
 		m_pTextureManager = pTextureManager;
 		m_style = style;
@@ -143,16 +148,31 @@ namespace gui
 		if(!pF)
 		{
 			printf(COLOR_YELLOW "[Warning]: Unable to open \"%s\" file to reading\nGenerating font\n" COLOR_RESET, String(file).c_str());
-			generateBase();
 			m_header.size = size;
+			generateBase();
 			return;
 		}
 
 		fread(&m_header, sizeof(SXFheader), 1, pF);
+
+		if(m_header.magick != SXF_MAGICK || m_header.version != SXF_VERSION || m_header.size != size)
+		{
+			m_header = SXFheader();
+			fclose(pF);
+
+			m_header.size = size;
+			printf(COLOR_YELLOW "[Warning]: Invalid magick or version \"%s\"\nRegenerating font\n" COLOR_RESET, String(file).c_str());
+			generateBase();
+			return;
+		}
+
 		CharDesc cd;
 		for(int i = 0; i < m_header.charCount; i++)
 		{
 			fread(&cd, sizeof(CharDesc), 1, pF);
+
+			applyScale(&cd);
+
 			m_chars[cd.id] = cd;
 		}
 		UINT w, h;
@@ -164,9 +184,10 @@ namespace gui
 			data = new byte[w * h * 4];
 			fread(data, sizeof(byte), w * h * 4, pF);
 			m_ppTextures.push_back(data);
+			
+			IGXTexture2D *pTex = GetGUI()->getDevice()->createTexture2D(w, h, 0, 0, GXFMT_A8B8G8R8, data);
 
-			CTexture * tex = m_pTextureManager->createTexture(StringW(L"!") + m_szFontName + L"_" + StringW((int)m_iFontSize) + L"+" + StringW((int)m_style) + L"-" + StringW(m_iBlurRadius) + L"#" + StringW((int)(m_vpTextures.size())), w, h, 4, false, data);
-			m_vpTextures.push_back(tex);
+			m_vpTextures.push_back(pTex);
 		}
 		//LoadFTfontFace();
 		fclose(pF);
@@ -187,7 +208,7 @@ namespace gui
 		//printf("_heapchk() = %d\n", _heapchk());
 		for(UINT i = 0; i < m_vpTextures.size(); i++)
 		{
-			m_pTextureManager->unloadTexture(m_vpTextures[i]);
+			mem_release(m_vpTextures[i]);
 		}
 		for(UINT i = 0; i < m_ppTextures.size(); i++)
 		{
@@ -241,12 +262,12 @@ namespace gui
 			d.w = (g->bitmap.pixel_mode == FT_PIXEL_MODE_LCD ? (g->bitmap.width / 3) : g->bitmap.width) + m_iBlurRadius * 2 + iPadding * 2;
 			d.h = g->bitmap.rows + m_iBlurRadius * 2 + iPadding * 2;
 
-			if(d.w > 64 || d.h > 64)
+			/*if(d.w > 64 || d.h > 64)
 			{
 				char tmp[128];
 				sprintf_s(tmp, "-:%dx%d", d.w, d.h);
 				MessageBoxA(NULL, tmp, "", MB_OK);
-			}
+			}*/
 
 			d.xa = g->advance.x;
 			d.xo = g->bitmap_left;
@@ -334,7 +355,8 @@ namespace gui
 			list.push_back(d);
 		}
 		
-#define CHECK_0() if(list[0].w > 64 || list[0].h > 64){char tmp[128];sprintf_s(tmp, "#:%dx%d", list[0].w, list[0].h);MessageBoxA(NULL, tmp, GEN_MSG_LOCATION, MB_OK);}
+#define CHECK_0() 
+		//if(list[0].w > 64 || list[0].h > 64){char tmp[128];sprintf_s(tmp, "#:%dx%d", list[0].w, list[0].h);MessageBoxA(NULL, tmp, GEN_MSG_LOCATION, MB_OK);}
 
 		CHECK_0();
 		//
@@ -438,12 +460,12 @@ namespace gui
 		for(UINT i = 0; i < list.size(); i++)
 		{
 			//	wprintf(L"%d %d %d %d  %d %d\n", list[i].w, list[i].h, list[i].x, list[i].y, list[i].w + list[i].x, list[i].h + list[i].y);
-			if(list[i].w > 64 || list[i].h > 64)
+			/*if(list[i].w > 64 || list[i].h > 64)
 			{
 				char tmp[128];
 				sprintf_s(tmp, "%d:%dx%d", i, list[i].w, list[i].h);
 				MessageBoxA(NULL, tmp, "", MB_OK);
-			}
+			}*/
 			imageCopy(image, list[i].data, width, height, list[i].w, list[i].h, list[i].x, list[i].y, 4);
 			if(m_bEmulateBold)
 			{
@@ -464,7 +486,8 @@ namespace gui
 			cd.xadvantage = list[i].xa >> 6;
 			cd.xoffset = list[i].xo;
 			//cd.yoffset = m_iFontSize - list[i].yo - 15.0f / 72.0f * (float)m_iFontSize;
-			cd.yoffset = m_iFontSize - list[i].yo;
+			cd.yoffset = (float)m_iFontSize - (float)list[i].yo;
+
 			m_chars[cd.id] = cd;
 		}
 
@@ -551,14 +574,15 @@ namespace gui
 
 		//printf("_heapchk() = %d\n", _heapchk());
 
-		CTexture * tex = m_pTextureManager->createTexture(StringW(L"!") + m_szFontName + L"_" + StringW((int)m_iFontSize) + L"+" + StringW((int)m_style) + L"-" + StringW(m_iBlurRadius) + L"#" + StringW((int)(m_vpTextures.size() - 1)), width, height, 4, false, image);
+		IGXTexture2D *pTex = GetGUI()->getDevice()->createTexture2D(width, height, 0, 0, GXFMT_A8B8G8R8, image);
+
 		//SX_SAFE_DELETE_A(image);
 		for(UINT i = 0; i < list.size(); i++)
 		{
 			mem_delete_a(list[i].data);
 		}
 
-		m_vpTextures.push_back(tex);
+		m_vpTextures.push_back(pTex);
 		m_ppTextures.push_back(image);
 		m_header.texCount = 1; // FIXME: allow multiple textures
 		m_header.charCount = list.size();
@@ -566,6 +590,11 @@ namespace gui
 		save(); // TODO: Find better place to call that
 
 		// TODO: Add rebuild handler to call Layout on the document
+
+		for(UINT i = 0; i < list.size(); i++)
+		{
+			applyScale(&m_chars[list[i].c]);
+		}
 
 
 		//printf("_heapchk() = %d\n", _heapchk());
@@ -639,22 +668,13 @@ namespace gui
 		regen();
 	}
 
-	CPITexture CFont::getTexture(UINT i)
+	IGXTexture2D* CFont::getAPITexture(UINT i)
 	{
 		if(m_vpTextures.size() <= i)
 		{
 			return(NULL);
 		}
 		return(m_vpTextures[i]);
-	}
-	const IGXTexture2D *CFont::getAPITexture(UINT i)
-	{
-		CPITexture pTex = getTexture(i);
-		if(!pTex)
-		{
-			return(NULL);
-		}
-		return(pTex->getAPItexture());
 	}
 
 	void CFont::addChar(WCHAR c, bool full)
@@ -679,6 +699,14 @@ namespace gui
 	CFont::~CFont()
 	{
 		freeFTfontFace();
+		for(UINT i = 0; i < m_vpTextures.size(); i++)
+		{
+			mem_release(m_vpTextures[i]);
+		}
+		for(UINT i = 0; i < m_ppTextures.size(); i++)
+		{
+			mem_delete_a(m_ppTextures[i]);
+		}
 	}
 
 	void CFont::freeFTfontFace()
@@ -686,6 +714,7 @@ namespace gui
 		if(m_pFTfontFace)
 		{
 			FT_Done_Face(m_pFTfontFace);
+			m_pFTfontFace = NULL;
 		}
 	}
 
@@ -969,10 +998,21 @@ namespace gui
 		return(NULL);
 	}
 
+	void CFont::applyScale(CharDesc *pCd)
+	{
+		if(m_fScale != 1.0f)
+		{
+			pCd->width = pCd->width / m_fScale;
+			pCd->height = pCd->height / m_fScale;
+			pCd->xoffset = pCd->xoffset / m_fScale;
+			pCd->yoffset = pCd->yoffset / m_fScale;
+			pCd->xadvantage = pCd->xadvantage / m_fScale;
+		}
+	}
 	void CFont::getStringMetrics(const StringW & str, UINT * width, UINT * height, UINT * vertexCount, UINT * indexCount, UINT * strCount, char_rects * pcr)
 	{
-		UINT w = 0;
-		UINT _w = 0;
+		float w = 0;
+		float _w = 0;
 		UINT h = m_iFontSize;
 		UINT vc = 0;
 		UINT ic = 0;
@@ -1289,6 +1329,7 @@ namespace gui
 	{
 		if(m_pFT)
 		{
+			m_mFonts.clear();
 			FT_Done_FreeType(m_pFT);
 			m_pFT = NULL;
 		}
@@ -1296,12 +1337,13 @@ namespace gui
 		mem_release(m_pFontIB);
 	}
 
-	CFont* IFontManager::getFont(const WCHAR *szName, UINT size, CFont::STYLE style, int iBlurRadius)
+	CFont* IFontManager::getFont(const WCHAR *szName, UINT size, CFont::STYLE style, int iBlurRadius, float fScale)
 	{
-		StringW n = StringW(szName) + L"_" + StringW((int)size) + L"+" + StringW((int)style) + L"-" + StringW(iBlurRadius);
+		size = (UINT)((float)size * fScale);
+		StringW n = StringW(szName) + L"_" + StringW((int)size) + L"+" + StringW((int)style) + L"-" + StringW(iBlurRadius) + L"~" + StringW(fScale);
 		if(!m_mFonts.KeyExists(n))
 		{
-			m_mFonts[n].load(this, m_pTextureManager, szName, size, style, iBlurRadius);
+			m_mFonts[n].load(this, m_pTextureManager, szName, size, style, iBlurRadius, fScale);
 		}
 		return(&m_mFonts[n]);
 	}

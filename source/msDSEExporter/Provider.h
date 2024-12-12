@@ -1,7 +1,7 @@
 #ifndef __PROVIDER_H
 #define __PROVIDER_H
 
-#include "Exporter.h"
+#include <exporter_base/Exporter.h>
 
 #include <msLib/msPlugIn.h>
 #include <msLib/msLib.h>
@@ -13,7 +13,7 @@ public:
 
 	bool canExportTB() override;
 
-	bool prepare(IProgress *pProgress, bool forStaticExport) override;
+	bool prepare(IProgress *pProgress, bool forStaticExport, bool bPrepareMesh, bool bPrepareTB) override;
 	bool preapareAnimationTrack(IProgress *pProgress, UINT uStartFrame, UINT uFrameCount) override;
 
 	UINT getLayerCount() override;

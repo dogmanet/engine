@@ -1,4 +1,5 @@
-[ent_0]
+
+[{37796D67-5FEC-4978-A868-4F2F8D893A25}]
 team = -842150451
 rotation = 0.000000 0.000000 0.000000 1.000000
 parent = 
@@ -7,73 +8,7 @@ name =
 flags = 0
 classname = info_player_spawn
 
-[ent_1]
-use_trimesh = 0
-skin = 0
-scale = 1.000000
-rotation = 0.000000 0.081049 0.000000 -0.996710
-parent = 
-origin = -6.353374 3.468264 6.488859
-name = 
-model = meshes/transparent/plane1.dse
-is_static = 1
-glow_color_ref = 
-glow_color = 0.000000 0.000000 0.000000
-flags = 0
-classname = prop_static
-auto_physbox = 1
-
-[ent_10]
-type_shadow = 1
-shadow_intensity = 1.000000
-rotation = 0.229104 0.124787 -0.290361 0.920668
-parent = 
-origin = -16.763458 11.002231 1.500001
-name = 
-linked_to = 
-flags = 0
-dist = 10.000000
-color = 2.000000 1.500000 1.000000
-classname = light_sun
-OnTurnOn = 
-OnTurnOff = 
-
-[ent_11]
-use_trimesh = 0
-skin = 0
-scale = 1.000000
-rotation = 0.000000 0.000000 0.000000 1.000000
-parent = 
-origin = -21.840677 0.000000 -16.020668
-name = 
-model = meshes/box/box_mtl_lit.dse
-is_static = 1
-glow_color_ref = 
-glow_color = 0.000000 0.000000 0.000000
-flags = 0
-classname = prop_static
-auto_physbox = 1
-
-[ent_12]
-model_view = 
-model = meshes/boxes/box_mtl_small.dse
-skin = 0
-scale = 1.000000
-rotation = 0.000000 0.000000 0.000000 -1.000000
-parent = 
-origin = -11.000000 -0.006302 -18.997316
-name = 
-is_static = 1
-inv_stack_cur = 0
-glow_color_ref = 
-glow_color = 0.000000 0.000000 0.000000
-flags = 0
-classname = ammobox_5.45x39ps
-auto_physbox = 1
-OnPickUp = 
-OnDrop = 
-
-[ent_2]
+[{3AABEB82-869E-476F-A468-3FB1981657BD}]
 use_trimesh = 0
 skin = 0
 scale = 1.000000
@@ -89,23 +24,7 @@ flags = 0
 classname = prop_static
 auto_physbox = 1
 
-[ent_3]
-use_trimesh = 1
-skin = 0
-scale = 1.000000
-rotation = 0.000000 0.000000 0.000000 1.000000
-parent = 
-origin = 0.000000 0.000000 0.000000
-name = base
-model = meshes/transparent/base.dse
-is_static = 1
-glow_color_ref = 
-glow_color = 0.000000 0.000000 0.000000
-flags = 0
-classname = prop_static
-auto_physbox = 1
-
-[ent_4]
+[{4472F6A7-6306-45AB-8FE1-011418A09590}]
 use_trimesh = 0
 skin = 0
 scale = 1.000000
@@ -121,15 +40,34 @@ flags = 0
 classname = prop_static
 auto_physbox = 1
 
-[ent_5]
+[{48EC09E5-1F91-41E8-8A18-52A526F3CCD8}]
+skin = 0
+scale = 0.300000
+rotation = 0.000000 0.000000 0.000000 1.000000
+parent = 
+origin = -8.000000 0.000000 -16.000000
+name = 
+model_view = 
+model = meshes/boxes/box_mtl_small.dse
+is_static = 1
+inv_stack_cur = 60
+glow_color_ref = 
+glow_color = 0.000000 0.000000 0.000000
+flags = 0
+classname = ammo_5.45x39ps
+auto_physbox = 1
+OnPickUp = 
+OnDrop = 
+
+[{9883C016-D91B-4D81-931F-AD7A2B2AB9B5}]
 use_trimesh = 0
 skin = 0
 scale = 1.000000
-rotation = 0.000000 0.682918 0.000000 -0.730495
+rotation = 0.000000 0.081049 0.000000 -0.996710
 parent = 
-origin = -4.130323 3.495506 -11.273858
+origin = -6.353374 3.468264 6.488859
 name = 
-model = meshes/transparent/plane2.dse
+model = meshes/transparent/plane1.dse
 is_static = 1
 glow_color_ref = 
 glow_color = 0.000000 0.000000 0.000000
@@ -137,74 +75,21 @@ flags = 0
 classname = prop_static
 auto_physbox = 1
 
-[ent_6]
-use_trimesh = 0
-skin = 0
-scale = 2.000000
-rotation = 0.000000 0.000000 0.000000 1.000000
+[{B70EFEBE-1013-4994-8383-606FB26CF652}]
+type_shadow = 1
+shadow_intensity = 1.000000
+rotation = 0.229104 0.124787 -0.290361 0.920668
 parent = 
-origin = -6.141287 0.000000 6.633917
+origin = -16.763458 11.002231 1.500001
 name = 
-model = meshes/transparent/box3.dse
-is_static = 1
-glow_color_ref = 
-glow_color = 0.000000 0.000000 0.000000
 flags = 0
-classname = prop_static
-auto_physbox = 1
+dist = 10.000000
+color = 2.000000 1.500000 1.000000 1.000000
+classname = light_sun
+OnTurnOn = 
+OnTurnOff = 
 
-[ent_7]
-use_trimesh = 0
-skin = 0
-scale = 2.000000
-rotation = 0.000000 0.000000 0.000000 1.000000
-parent = 
-origin = -0.163496 0.000000 7.586028
-name = 
-model = meshes/transparent/box1.dse
-is_static = 1
-glow_color_ref = 
-glow_color = 0.000000 0.000000 0.000000
-flags = 0
-classname = prop_static
-auto_physbox = 1
-
-[ent_8]
-use_trimesh = 0
-skin = 0
-scale = 2.000000
-rotation = 0.000000 0.000000 0.000000 1.000000
-parent = 
-origin = -9.934603 0.000000 15.668315
-name = 
-model = meshes/transparent/box2.dse
-is_static = 1
-glow_color_ref = 
-glow_color = 0.000000 0.000000 0.000000
-flags = 0
-classname = prop_static
-auto_physbox = 1
-
-[ent_9]
-use_trimesh = 0
-skin = 0
-scale = 2.000000
-rotation = 0.000000 0.000000 0.000000 1.000000
-parent = 
-origin = -9.126783 0.000000 -11.453623
-name = 
-model = meshes/transparent/box1.dse
-is_static = 1
-glow_color_ref = 
-glow_color = 0.000000 0.000000 0.000000
-flags = 0
-classname = prop_static
-auto_physbox = 1
-
-[meta]
-count = 16
-
-[ent_13]
+[{CDB3BEC5-3264-4356-B148-24D7BF0C6E83}]
 skin = 0
 scale = 0.300000
 rotation = 0.000000 0.000000 0.000000 1.000000
@@ -223,7 +108,42 @@ auto_physbox = 1
 OnPickUp = 
 OnDrop = 
 
-[ent_14]
+[{F1A5A9B2-00DF-4D62-BCBA-A958A16B9DFE}]
+use_trimesh = 0
+skin = 0
+scale = 1.000000
+rotation = 0.000000 0.000000 0.000000 1.000000
+parent = 
+origin = -21.840677 0.000000 -16.020668
+name = 
+model = meshes/box/box_mtl_lit.dse
+is_static = 1
+glow_color_ref = 
+glow_color = 0.000000 0.000000 0.000000
+flags = 0
+classname = prop_static
+auto_physbox = 1
+
+[{F1EFD8B0-47C2-4643-930C-7B4BA7D8320F}]
+skin = 0
+scale = 1.000000
+rotation = 0.000000 0.000000 0.000000 -1.000000
+parent = 
+origin = -11.000000 -0.006302 -18.997316
+name = 
+model_view = 
+model = meshes/boxes/box_mtl_small.dse
+is_static = 1
+inv_stack_cur = 0
+glow_color_ref = 
+glow_color = 0.000000 0.000000 0.000000
+flags = 0
+classname = ammobox_5.45x39ps
+auto_physbox = 1
+OnPickUp = 
+OnDrop = 
+
+[{F66EBCEE-6CAD-42A1-AA60-1E4AC72626E5}]
 skin = 0
 scale = 0.300000
 rotation = 0.000000 0.000000 0.000000 1.000000
@@ -242,21 +162,18 @@ auto_physbox = 1
 OnPickUp = 
 OnDrop = 
 
-[ent_15]
+[{FADAB930-98CC-4999-AC99-350F5B869E19}]
+use_trimesh = 0
 skin = 0
-scale = 0.300000
-rotation = 0.000000 0.000000 0.000000 1.000000
+scale = 1.000000
+rotation = 0.000000 0.682918 0.000000 -0.730495
 parent = 
-origin = -8.000000 0.000000 -16.000000
+origin = -4.130323 3.495506 -11.273858
 name = 
-model_view = 
-model = meshes/boxes/box_mtl_small.dse
+model = meshes/transparent/plane2.dse
 is_static = 1
-inv_stack_cur = 60
 glow_color_ref = 
 glow_color = 0.000000 0.000000 0.000000
 flags = 0
-classname = ammo_5.45x39ps
+classname = prop_static
 auto_physbox = 1
-OnPickUp = 
-OnDrop = 

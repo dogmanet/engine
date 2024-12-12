@@ -115,12 +115,7 @@ namespace gui
 				{
 					return;
 				}
-				static CPITexture texWhite = NULL;
-				if(!texWhite)
-				{
-					
-					texWhite = m_pTextureManager->getTexture(TEX_WHITE);
-				}
+				static IXTexture *texWhite = m_pTextureManager->getWhite();
 
 				IGXContext *pCtx = GetGUI()->getDevice()->getThreadContext();
 
@@ -129,7 +124,7 @@ namespace gui
 				m_pTextureManager->bindTexture(texWhite);
 			//	CTextureManager::bindShader(shText);
 				auto shader = GetGUI()->getShaders()->m_baseColored;
-				SGCore_ShaderBind(shader.m_idShaderKit);
+				GetGUI()->getRender()->bindShader(pCtx, shader.m_idShaderKit);
 				bool need = false;
 				for(UINT i = 0; i < 4; i++)
 				{
@@ -173,7 +168,7 @@ namespace gui
 				pCtx->setIndexBuffer(m_pIndexBuffer);
 
 				auto shader = GetGUI()->getShaders()->m_baseColored;
-				SGCore_ShaderBind(shader.m_idShaderKit);
+				GetGUI()->getRender()->bindShader(pCtx, shader.m_idShaderKit);
 
 
 				UINT iVC = 0;

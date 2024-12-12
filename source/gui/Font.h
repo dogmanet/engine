@@ -14,7 +14,7 @@
 //#	pragma comment(lib, "freetype26.lib")
 #endif
 
-#define SXF_VERSION 1
+#define SXF_VERSION 2
 #define SXF_MAGICK 'DFXS'
 
 namespace gui
@@ -28,7 +28,7 @@ namespace gui
 	public:
 		~CFont();
 
-		void load(IFontManager *pFontManager, CTextureManager *pTextureManager, const WCHAR *szFont, UINT size, STYLE style, int iBlurRadius = 0);
+		void load(IFontManager *pFontManager, CTextureManager *pTextureManager, const WCHAR *szFont, UINT size, STYLE style, int iBlurRadius = 0, float fScale = 1.0f);
 		void release();
 
 		void save();
@@ -38,15 +38,15 @@ namespace gui
 			UINT id;
 			short x;
 			short y;
-			short width;
-			short height;
+			float width;
+			float height;
 			float tx;
 			float ty;
 			float twidth;
 			float theight;
-			short xoffset;
-			short yoffset;
-			short xadvantage;
+			float xoffset;
+			float yoffset;
+			float xadvantage;
 			short texid;
 			CharDesc():id(0), xadvantage(0)
 			{
@@ -64,8 +64,7 @@ namespace gui
 		const CharDesc* getChar(UINT id);
 
 
-		CPITexture getTexture(UINT i);
-		const IGXTexture2D *getAPITexture(UINT i);
+		IGXTexture2D* getAPITexture(UINT i) override;
 
 		void getStringMetrics(const StringW &str, UINT *width, UINT *height, UINT *vertexCount, UINT *indexCount, UINT *strCount, char_rects *pcr = NULL);
 
@@ -132,7 +131,7 @@ namespace gui
 
 		UINT m_iFontSize;
 
-		Array<CTexture*> m_vpTextures;
+		Array<IGXTexture2D*> m_vpTextures;
 		Array<byte*> m_ppTextures;
 
 		bool m_bHasBeenChanged = false;
@@ -153,6 +152,9 @@ namespace gui
 		static const symRange* getSymRange(UINT sym);
 
 		int m_iBlurRadius = 0;
+
+		float m_fScale = 1.0f;
+		void applyScale(CharDesc *pCd);
 	};
 
 
@@ -165,7 +167,7 @@ namespace gui
 		IFontManager(const WCHAR *szResourceDir, CTextureManager *pTextureManager);
 		~IFontManager();
 
-		CFont* getFont(const WCHAR *szName, UINT size, CFont::STYLE style = CFont::STYLE_NONE, int iBlurRadius = 0);
+		CFont* getFont(const WCHAR *szName, UINT size, CFont::STYLE style = CFont::STYLE_NONE, int iBlurRadius = 0, float fScale = 1.0f);
 		FT_Library requestFT();
 		
 		const StringW& getResourceDir()

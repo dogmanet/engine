@@ -1,0 +1,236 @@
+<html onkeydown="close_inventory" onclick="global_click" onmousemove="drag_move" onmouseup="end_drag">
+	<head>
+		<link type="text/css" rel="stylesheet" href="inventory.css"/>
+	</head>
+	<body>
+		<div class="title">Инвентарь</div>
+		<div class="close" onclick="close_inventory">✖</div>
+		<div class="rectangle">
+			<div id="inventory_area">
+				<div id="frame">
+					<div class="row">
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+					</div>
+					<div class="row">
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+					</div>
+					<div class="row">
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+					</div>
+					<div class="row">
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+					</div>
+					<div class="row">
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+					</div>
+					<div class="row">
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+					</div>
+					<div class="row">
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+					</div>
+					<div class="row">
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+					</div>
+					<div class="row">
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+					</div>
+					<div class="row">
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+						<div class="cell"/>
+					</div>
+					<div id="item_container" style="overflow:visible;position:absolute;top:0;bottom:0;right:0;left:0;"/>
+				</div>
+			</div>
+			<div id="equip_area">
+				<div id="equip_weapon_one">
+					<div class="equip_unit_title">Оружие 1</div>
+					<div class="equip_unit_grid" equip_type="EIT_WEAPON">
+						<div class="row">
+							<div class="cell"/>
+							<div class="cell"/>
+						</div>
+					</div>
+				</div>
+				<div id="equip_weapon_two">
+					<div class="equip_unit_title">Оружие 2</div>
+					<div class="equip_unit_grid" equip_type="EIT_WEAPON">
+						<div class="row">
+							<div class="cell"/>
+							<div class="cell"/>
+						</div>
+					</div>
+				</div>
+				<div id="equip_armor">
+					<div class="equip_unit_title">Броня</div>
+					<div class="equip_unit_grid" equip_type="EIT_ARMOR">
+						<div class="row">
+							<div class="cell"/>
+							<div class="cell"/>
+						</div>
+						<div class="row">
+							<div class="cell"/>
+							<div class="cell"/>
+						</div>
+						<div class="row">
+							<div class="cell"/>
+							<div class="cell"/>
+						</div>
+					</div>
+				</div>
+				<div id="equip_quick_access">
+					<div class="equip_unit_title">Быстрый доступ</div>
+					<div class="equip_unit_grid" split_container="true" equip_type="EIT_QUICK_USE">
+						<div class="row">
+							<div class="cell"/>
+							<div class="cell"/>
+						</div>
+						<div class="row">
+							<div class="cell"/>
+							<div class="cell"/>
+						</div>
+					</div>
+				</div>
+				<div id="equip_container" style="overflow:visible;position:absolute;top:0;bottom:0;right:0;left:0;"/>
+			</div>
+		</div>
+		<div class="capacity">Грузоподьемность:
+			<span id="capacity_current">3.07</span>
+			кг /
+			<span id="capacity_max">20</span>
+			кг
+		</div>
+		<div id="context_menu" style="visibility:hidden;">
+			<div onclick="drop_item">Выкинуть предмет</div>
+		</div>
+	</body>
+</html>

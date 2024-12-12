@@ -30,7 +30,7 @@ namespace gui
 	public:
 		SX_ALIGNED_OP_MEM();
 
-		CDesktopStack(CGUI *pGUI, IGXDevice *pDev, const char *szResPath, UINT uWidth, UINT uHeight);
+		CDesktopStack(CGUI *pGUI, IXRender *pRender, const char *szResPath, UINT uWidth, UINT uHeight);
 		~CDesktopStack();
 
 		BOOL putMessage(UINT msg, WPARAM wParam, LPARAM lParam) override;
@@ -84,6 +84,11 @@ namespace gui
 			m_mTransformViewProj = mat;
 		}
 
+		void setTransformScaling(float fScale)
+		{
+			m_fCurrentScale = fScale;
+		}
+
 		CTextureManager* getTextureManager()
 		{
 			return(m_pTextureManager);
@@ -105,7 +110,14 @@ namespace gui
 
 		void updateTransformShader()
 		{
-			m_pVSTransformConstant->update(&SMMatrixTranspose(m_mTransformWorld * m_mTransformViewProj));
+			if(m_fCurrentScale == 1.0f)
+			{
+				m_pVSTransformConstant->update(&SMMatrixTranspose(m_mTransformWorld * m_mTransformViewProj));
+			}
+			else
+			{
+				m_pVSTransformConstant->update(&SMMatrixTranspose(m_mTransformWorld * SMMatrixScaling(m_fCurrentScale) * m_mTransformViewProj));
+			}
 			m_pDevice->getThreadContext()->setVSConstant(m_pVSTransformConstant, 0);
 		}
 
@@ -114,13 +126,24 @@ namespace gui
 
 		IFont* getFont(const WCHAR * szName, UINT size, IFont::STYLE style, int iBlurRadius) override;
 
+		bool getKeyState(int iKey) override;
+
+		void setScale(float fScale) override;
+
+		float getScale()
+		{
+			return(m_fScale);
+		};
+
 	protected:
 		SMMATRIX m_mTransformWorld;
 		SMMATRIX m_mTransformViewProj;
+		float m_fCurrentScale = 1.0f;
 
-		const CTexture *m_pDefaultWhite;
+		IXTexture *m_pDefaultWhite;
 
 		CGUI *m_pGUI;
+		IXRender *m_pRender;
 		IGXDevice *m_pDevice;
 		WCHAR *m_szResourceDir = NULL;
 
@@ -167,6 +190,7 @@ namespace gui
 
 		IGXConstantBuffer *m_pVSTransformConstant = NULL;
 
+		float m_fScale = 1.0f;
 
 
 		SimpleCallback* getFullCallbackByName(const char *cbName);
@@ -178,10 +202,11 @@ namespace gui
 	public:
 		SX_ALIGNED_OP_MEM();
 
-		CGUI(IGXDevice *pDev, IXMaterialSystem *pMaterialSystem, IFileSystem *pFileSystem);
+		CGUI(IXRender *pRender, IXMaterialSystem *pMaterialSystem, IFileSystem *pFileSystem);
 		~CGUI();
 
 		IGXDevice* getDevice();
+		IXRender* getRender();
 
 		struct shader_s
 		{
@@ -250,7 +275,13 @@ namespace gui
 
 		IDesktopStack* newDesktopStack(const char *szResPath, UINT uWidth, UINT uHeight) override;
 
+		IXMaterialSystem* getMaterialSystem()
+		{
+			return(m_pMaterialSystem);
+		}
+
 	protected:
+		IXRender *m_pRender;
 		IGXDevice *m_pDevice;
 
 		shaders_s m_shaders;
@@ -261,11 +292,13 @@ namespace gui
 
 		IGXIndexBuffer *m_pQuadIndexes;
 		IGXSamplerState *m_pDefaultSamplerState;
+
+		IXMaterialSystem *m_pMaterialSystem;
 	};
 
 	CGUI* GetGUI();
 };
 
-EXTERN_C __declspec(dllexport) gui::IGUI* InitInstance(IGXDevice *pDev, IXMaterialSystem *pMaterialSystem, IFileSystem *pFileSystem);
+EXTERN_C __declspec(dllexport) gui::IGUI* InitInstance(IXRender *pRender, IXMaterialSystem *pMaterialSystem, IFileSystem *pFileSystem);
 
 #endif

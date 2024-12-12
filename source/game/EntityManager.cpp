@@ -432,7 +432,7 @@ bool CEntityManager::exportList(const char * file)
 		{
 			for(int j = 0; j < pTbl->numFields; ++j)
 			{
-				if(pTbl->pData[j].szKey && !(pTbl->pData[j].flags & (PDFF_INPUT | PDFF_NOEXPORT)) && !conf->keyExists(sect, pTbl->pData[j].szKey))
+				if(pTbl->pData[j].szKey && !(pTbl->pData[j].flags & (PDFF_INPUT | PDFF_NOEXPORT | PDFF_MESSAGE)) && !conf->keyExists(sect, pTbl->pData[j].szKey))
 				{
 					pEnt->getKV(pTbl->pData[j].szKey, buf, sizeof(buf));
 					conf->set(sect, pTbl->pData[j].szKey, buf);
@@ -1050,7 +1050,7 @@ CBaseline* CEntityManager::createBaseline(ID id)
 			{
 				for(int j = 0; j < pTbl->numFields; ++j)
 				{
-					if(pTbl->pData[j].szKey && !(pTbl->pData[j].flags & PDFF_INPUT) && !record.m_mProps.KeyExists(pTbl->pData[j].szKey))
+					if(pTbl->pData[j].szKey && !(pTbl->pData[j].flags & (PDFF_INPUT | PDFF_MESSAGE)) && !record.m_mProps.KeyExists(pTbl->pData[j].szKey))
 					{
 						pEnt->getKV(pTbl->pData[j].szKey, buf, sizeof(buf));
 						//test defaults

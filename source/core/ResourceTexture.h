@@ -244,6 +244,8 @@ public:
 	IXResourceTexture2D* XMETHODCALLTYPE as2D() override;
 
 	void XMETHODCALLTYPE clone(IXResourceTexture **pOut) const override;
+
+	void genMipmaps();
 protected: 
 	UINT m_uWidth = 0;
 	UINT m_uHeight = 0;

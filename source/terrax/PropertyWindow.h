@@ -10,6 +10,19 @@
 #include <xcommon/editor/IXEditorExtension.h>
 #include "terrax.h"
 
+class CEditorResourceBrowserCallback final: public IXEditorResourceBrowserCallback
+{
+public:
+	void init(HWND hDlgWnd, HWND hEditWnd, IXEditorResourceBrowser *pBrowser);
+	void XMETHODCALLTYPE onSelected(const char *szFile) override;
+	void XMETHODCALLTYPE onCancelled() override;
+	void cancel();
+private:
+	HWND m_hDlgWnd = NULL;
+	HWND m_hEditWnd = NULL;
+	IXEditorResourceBrowser *m_pBrowser = NULL;
+};
+
 class CEditorPropertyTabCallback;
 class CPropertyWindow
 {
@@ -115,6 +128,9 @@ protected:
 	int m_iTabY = 0;
 	int m_iTabCX = 0;
 	int m_iTabCY = 0;
+
+
+	CEditorResourceBrowserCallback m_resourceBrowserCallback;
 };
 
 #endif

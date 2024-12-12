@@ -32,7 +32,7 @@ public:
 	{
 	}
 
-	void XMETHODCALLTYPE startup(IGXDevice *pDevice, IXMaterialSystem *pMaterialSystem) override;
+	void XMETHODCALLTYPE startup(IXRender *pRender, IXMaterialSystem *pMaterialSystem) override;
 	void XMETHODCALLTYPE shutdown() override;
 
 	//! Создает новый объект просчета видимости для системы

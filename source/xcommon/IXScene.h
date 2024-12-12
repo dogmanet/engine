@@ -34,6 +34,12 @@ public:
 		@threadsafe full
 	*/
 	virtual void XMETHODCALLTYPE setFeatures(IXSceneFeature **ppFeatures) = 0;
+
+	/*!
+		Устанавливает слой объекта.
+		@threadsafe full
+	*/
+	virtual void XMETHODCALLTYPE setLayer(UINT uLayer) = 0;
 };
 
 //##########################################################################
@@ -85,6 +91,19 @@ public:
 		@threadsafe none
 	*/
 	virtual void XMETHODCALLTYPE setFeature(IXSceneFeature *pFeat, XSCENE_QUERY_FEATURE mode) = 0;
+
+	/*!
+		Устанавливает отсечение по экранному размеру
+		@threadsafe none
+	*/
+	virtual void XMETHODCALLTYPE setScreenSizeCulling(const float3 &vCamPos, float fFov, float fScreenHeightPx, float fThresholdPx = 4.0f) = 0;
+	virtual void XMETHODCALLTYPE unsetScreenSizeCulling() = 0;
+
+	/*!
+		Устанавливает маску слоев
+		@threadsafe none
+	*/
+	virtual void XMETHODCALLTYPE setLayerMask(UINT bmLayerMask) = 0;
 };
 
 //##########################################################################
@@ -97,7 +116,7 @@ public:
 		Добавляет новый объект в систему
 		@threadsafe full
 	*/
-	virtual IXSceneObject* XMETHODCALLTYPE newObject(const SMAABB &aabb, void *pUserData, IXSceneFeature **ppFeatures = NULL) = 0;
+	virtual IXSceneObject* XMETHODCALLTYPE newObject(const SMAABB &aabb, void *pUserData, IXSceneFeature **ppFeatures = NULL, UINT uLayer = 0) = 0;
 	
 	/*!
 		Создает новый запрос

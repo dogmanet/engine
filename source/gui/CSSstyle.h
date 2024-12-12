@@ -1,4 +1,4 @@
-﻿#ifndef _CCSSstyle_H_
+#ifndef _CCSSstyle_H_
 #define _CCSSstyle_H_
 
 
@@ -237,6 +237,14 @@ namespace gui
 					return(L"pt");
 				case DIM_PX:
 					return(L"px");
+				case DIM_VH:
+					return(L"vh");
+				case DIM_VW:
+					return(L"vw");
+				case DIM_VMIN:
+					return(L"vmin");
+				case DIM_VMAX:
+					return(L"vmax");
 				}
 				return(L"");
 			}
@@ -309,7 +317,7 @@ namespace gui
 				m_flags = f;
 			}
 
-			int getPX(int base)
+			int getPX(int base, UINT uWinWidth, UINT uWinHeight) override
 			{
 				if(m_type == css::ICSSproperty::TYPE_UNDEFINED)
 				{
@@ -324,10 +332,24 @@ namespace gui
 				case css::ICSSproperty::DIM_NONE:
 					return((int)_round(falue));
 				case css::ICSSproperty::DIM_PT:
-					return((int)_round((float)falue * 4.0f / 3.0f));
+					return((int)_round(falue * 4.0f / 3.0f));
 				case css::ICSSproperty::DIM_MM:
-					return((int)_round((float)falue * 3.7795f));
+					return((int)_round(falue * 3.7795f));
 					break;
+				case css::ICSSproperty::DIM_VH:
+					return((int)_round(falue * (float)uWinHeight * 0.01f));
+					break;
+				case css::ICSSproperty::DIM_VW:
+					return((int)_round(falue * (float)uWinWidth * 0.01f));
+					break;
+				case css::ICSSproperty::DIM_VMIN:
+					return((int)_round(falue * (float)min(uWinWidth, uWinHeight) * 0.01f));
+					break;
+				case css::ICSSproperty::DIM_VMAX:
+					return((int)_round(falue * (float)max(uWinWidth, uWinHeight) * 0.01f));
+					break;
+				case css::ICSSproperty::DIM_AUTO:
+					assert(!"Cannot handle auto values this way!");
 				default:
 					return(base);
 				}

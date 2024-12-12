@@ -5,6 +5,7 @@
 #include "PhyWorld.h"
 #include "CharacterController.h"
 #include "MutationObserver.h"
+#include <core/sxcore.h>
 
 CPhysics::CPhysics(CPhyWorld *pDefaultWorld):
 	m_pDefaultWorld(pDefaultWorld)

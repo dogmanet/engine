@@ -52,6 +52,7 @@ CDynamicModelShared::~CDynamicModelShared()
 	}
 
 	mem_release(m_pInstanceBuffer);
+	mem_release(m_pInstanceColorsBuffer);
 }
 void CDynamicModelShared::AddRef()
 {
@@ -264,6 +265,7 @@ bool CDynamicModelShared::init(IXResourceModelStatic *pResource)
 					if(!m_pInstanceBuffer)
 					{
 						m_pInstanceBuffer = m_pDevice->createConstantBuffer(sizeof(m_instanceData), true);
+						m_pInstanceColorsBuffer = m_pDevice->createConstantBuffer(sizeof(m_instanceColors), true);
 					}
 				}
 				else
@@ -424,6 +426,7 @@ void CDynamicModelShared::initGPUresources()
 	mem_delete_a(m_puTempTotalVertices);
 
 	m_pInstanceBuffer = m_pDevice->createConstantBuffer(sizeof(m_instanceData), true);
+	m_pInstanceColorsBuffer = m_pDevice->createConstantBuffer(sizeof(m_instanceColors), true);
 }
 
 IXResourceModelStatic *CDynamicModelShared::getResource()
@@ -476,9 +479,10 @@ void CDynamicModelShared::endInstancing()
 	if(m_iInstanceCount && m_pInstanceBuffer)
 	{
 		m_pInstanceBuffer->update(m_instanceData, sizeof(m_instanceData[0]) * m_iInstanceCount);
+		m_pInstanceColorsBuffer->update(m_instanceColors, sizeof(m_instanceColors[0]) * m_iInstanceCount);
 
 		m_pProvider->bindVertexFormat(true);
-		render(m_uInstancingSkin, m_uInstancingLod, float4(), m_bmInstancingFeatures);
+		render(m_uInstancingSkin, m_uInstancingLod, m_bmInstancingFeatures);
 	}
 
 	m_isInstancingEnabled = false;
@@ -490,6 +494,7 @@ void CDynamicModelShared::renderInstanced(const float3 &vPos, const SMQuaternion
 
 	m_instanceData[m_iInstanceCount].vPosScale = float4(vPos, fScale);
 	m_instanceData[m_iInstanceCount].qRot = qRot;
+	m_instanceColors[m_iInstanceCount].vColor = vColor;
 	
 	if(++m_iInstanceCount == MAX_INSTANCES)
 	{
@@ -503,7 +508,7 @@ bool CDynamicModelShared::isInstancing()
 	return(m_isInstancingEnabled);
 }
 
-void CDynamicModelShared::render(UINT uSkin, UINT uLod, const float4_t &vColor, XMODEL_FEATURE bmFeatures)
+void CDynamicModelShared::render(UINT uSkin, UINT uLod, XMODEL_FEATURE bmFeatures)
 {
 
 	//m_instanceData[MAX_INSTANCES];
@@ -542,6 +547,7 @@ void CDynamicModelShared::render(UINT uSkin, UINT uLod, const float4_t &vColor, 
 	if(m_isInstancingEnabled)
 	{
 		pCtx->setVSConstant(m_pInstanceBuffer, 1 /* SCR_OBJECT */);
+		pCtx->setPSConstant(m_pInstanceColorsBuffer, 8);
 	}
 
 	pCtx->setIndexBuffer(m_ppIndexBuffer[uLod]);
@@ -575,7 +581,6 @@ void CDynamicModelShared::render(UINT uSkin, UINT uLod, const float4_t &vColor, 
 		{
 			if(m_pMaterialSystem->bindMaterial(m_pppMaterials[uSkin][i]))
 			{
-
 				switch(m_topology)
 				{
 				case XPT_TRIANGLELIST:

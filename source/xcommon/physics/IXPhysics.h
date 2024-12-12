@@ -35,6 +35,23 @@ public:
 
 //#############################################################################
 
+struct XConvexResult
+{
+	float3_t vHitPoint;
+	float3_t vHitNormal;
+	IXCollisionObject *pCollisionObject;
+	void *_reserved;
+	float fHitFraction;
+};
+
+class IXConvexCallback
+{
+public:
+	virtual float XMETHODCALLTYPE addSingleResult(const XConvexResult &result) = 0;
+};
+
+//#############################################################################
+
 class IXPhysicsWorld: public IXUnknown
 {
 public:
@@ -45,6 +62,8 @@ public:
 	
 	virtual void XMETHODCALLTYPE disableSimulation() = 0;
 	virtual void XMETHODCALLTYPE enableSimulation() = 0;
+
+	virtual void XMETHODCALLTYPE convexSweepTest(IXConvexShape *pShape, const transform_t &xfFrom, const transform_t &xfTo, IXConvexCallback *pCallback, COLLISION_GROUP collisionGroup = CG_DEFAULT, COLLISION_GROUP collisionMask = CG_ALL) = 0;
 
 	// add/remove action
 	// convexSweepTest

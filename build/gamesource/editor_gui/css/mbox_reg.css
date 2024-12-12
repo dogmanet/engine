@@ -1,0 +1,57 @@
+body {
+	background-color: #110000ee;
+}
+
+.mbox-header {
+	border-top-right-radius: 20px;
+	border-top-right-method: cut;
+	font-size: 24px;
+	padding: 0px 10px 10px;
+}
+
+.warn .mbox-header {
+	background-color: #660000cc;
+}
+
+.info .mbox-header {
+	background-color: #55c6d5cc;
+	color: #000000;
+}
+
+.mbox-body {
+	border-width: 1px;
+	border-bottom-right-radius: 20px;
+	border-bottom-right-method: cut;
+	padding: 3px;
+	background-color: #000000dd;
+}
+
+.warn .mbox-body {
+	border-color: #660000cc;
+}
+
+.info .mbox-body {
+	border-color: #55c6d5cc;
+	color: #000000;
+}
+
+.mbox-message {
+	padding: 0 10px 10px;
+	font-size: 16px;
+	min-height: 200px;
+}
+
+.warn .mbox-message {
+	background-color: #660000cc;
+}
+
+.info .mbox-message {
+	background-color: #55c6d5cc;
+}
+
+.mbox-buttons-wrap {
+	position: relative;
+	height: 30px;
+	font-size: 16px;
+}
+	

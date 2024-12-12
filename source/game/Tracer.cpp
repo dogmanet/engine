@@ -1,5 +1,4 @@
 #include "Tracer.h"
-#include <gcore/sxgcore.h>
 
 CTracer::CTracer(int iTracePoolSize):
 	m_isTracing(false),

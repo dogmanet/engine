@@ -20,7 +20,7 @@ class CShadowCache
 {
 	friend class CRShadowSizeCvarListener;
 public:
-	CShadowCache(IXRenderPipeline *pRenderPipeline, IXMaterialSystem *pMaterialSystem);
+	CShadowCache(IXRender *pRender, IXMaterialSystem *pMaterialSystem);
 	~CShadowCache();
 
 	SX_ALIGNED_OP_MEM();
@@ -32,7 +32,7 @@ public:
 	//! Указывает, что начался новый кадр
 	void nextFrame();
 
-	void setObserverCamera(ICamera *pCamera);
+	void setObserverCamera(IXCamera *pCamera);
 
 	//! Добавляет источник к текущему проходу, В случае отсутствия свободных слотов, возвращает false
 	void addLight(CXLight *pLight);
@@ -46,11 +46,11 @@ public:
 	IBaseReflectiveShadowMap *getRSMShadow(ID id);
 
 protected:
-	IXRenderPipeline *m_pRenderPipeline;
+	IXRender *m_pRender;
 	IXMaterialSystem *m_pMaterialSystem;
 	CRShadowSizeCvarListener *m_pShadowSizeCvarListener;
 
-	ICamera *m_pCamera = NULL;
+	IXCamera *m_pCamera = NULL;
 
 	IGXRasterizerState *m_pRasterizerConservative = NULL;
 	IGXRasterizerState *m_pRasterizerCullFront = NULL;
@@ -121,17 +121,17 @@ protected:
 	template<class T, class R> struct Cache
 	{
 	private:
-		IXRenderPipeline *m_pRenderPipeline;
+		IXRender *m_pRender;
 		Array<T> m_aMaps;
 		Array<T*> m_aMapsQueue;
 		LIGHT_RENDER_TYPE m_renderType;
 		Array<CXLight*> &m_aFrameLights;
 		Array<R> &m_aReadyMaps;
 	public:
-		Cache(Array<CXLight*> &aFrameLights, Array<R> &aReadyMaps, IXRenderPipeline *pRenderPipeline, LIGHT_RENDER_TYPE renderType):
+		Cache(Array<CXLight*> &aFrameLights, Array<R> &aReadyMaps, IXRender *pRender, LIGHT_RENDER_TYPE renderType):
 			m_aFrameLights(aFrameLights),
 			m_aReadyMaps(aReadyMaps),
-			m_pRenderPipeline(pRenderPipeline),
+			m_pRender(pRender),
 			m_renderType(renderType)
 		{
 		}
@@ -148,7 +148,7 @@ protected:
 				m_aMapsQueue.resizeFast(uSize);
 				for(; i < uSize; ++i)
 				{
-					m_aMaps[i].map.init(m_pRenderPipeline->getDevice(), uMapSize);
+					m_aMaps[i].map.init(m_pRender, uMapSize);
 				}
 
 				for(i = 0; i < uSize; ++i)
@@ -228,7 +228,7 @@ protected:
 					if(pSM->isDirty)
 					{
 						pSM->map.setLight(pSM->pLight);
-						pSM->map.process(m_pRenderPipeline);
+						pSM->map.process();
 						pSM->isDirty = false;
 					}
 

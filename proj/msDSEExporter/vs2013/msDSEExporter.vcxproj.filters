@@ -16,103 +16,104 @@
     <Filter Include="Header Files\xcommon">
       <UniqueIdentifier>{5397D77E-AFAA-40C0-B372-3FA1B3E381E9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\exporter_base">
+      <UniqueIdentifier>{fc15fa56-e5b4-4e39-a71b-0c8e42983ec9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\exporter_base">
+      <UniqueIdentifier>{e4855480-8b08-4704-b1a8-3bdfe709cdb1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\source\msDSEExporter\dllmain.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\source\msDSEExporter\Plugin.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\source\msDSEExporter\GeomDetector.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\source\msDSEExporter\Exporter.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\source\msDSEExporter\stdafx.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\source\msDSEExporter\Extended.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\source\msDSEExporter\ExtendedPhys.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\source\msDSEExporter\ExtendedAnim.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\source\msDSEExporter\ExtendedSkin.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\source\common\string.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\source\msDSEExporter\ExtendedActs.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\source\msDSEExporter\ExtendedDeps.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\source\msDSEExporter\ExtendedLods.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\source\msDSEExporter\Provider.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\exporter_base\ExtendedActs.cpp">
+      <Filter>Source Files\exporter_base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\exporter_base\ExtendedAnim.cpp">
+      <Filter>Source Files\exporter_base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\exporter_base\ExtendedDeps.cpp">
+      <Filter>Source Files\exporter_base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\exporter_base\ExtendedLods.cpp">
+      <Filter>Source Files\exporter_base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\exporter_base\ExtendedPhys.cpp">
+      <Filter>Source Files\exporter_base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\exporter_base\ExtendedSkin.cpp">
+      <Filter>Source Files\exporter_base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\exporter_base\GeomDetector.cpp">
+      <Filter>Source Files\exporter_base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\exporter_base\stdafx.cpp">
+      <Filter>Source Files\exporter_base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\exporter_base\dllmain.cpp">
+      <Filter>Source Files\exporter_base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\exporter_base\Exporter.cpp">
+      <Filter>Source Files\exporter_base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\exporter_base\Extended.cpp">
+      <Filter>Source Files\exporter_base</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\source\msDSEExporter\Plugin.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\source\msDSEExporter\GeomDetector.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\source\msDSEExporter\resource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\source\msDSEExporter\Exporter.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\source\msDSEExporter\stdafx.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\source\msDSEExporter\Extended.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\source\msDSEExporter\IExtendedTab.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\source\msDSEExporter\ExtendedPhys.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\source\msDSEExporter\ExtendedAnim.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\source\msDSEExporter\ExtendedSkin.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\source\msDSEExporter\ExtendedActs.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\source\msDSEExporter\ExtendedDeps.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\source\msDSEExporter\ExtendedLods.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\source\msDSEExporter\Provider.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\source\exporter_base\ExtendedAnim.h">
+      <Filter>Header Files\exporter_base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\exporter_base\ExtendedDeps.h">
+      <Filter>Header Files\exporter_base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\exporter_base\ExtendedLods.h">
+      <Filter>Header Files\exporter_base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\exporter_base\ExtendedPhys.h">
+      <Filter>Header Files\exporter_base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\exporter_base\ExtendedSkin.h">
+      <Filter>Header Files\exporter_base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\exporter_base\GeomDetector.h">
+      <Filter>Header Files\exporter_base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\exporter_base\IExtendedTab.h">
+      <Filter>Header Files\exporter_base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\exporter_base\resource.h">
+      <Filter>Header Files\exporter_base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\exporter_base\stdafx.h">
+      <Filter>Header Files\exporter_base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\exporter_base\Exporter.h">
+      <Filter>Header Files\exporter_base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\exporter_base\Extended.h">
+      <Filter>Header Files\exporter_base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\exporter_base\ExtendedActs.h">
+      <Filter>Header Files\exporter_base</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="..\..\..\source\msDSEExporter\msDSEExporter.rc">
+    <ResourceCompile Include="..\..\..\source\exporter_base\exporter_base.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="..\..\..\source\msDSEExporter\logo.bmp">
-      <Filter>Resource Files</Filter>
-    </Image>
   </ItemGroup>
 </Project>

@@ -19,8 +19,7 @@
 
 #include <skyxengine.h>
 #include <core/sxcore.h>
-#include <gcore/sxgcore.h>
-#include <render/sxrender.h>
+#include <xcommon/render/IXRender.h>
 #include <input/sxinput.h>
 //#include <sxguiwinapi/sxgui.h>
 //#include <level/sxlevel.h>
@@ -44,10 +43,14 @@
 
 #include "PropertyWindow.h"
 
+#include "Tools.h"
+
 #define CLIPBOARD_FILE "TerraX.clipboard"
 char g_szClipboardFile[MAX_PATH + sizeof(CLIPBOARD_FILE)];
 
 #include <gui/guimain.h>
+
+#include "TextureWindow.h"
 
 extern Array<IXEditorObject*> g_pLevelObjects;
 extern AssotiativeArray<AAString, IXEditable*> g_mEditableSystems;
@@ -57,6 +60,8 @@ CMaterialBrowser *g_pMaterialBrowser = NULL;
 // Global Variables:
 HINSTANCE hInst;								// current instance
 HWND g_hWndMain = NULL;
+UINT g_uWndMainDpi = 96;
+HFONT g_hWndMainFont = NULL;
 HWND g_hTopRightWnd = NULL;
 HWND g_hTopLeftWnd = NULL;
 HWND g_hBottomRightWnd = NULL;
@@ -101,6 +106,7 @@ extern HACCEL g_hAccelTableMain;
 extern HACCEL g_hAccelTableEdit;
 
 HMENU g_hMenu = NULL;
+HMENU g_hMenu2 = NULL;
 
 HWND g_pGuiWnd = NULL;
 gui::IGUI *g_pGUI = NULL;
@@ -138,13 +144,19 @@ CGizmoRotateCallback g_gizmoRotateCallback;
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK RenderWndProc(HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK RenderNoninteractiveWndProc(HWND, UINT, WPARAM, LPARAM);
-void DisplayContextMenu(HWND hwnd, POINT pt, int iMenu, int iSubmenu, int iCheckItem = -1);
+void DisplayContextMenu(HWND hwnd, POINT pt, HMENU hMenu, int iSubmenu, int iCheckItem = -1);
 void XInitViewportLayout(X_VIEWPORT_LAYOUT layout);
 BOOL XCheckMenuItem(HMENU hMenu, UINT uIDCheckItem, bool bCheck);
 void XUpdateStatusGrid();
 void XUpdateStatusMPos();
 void XUpdateUndoRedo();
 HWND CreateToolbar(HWND hWndParent);
+HBITMAP StretchBitmap(HDC hDC, HBITMAP hBitmap);
+
+UINT GetWindowDPI(HWND hWnd);
+
+HFONT GetDefaultFont(UINT uDpi);
+void ReleaseDefaultFont(HFONT hFont);
 
 class CPropertyCallback: public CPropertyWindow::ICallback
 {
@@ -184,7 +196,7 @@ public:
 		onApply();
 		
 		m_pPropsCmd = new CCommandProperties();
-		XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+		XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 			if(pObj->isSelected() && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent))
 			{
 				m_pPropsCmd->addObject(pObj);
@@ -244,6 +256,8 @@ void CMatBrowserCallback::onSelected(const char *szName)
 	{
 		m_pMaterialSystem->loadTexture(szTexture, &m_pTex);
 	}
+
+	SetWindowTextW(g_hCurMatWnd, szTexture ? CMB2WC(szTexture) : L"");
 
 	mem_release(pIter);
 
@@ -368,6 +382,11 @@ ATOM XRegisterClass(HINSTANCE hInstance)
 		return(FALSE);
 	}
 
+	if(!CTextureWindow::RegisterWindowClass(hInstance))
+	{
+		return(FALSE);
+	}
+
 	return(TRUE);
 }
 
@@ -384,6 +403,8 @@ BOOL XInitInstance(HINSTANCE hInstance, int nCmdShow)
 
 	g_hWndMain = CreateWindowA(MAIN_WINDOW_CLASS, MAIN_WINDOW_TITLE " | " SKYXENGINE_VERSION4EDITORS, WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_OVERLAPPEDWINDOW, nx_pos, ny_pos, WINDOW_WIDTH, WINDOW_HEIGHT, NULL, g_hMenu = LoadMenu(hInstance, MAKEINTRESOURCE(IDR_MENU1)), hInstance, NULL);
 
+	g_hMenu2 = LoadMenu(hInstance, MAKEINTRESOURCE(IDR_MENU2));
+
 	if(!g_hWndMain)
 	{
 		UINT ret_val;
@@ -391,7 +412,17 @@ BOOL XInitInstance(HINSTANCE hInstance, int nCmdShow)
 		ret_val = GetLastError();
 		return FALSE;
 	}
-	ShowWindow(g_hWndMain, nCmdShow == SW_SHOWDEFAULT ? SW_MAXIMIZE : nCmdShow);
+
+	WINDOWPLACEMENT wp = {sizeof(wp)};
+	DWORD dwKeyLen = wp.length;
+	if(ERROR_SUCCESS == RegGetValueA(HKEY_CURRENT_USER, "SOFTWARE\\DogmaNet\\TerraX", "WinPos", RRF_RT_REG_BINARY, NULL, (BYTE*)&wp, &dwKeyLen) && wp.length == sizeof(wp))
+	{
+		SetWindowPlacement(g_hWndMain, &wp);
+	}
+	else
+	{
+		ShowWindow(g_hWndMain, nCmdShow == SW_SHOWDEFAULT ? SW_MAXIMIZE : nCmdShow);
+	}
 
 	UpdateWindow(g_hWndMain);
 
@@ -483,10 +514,10 @@ LRESULT CALLBACK StatusBarWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 		// Calculate the right edge coordinate for each part, and
 		// copy the coordinates to the array.
 		paParts[0] = 0;
-		paParts[1] = 200;
-		paParts[2] = 100;
-		paParts[3] = 100;
-		paParts[4] = 150;
+		paParts[1] = MulDpi(200, g_uWndMainDpi);
+		paParts[2] = MulDpi(100, g_uWndMainDpi);
+		paParts[3] = MulDpi(100, g_uWndMainDpi);
+		paParts[4] = MulDpi(150, g_uWndMainDpi);
 		int iTotal = 0;
 		for(int i = 0; i < iParts; ++i)
 		{
@@ -510,7 +541,7 @@ LRESULT CALLBACK StatusBarWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 static void DeleteSelection()
 {
 	CCommandDelete *pDelCmd = new CCommandDelete();
-	XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+	XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 		if(pObj->isSelected() && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent))
 		{
 			pDelCmd->addObject(pObj);
@@ -571,11 +602,11 @@ static void ExportObject(IXConfig *pConfig, IXEditorObject *pObj, UINT &uCount)
 	++uCount;
 
 	void *isProxy = NULL;
-	pObj->getInternalData(&X_IS_PROXY_GUID, &isProxy);
+	pObj->getInternalData(&X_IS_COMPOUND_GUID, &isProxy);
 	if(isProxy)
 	{
 		// export nested objects
-		CProxyObject *pProxy = (CProxyObject*)pObj;
+		ICompoundObject *pProxy = (ICompoundObject*)pObj;
 		for(UINT i = 0, l = pProxy->getObjectCount(); i < l; ++i)
 		{
 			ExportObject(pConfig, pProxy->getObject(i), uCount);
@@ -929,6 +960,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	{
 	case WM_CREATE:
 	{
+		g_uWndMainDpi = GetWindowDPI(hWnd);
+		g_hWndMainFont = GetDefaultFont(g_uWndMainDpi);
+
 		hcSizeEW = LoadCursor(NULL, IDC_SIZEWE);
 		hcSizeNS = LoadCursor(NULL, IDC_SIZENS);
 		hcSizeNESW = LoadCursor(NULL, IDC_SIZEALL);
@@ -953,28 +987,28 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 		// Creates the left window using the width and height read from the XML 
 		// files
-		g_hTopLeftWnd = CreateWindowExA(WS_EX_CLIENTEDGE, RENDER_WINDOW_CLASS, "", WS_CHILD | WS_VISIBLE | SS_SUNKEN, rect.left, rect.top, iLeftWidth, iTopHeight, hWnd, NULL, hInst, NULL);
+		g_hTopLeftWnd = CreateWindowExA(WS_EX_CLIENTEDGE, RENDER_WINDOW_CLASS, "", WS_CHILD | WS_VISIBLE | SS_SUNKEN, MulDpi(rect.left, g_uWndMainDpi), MulDpi(rect.top, g_uWndMainDpi), MulDpi(iLeftWidth, g_uWndMainDpi), MulDpi(iTopHeight, g_uWndMainDpi), hWnd, NULL, hInst, NULL);
 		if(g_hTopLeftWnd)
 		{
 			ShowWindow(g_hTopLeftWnd, SW_SHOW);
 			//	UpdateWindow(g_hTopLeftWnd);
 		}
 
-		g_hBottomLeftWnd = CreateWindowExA(WS_EX_CLIENTEDGE, RENDER_WINDOW_CLASS, "", WS_CHILD | WS_VISIBLE | SS_SUNKEN, rect.left, rect.top + iTopHeight + SPLITTER_BAR_WIDTH, iLeftWidth, iTopHeight, hWnd, NULL, hInst, NULL);
-		if(g_hTopLeftWnd)
+		g_hBottomLeftWnd = CreateWindowExA(WS_EX_CLIENTEDGE, RENDER_WINDOW_CLASS, "", WS_CHILD | WS_VISIBLE | SS_SUNKEN, MulDpi(rect.left, g_uWndMainDpi), MulDpi(rect.top + iTopHeight + SPLITTER_BAR_WIDTH, g_uWndMainDpi), MulDpi(iLeftWidth, g_uWndMainDpi), MulDpi(iTopHeight, g_uWndMainDpi), hWnd, NULL, hInst, NULL);
+		if(g_hBottomLeftWnd)
 		{
-			ShowWindow(g_hTopLeftWnd, SW_SHOW);
+			ShowWindow(g_hBottomLeftWnd, SW_SHOW);
 			//	UpdateWindow(g_hTopLeftWnd);
 		}
 
-		g_hTopRightWnd = CreateWindowExA(WS_EX_CLIENTEDGE, RENDER_WINDOW_CLASS, "", WS_CHILD | WS_VISIBLE | SS_SUNKEN, rect.left + iLeftWidth + SPLITTER_BAR_WIDTH, rect.top, iLeftWidth, iTopHeight, hWnd, NULL, hInst, NULL);
+		g_hTopRightWnd = CreateWindowExA(WS_EX_CLIENTEDGE, RENDER_WINDOW_CLASS, "", WS_CHILD | WS_VISIBLE | SS_SUNKEN, MulDpi(rect.left + iLeftWidth + SPLITTER_BAR_WIDTH, g_uWndMainDpi), MulDpi(rect.top, g_uWndMainDpi), MulDpi(iLeftWidth, g_uWndMainDpi), MulDpi(iTopHeight, g_uWndMainDpi), hWnd, NULL, hInst, NULL);
 		if(g_hTopRightWnd)
 		{
 			ShowWindow(g_hTopRightWnd, SW_SHOW);
 			//	UpdateWindow(g_hTopLeftWnd);
 		}
 
-		g_hBottomRightWnd = CreateWindowExA(WS_EX_CLIENTEDGE, RENDER_WINDOW_CLASS, "", WS_CHILD | WS_VISIBLE | SS_SUNKEN, rect.left + iLeftWidth + SPLITTER_BAR_WIDTH, rect.top + iTopHeight + SPLITTER_BAR_WIDTH, iLeftWidth, iTopHeight, hWnd, NULL, hInst, NULL);
+		g_hBottomRightWnd = CreateWindowExA(WS_EX_CLIENTEDGE, RENDER_WINDOW_CLASS, "", WS_CHILD | WS_VISIBLE | SS_SUNKEN, MulDpi(rect.left + iLeftWidth + SPLITTER_BAR_WIDTH, g_uWndMainDpi), MulDpi(rect.top + iTopHeight + SPLITTER_BAR_WIDTH, g_uWndMainDpi), MulDpi(iLeftWidth, g_uWndMainDpi), MulDpi(iTopHeight, g_uWndMainDpi), hWnd, NULL, hInst, NULL);
 		if(g_hBottomRightWnd)
 		{
 			ShowWindow(g_hBottomRightWnd, SW_SHOW);
@@ -990,7 +1024,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 		g_uABNextTop = rect.top;
 		g_uABNextLeft = rect.left - MARGIN_LEFT;
-		g_hABArrowButton = CreateWindow("Button", "", WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_BITMAP | BS_PUSHLIKE | BS_CHECKBOX, g_uABNextLeft, g_uABNextTop, AB_BUTTON_WIDTH, AB_BUTTON_HEIGHT, hWnd, (HMENU)IDC_AB_ARROW, hInst, NULL);
+		g_hABArrowButton = CreateWindow("Button", "", WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_BITMAP | BS_PUSHLIKE | BS_CHECKBOX, MulDpi(g_uABNextLeft, g_uWndMainDpi), MulDpi(g_uABNextTop, g_uWndMainDpi), MulDpi(AB_BUTTON_WIDTH, g_uWndMainDpi), MulDpi(AB_BUTTON_HEIGHT, g_uWndMainDpi), hWnd, (HMENU)IDC_AB_ARROW, hInst, NULL);
 		{
 			SetWindowTheme(g_hABArrowButton, L" ", L" ");
 			HBITMAP hBitmap = LoadBitmap(hInst, MAKEINTRESOURCE(IDB_BITMAP30));
@@ -1001,7 +1035,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		//WS_EX_DLGMODALFRAME
 
 		g_uABNextTop += AB_BUTTON_HEIGHT;
-		g_hABCameraButton = CreateWindow("Button", "", WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_BITMAP | BS_PUSHLIKE | BS_CHECKBOX, g_uABNextLeft, g_uABNextTop, AB_BUTTON_WIDTH, AB_BUTTON_HEIGHT, hWnd, (HMENU)IDC_AB_CAMERA, hInst, NULL);
+		g_hABCameraButton = CreateWindow("Button", "", WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_BITMAP | BS_PUSHLIKE | BS_CHECKBOX, MulDpi(g_uABNextLeft, g_uWndMainDpi), MulDpi(g_uABNextTop, g_uWndMainDpi), MulDpi(AB_BUTTON_WIDTH, g_uWndMainDpi), MulDpi(AB_BUTTON_HEIGHT, g_uWndMainDpi), hWnd, (HMENU)IDC_AB_CAMERA, hInst, NULL);
 		{
 			SetWindowTheme(g_hABCameraButton, L" ", L" ");
 			HBITMAP hBitmap = LoadBitmap(hInst, MAKEINTRESOURCE(IDB_BITMAP31));
@@ -1009,7 +1043,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 
 		g_uABNextTop += AB_BUTTON_HEIGHT;
-		g_hABCreateButton = CreateWindow("Button", "", WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_BITMAP | BS_PUSHLIKE | BS_CHECKBOX, g_uABNextLeft, g_uABNextTop, AB_BUTTON_WIDTH, AB_BUTTON_HEIGHT, hWnd, (HMENU)IDC_AB_CREATE, hInst, NULL);
+		g_hABCreateButton = CreateWindow("Button", "", WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_BITMAP | BS_PUSHLIKE | BS_CHECKBOX, MulDpi(g_uABNextLeft, g_uWndMainDpi), MulDpi(g_uABNextTop, g_uWndMainDpi), MulDpi(AB_BUTTON_WIDTH, g_uWndMainDpi), MulDpi(AB_BUTTON_HEIGHT, g_uWndMainDpi), hWnd, (HMENU)IDC_AB_CREATE, hInst, NULL);
 		{
 			SetWindowTheme(g_hABCreateButton, L" ", L" ");
 			HBITMAP hBitmap = LoadBitmap(hInst, MAKEINTRESOURCE(IDB_BITMAP34));
@@ -1018,34 +1052,34 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		g_uABNextTop += AB_BUTTON_HEIGHT;
 
 
-		g_hStaticCurrentMatWnd = CreateWindowExA(0, WC_STATIC, "Current material", WS_VISIBLE | WS_CHILD, rect.right, rect.top, MARGIN_RIGHT, 15, hWnd, 0, hInst, NULL);
+		g_hStaticCurrentMatWnd = CreateWindowExA(0, WC_STATIC, "Current material", WS_VISIBLE | WS_CHILD, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(15, g_uWndMainDpi), hWnd, 0, hInst, NULL);
 		{
-			SetWindowFont(g_hStaticCurrentMatWnd, GetStockObject(DEFAULT_GUI_FONT), FALSE);
+			SetWindowFont(g_hStaticCurrentMatWnd, g_hWndMainFont, FALSE);
 		}
 
-		g_hComboCurrentMatWnd = CreateWindowExA(WS_EX_RIGHT, WC_COMBOBOX, "", WS_VISIBLE | WS_CHILD | WS_BORDER | /*CBS_SORT | */CBS_DROPDOWNLIST | CBS_HASSTRINGS, rect.right, rect.top + 15, MARGIN_RIGHT, OBJECT_TREE_HEIGHT, hWnd, (HMENU)ID_CMB_MAT, hInst, NULL);
+		g_hComboCurrentMatWnd = CreateWindowExA(WS_EX_RIGHT, WC_COMBOBOX, "", WS_VISIBLE | WS_CHILD | WS_BORDER | /*CBS_SORT | */CBS_DROPDOWNLIST | CBS_HASSTRINGS, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(OBJECT_TREE_HEIGHT, g_uWndMainDpi), hWnd, (HMENU)ID_CMB_MAT, hInst, NULL);
 		{
-			SetWindowFont(g_hComboCurrentMatWnd, GetStockObject(DEFAULT_GUI_FONT), FALSE);
+			SetWindowFont(g_hComboCurrentMatWnd, g_hWndMainFont, FALSE);
 
 			//g_pfnClassesComboOldWndproc = (WNDPROC)GetWindowLongPtr(g_hComboTypesWnd, GWLP_WNDPROC);
 			//SetWindowLongPtr(g_hComboCurrentMatWnd, GWLP_WNDPROC, (LONG_PTR)ClassesComboWndProc);
 		}
 
-		g_hCurMatWnd = CreateWindowExA(WS_EX_CLIENTEDGE, RENDER_NONINTERACTIVE_WINDOW_CLASS, "", WS_CHILD | WS_VISIBLE | SS_SUNKEN, rect.right, rect.top + 15 + 25, MARGIN_RIGHT, MARGIN_RIGHT, hWnd, NULL, hInst, NULL);
+		g_hCurMatWnd = CreateWindowExA(WS_EX_CLIENTEDGE, WC_TEXTURE_VIEWPORT, "", WS_CHILD | WS_VISIBLE | SS_SUNKEN, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15 + 25, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), hWnd, NULL, hInst, NULL);
 		if(g_hCurMatWnd)
 		{
 			ShowWindow(g_hCurMatWnd, SW_SHOW);
 			//	UpdateWindow(g_hTopLeftWnd);
 		}
 
-		g_hStaticCurrentMatSizeWnd = CreateWindowExA(0, WC_STATIC, "16384x16384", WS_VISIBLE | WS_CHILD, rect.right, rect.top + 15 + 25 + MARGIN_RIGHT, MARGIN_RIGHT, 15, hWnd, 0, hInst, NULL);
+		g_hStaticCurrentMatSizeWnd = CreateWindowExA(0, WC_STATIC, "16384x16384", WS_VISIBLE | WS_CHILD, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15 + 25 + MARGIN_RIGHT, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(15, g_uWndMainDpi), hWnd, 0, hInst, NULL);
 		{
-			SetWindowFont(g_hStaticCurrentMatSizeWnd, GetStockObject(DEFAULT_GUI_FONT), FALSE);
+			SetWindowFont(g_hStaticCurrentMatSizeWnd, g_hWndMainFont, FALSE);
 		}
 
-		g_hButtonCurrentMatBrowseWnd = CreateWindowExA(0, WC_BUTTON, "Browse", WS_VISIBLE | WS_CHILD, rect.right, rect.top + 15 + 25 + MARGIN_RIGHT + 15, MARGIN_RIGHT, 25, hWnd, (HMENU)ID_MAT_BROWSER, hInst, NULL);
+		g_hButtonCurrentMatBrowseWnd = CreateWindowExA(0, WC_BUTTON, "Browse", WS_VISIBLE | WS_CHILD, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15 + 25 + MARGIN_RIGHT + 15, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(25, g_uWndMainDpi), hWnd, (HMENU)ID_MAT_BROWSER, hInst, NULL);
 		{
-			SetWindowFont(g_hButtonCurrentMatBrowseWnd, GetStockObject(DEFAULT_GUI_FONT), FALSE);
+			SetWindowFont(g_hButtonCurrentMatBrowseWnd, g_hWndMainFont, FALSE);
 		}
 
 		/*g_hObjectTreeWnd = CreateWindowExA(0, WC_TREEVIEW, "", WS_VISIBLE | WS_CHILD | WS_BORDER | TVS_HASLINES | TVS_HASBUTTONS | TVS_LINESATROOT | TVS_SHOWSELALWAYS | TVS_DISABLEDRAGDROP | TVS_CHECKBOXES | TVS_NOHSCROLL, rect.right, rect.top, MARGIN_RIGHT, OBJECT_TREE_HEIGHT, hWnd, 0, hInst, NULL);
@@ -1054,51 +1088,51 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			SetWindowLongPtr(g_hObjectTreeWnd, GWLP_WNDPROC, (LONG_PTR)TreeViewWndProc);
 		}*/
 		
-		g_hStaticTypesWnd = CreateWindowExA(0, WC_STATIC, "Object type", WS_VISIBLE | WS_CHILD, rect.right, rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10, MARGIN_RIGHT, 15, hWnd, 0, hInst, NULL);
+		g_hStaticTypesWnd = CreateWindowExA(0, WC_STATIC, "Object type", WS_VISIBLE | WS_CHILD, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(15, g_uWndMainDpi), hWnd, 0, hInst, NULL);
 		{
-			SetWindowFont(g_hStaticTypesWnd, GetStockObject(DEFAULT_GUI_FONT), FALSE);
+			SetWindowFont(g_hStaticTypesWnd, g_hWndMainFont, FALSE);
 		}
 
-		g_hComboTypesWnd = CreateWindowExA(0, WC_COMBOBOX, "", WS_VISIBLE | WS_CHILD | WS_BORDER | CBS_SORT | CBS_DROPDOWNLIST | CBS_HASSTRINGS, rect.right, rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15, MARGIN_RIGHT, OBJECT_TREE_HEIGHT, hWnd, (HMENU)IDC_CMB_TYPE, hInst, NULL);
+		g_hComboTypesWnd = CreateWindowExA(0, WC_COMBOBOX, "", WS_VISIBLE | WS_CHILD | WS_BORDER | CBS_SORT | CBS_DROPDOWNLIST | CBS_HASSTRINGS, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(OBJECT_TREE_HEIGHT, g_uWndMainDpi), hWnd, (HMENU)IDC_CMB_TYPE, hInst, NULL);
 		{
-			SetWindowFont(g_hComboTypesWnd, GetStockObject(DEFAULT_GUI_FONT), FALSE);
+			SetWindowFont(g_hComboTypesWnd, g_hWndMainFont, FALSE);
 
 			//g_pfnClassesComboOldWndproc = (WNDPROC)GetWindowLongPtr(g_hComboTypesWnd, GWLP_WNDPROC);
 			SetWindowLongPtr(g_hComboTypesWnd, GWLP_WNDPROC, (LONG_PTR)ClassesComboWndProc);
 		}
 
-		g_hStaticClassesWnd = CreateWindowExA(0, WC_STATIC, "Object class", WS_VISIBLE | WS_CHILD, rect.right, rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 25, MARGIN_RIGHT, 15, hWnd, 0, hInst, NULL);
+		g_hStaticClassesWnd = CreateWindowExA(0, WC_STATIC, "Object class", WS_VISIBLE | WS_CHILD, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 25, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(15, g_uWndMainDpi), hWnd, 0, hInst, NULL);
 		{
-			SetWindowFont(g_hStaticClassesWnd, GetStockObject(DEFAULT_GUI_FONT), FALSE);
+			SetWindowFont(g_hStaticClassesWnd, g_hWndMainFont, FALSE);
 		}
 
-		g_hComboClassesWnd = CreateWindowExA(0, WC_COMBOBOX, "", WS_VISIBLE | WS_CHILD | WS_BORDER | CBS_SORT | CBS_DROPDOWNLIST | CBS_HASSTRINGS | WS_VSCROLL, rect.right, rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 15 + 25, MARGIN_RIGHT, OBJECT_TREE_HEIGHT, hWnd, (HMENU)IDC_CMB_CLASS, hInst, NULL);
+		g_hComboClassesWnd = CreateWindowExA(0, WC_COMBOBOX, "", WS_VISIBLE | WS_CHILD | WS_BORDER | CBS_SORT | CBS_DROPDOWNLIST | CBS_HASSTRINGS | WS_VSCROLL, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 15 + 25, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(OBJECT_TREE_HEIGHT, g_uWndMainDpi), hWnd, (HMENU)IDC_CMB_CLASS, hInst, NULL);
 		{
-			SetWindowFont(g_hComboClassesWnd, GetStockObject(DEFAULT_GUI_FONT), FALSE);
+			SetWindowFont(g_hComboClassesWnd, g_hWndMainFont, FALSE);
 
 			g_pfnClassesComboOldWndproc = (WNDPROC)GetWindowLongPtr(g_hComboClassesWnd, GWLP_WNDPROC);
 			SetWindowLongPtr(g_hComboClassesWnd, GWLP_WNDPROC, (LONG_PTR)ClassesComboWndProc);
 		}
 
 		//g_hCheckboxRandomScaleYawWnd
-		g_hCheckboxRandomScaleYawWnd = CreateWindowExA(0, WC_BUTTON, "Random scale and yaw", WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX, rect.right, rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 15 + 25 + 25, MARGIN_RIGHT, 15, hWnd, (HMENU)0, hInst, NULL);
+		g_hCheckboxRandomScaleYawWnd = CreateWindowExA(0, WC_BUTTON, "Random scale and yaw", WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 15 + 25 + 25, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(15, g_uWndMainDpi), hWnd, (HMENU)IDC_RAND_SCALE_YAW, hInst, NULL);
 		{
-			SetWindowFont(g_hCheckboxRandomScaleYawWnd, GetStockObject(DEFAULT_GUI_FONT), FALSE);
+			SetWindowFont(g_hCheckboxRandomScaleYawWnd, g_hWndMainFont, FALSE);
 		}
 
-		g_hStaticMoveSelectedToWnd = CreateWindowExA(0, WC_STATIC, "Move selected", WS_VISIBLE | WS_CHILD, rect.right, rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 15 + 25 + 25 + 25, MARGIN_RIGHT, 15, hWnd, 0, hInst, NULL);
+		g_hStaticMoveSelectedToWnd = CreateWindowExA(0, WC_STATIC, "Move selected", WS_VISIBLE | WS_CHILD, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 15 + 25 + 25 + 25, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(15, g_uWndMainDpi), hWnd, 0, hInst, NULL);
 		{
-			SetWindowFont(g_hStaticMoveSelectedToWnd, GetStockObject(DEFAULT_GUI_FONT), FALSE);
+			SetWindowFont(g_hStaticMoveSelectedToWnd, g_hWndMainFont, FALSE);
 		}
 
-		g_hButtonToWorldWnd = CreateWindowExA(0, WC_BUTTON, "To World", WS_VISIBLE | WS_CHILD, rect.right, rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 15 + 25 + 25 + 25 + 15, MARGIN_RIGHT / 2, 25, hWnd, (HMENU)IDC_BACK_TO_WORLD, hInst, NULL);
+		g_hButtonToWorldWnd = CreateWindowExA(0, WC_BUTTON, "To World", WS_VISIBLE | WS_CHILD, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 15 + 25 + 25 + 25 + 15, g_uWndMainDpi), MulDpi(MARGIN_RIGHT / 2, g_uWndMainDpi), MulDpi(25, g_uWndMainDpi), hWnd, (HMENU)IDC_BACK_TO_WORLD, hInst, NULL);
 		{
-			SetWindowFont(g_hButtonToWorldWnd, GetStockObject(DEFAULT_GUI_FONT), FALSE);
+			SetWindowFont(g_hButtonToWorldWnd, g_hWndMainFont, FALSE);
 		}
 
-		g_hButtonToEntityWnd = CreateWindowExA(0, WC_BUTTON, "To Object", WS_VISIBLE | WS_CHILD, rect.right + MARGIN_RIGHT / 2, rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 15 + 25 + 25 + 25 + 15, MARGIN_RIGHT / 2, 25, hWnd, (HMENU)IDC_TIE_TO_OBJECT, hInst, NULL);
+		g_hButtonToEntityWnd = CreateWindowExA(0, WC_BUTTON, "To Object", WS_VISIBLE | WS_CHILD, MulDpi(rect.right + MARGIN_RIGHT / 2, g_uWndMainDpi), MulDpi(rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 15 + 25 + 25 + 25 + 15, g_uWndMainDpi), MulDpi(MARGIN_RIGHT / 2, g_uWndMainDpi), MulDpi(25, g_uWndMainDpi), hWnd, (HMENU)IDC_TIE_TO_OBJECT, hInst, NULL);
 		{
-			SetWindowFont(g_hButtonToEntityWnd, GetStockObject(DEFAULT_GUI_FONT), FALSE);
+			SetWindowFont(g_hButtonToEntityWnd, g_hWndMainFont, FALSE);
 			EnableWindow(g_hButtonToEntityWnd, FALSE);
 		}
 
@@ -1130,7 +1164,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		g_pPropWindow->setCallback(&g_propertyCallback);
 
 		g_pMaterialBrowser = new CMaterialBrowser(hInst, hWnd);
-
+		
 		return FALSE;
 	}
 		break;
@@ -1149,6 +1183,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	}
 		break;
 
+	case WM_DPICHANGED:
+		g_uWndMainDpi = LOWORD(wParam);
+		ReleaseDefaultFont(g_hWndMainFont);
+		g_hWndMainFont = GetDefaultFont(g_uWndMainDpi);
+		// no break!
 	case WM_SIZE:
 	{
 #if 0
@@ -1168,6 +1207,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 #endif
 		GetClientRect(hWnd, &rect);
+		DivDpiRect(&rect, g_uWndMainDpi);
 
 		rect.top += MARGIN_TOP;
 		rect.bottom -= MARGIN_BOTTOM;
@@ -1178,7 +1218,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 			RECT rcTopLeft, rcBottomRight;
 			GetClientRect(g_hTopLeftWnd, &rcTopLeft);
+			DivDpiRect(&rcTopLeft, g_uWndMainDpi);
 			GetClientRect(g_hBottomRightWnd, &rcBottomRight);
+			DivDpiRect(&rcBottomRight, g_uWndMainDpi);
 
 			UINT uLeftWidth = rcTopLeft.right - rcTopLeft.left;
 			UINT uRightWidth = rcBottomRight.right - rcBottomRight.left;
@@ -1194,33 +1236,76 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				iLeftWidth = (UINT)(fCoeffWidth * (float)(rect.right - rect.left));
 			}
 		}
-		MoveWindow(g_hTopLeftWnd, rect.left, rect.top, iLeftWidth, iTopHeight, FALSE);
-		MoveWindow(g_hBottomLeftWnd, rect.left, rect.top + iTopHeight + SPLITTER_BAR_WIDTH, iLeftWidth, rect.bottom - rect.top - SPLITTER_BAR_WIDTH - iTopHeight, FALSE);
-		MoveWindow(g_hTopRightWnd, rect.left + iLeftWidth + SPLITTER_BAR_WIDTH, rect.top, rect.right - rect.left - iLeftWidth - SPLITTER_BAR_WIDTH, iTopHeight, FALSE);
-		MoveWindow(g_hBottomRightWnd, rect.left + iLeftWidth + SPLITTER_BAR_WIDTH, rect.top + iTopHeight + SPLITTER_BAR_WIDTH, rect.right - rect.left - iLeftWidth - SPLITTER_BAR_WIDTH, rect.bottom - rect.top - SPLITTER_BAR_WIDTH - iTopHeight, FALSE);
+		MoveWindow(g_hTopLeftWnd, MulDpi(rect.left, g_uWndMainDpi), MulDpi(rect.top, g_uWndMainDpi), MulDpi(iLeftWidth, g_uWndMainDpi), MulDpi(iTopHeight, g_uWndMainDpi), FALSE);
+		MoveWindow(g_hBottomLeftWnd, MulDpi(rect.left, g_uWndMainDpi), MulDpi(rect.top + iTopHeight + SPLITTER_BAR_WIDTH, g_uWndMainDpi), MulDpi(iLeftWidth, g_uWndMainDpi), MulDpi(rect.bottom - rect.top - SPLITTER_BAR_WIDTH - iTopHeight, g_uWndMainDpi), FALSE);
+		MoveWindow(g_hTopRightWnd, MulDpi(rect.left + iLeftWidth + SPLITTER_BAR_WIDTH, g_uWndMainDpi), MulDpi(rect.top, g_uWndMainDpi), MulDpi(rect.right - rect.left - iLeftWidth - SPLITTER_BAR_WIDTH, g_uWndMainDpi), MulDpi(iTopHeight, g_uWndMainDpi), FALSE);
+		MoveWindow(g_hBottomRightWnd, MulDpi(rect.left + iLeftWidth + SPLITTER_BAR_WIDTH, g_uWndMainDpi), MulDpi(rect.top + iTopHeight + SPLITTER_BAR_WIDTH, g_uWndMainDpi), MulDpi(rect.right - rect.left - iLeftWidth - SPLITTER_BAR_WIDTH, g_uWndMainDpi), MulDpi(rect.bottom - rect.top - SPLITTER_BAR_WIDTH - iTopHeight, g_uWndMainDpi), FALSE);
 		//MoveWindow(g_hObjectTreeWnd, rect.right, rect.top, MARGIN_RIGHT, OBJECT_TREE_HEIGHT, FALSE);
-		MoveWindow(g_hStaticCurrentMatWnd, rect.right, rect.top, MARGIN_RIGHT, 15, FALSE);
-		MoveWindow(g_hComboCurrentMatWnd, rect.right, rect.top + 15, MARGIN_RIGHT, 15, FALSE);
-		MoveWindow(g_hCurMatWnd, rect.right, rect.top + 15 + 25, MARGIN_RIGHT, MARGIN_RIGHT, FALSE);
-		MoveWindow(g_hStaticCurrentMatSizeWnd, rect.right, rect.top + 15 + 25 + MARGIN_RIGHT, MARGIN_RIGHT, 15, FALSE);
-		MoveWindow(g_hButtonCurrentMatBrowseWnd, rect.right, rect.top + 15 + 25 + MARGIN_RIGHT + 15, MARGIN_RIGHT, 25, FALSE);
+		MoveWindow(g_hStaticCurrentMatWnd, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(15, g_uWndMainDpi), FALSE);
+		MoveWindow(g_hComboCurrentMatWnd, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(15, g_uWndMainDpi), FALSE);
+		MoveWindow(g_hCurMatWnd, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15 + 25, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), FALSE);
+		MoveWindow(g_hStaticCurrentMatSizeWnd, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15 + 25 + MARGIN_RIGHT, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(15, g_uWndMainDpi), FALSE);
+		MoveWindow(g_hButtonCurrentMatBrowseWnd, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15 + 25 + MARGIN_RIGHT + 15, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(25, g_uWndMainDpi), FALSE);
 
-		MoveWindow(g_hStaticTypesWnd, rect.right, rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10, MARGIN_RIGHT, 15, FALSE);
-		MoveWindow(g_hComboTypesWnd, rect.right, rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15, MARGIN_RIGHT, OBJECT_TREE_HEIGHT, FALSE);
-		MoveWindow(g_hStaticClassesWnd, rect.right, rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 25, MARGIN_RIGHT, 15, FALSE);
-		MoveWindow(g_hComboClassesWnd, rect.right, rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 15 + 25, MARGIN_RIGHT, OBJECT_TREE_HEIGHT, FALSE);
-		MoveWindow(g_hCheckboxRandomScaleYawWnd, rect.right, rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 15 + 25 + 25, MARGIN_RIGHT, 15, FALSE);
-		MoveWindow(g_hStaticMoveSelectedToWnd, rect.right, rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 15 + 25 + 25 + 25, MARGIN_RIGHT, 15, FALSE);
-		MoveWindow(g_hButtonToWorldWnd, rect.right, rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 15 + 25 + 25 + 25 + 15, MARGIN_RIGHT / 2, 25, FALSE);
-		MoveWindow(g_hButtonToEntityWnd, rect.right + MARGIN_RIGHT / 2, rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 15 + 25 + 25 + 25 + 15, MARGIN_RIGHT / 2, 25, FALSE);
+		MoveWindow(g_hStaticTypesWnd, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(15, g_uWndMainDpi), FALSE);
+		MoveWindow(g_hComboTypesWnd, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(OBJECT_TREE_HEIGHT, g_uWndMainDpi), FALSE);
+		MoveWindow(g_hStaticClassesWnd, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 25, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(15, g_uWndMainDpi), FALSE);
+		MoveWindow(g_hComboClassesWnd, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 15 + 25, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(OBJECT_TREE_HEIGHT, g_uWndMainDpi), FALSE);
+		MoveWindow(g_hCheckboxRandomScaleYawWnd, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 15 + 25 + 25, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(15, g_uWndMainDpi), FALSE);
+		MoveWindow(g_hStaticMoveSelectedToWnd, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 15 + 25 + 25 + 25, g_uWndMainDpi), MulDpi(MARGIN_RIGHT, g_uWndMainDpi), MulDpi(15, g_uWndMainDpi), FALSE);
+		MoveWindow(g_hButtonToWorldWnd, MulDpi(rect.right, g_uWndMainDpi), MulDpi(rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 15 + 25 + 25 + 25 + 15, g_uWndMainDpi), MulDpi(MARGIN_RIGHT / 2, g_uWndMainDpi), MulDpi(25, g_uWndMainDpi), FALSE);
+		MoveWindow(g_hButtonToEntityWnd, MulDpi(rect.right + MARGIN_RIGHT / 2, g_uWndMainDpi), MulDpi(rect.top + 15 + 25 + MARGIN_RIGHT + 15 + 25 + 10 + 15 + 15 + 25 + 25 + 25 + 15, g_uWndMainDpi), MulDpi(MARGIN_RIGHT / 2, g_uWndMainDpi), MulDpi(25, g_uWndMainDpi), FALSE);
 		
+
+		GetClientRect(hWnd, &rect);
+
+		if(message == WM_DPICHANGED)
+		{
+			g_uABNextTop = rect.top + MARGIN_TOP;
+			g_uABNextLeft = rect.left;
+			MoveWindow(g_hABArrowButton, MulDpi(g_uABNextLeft, g_uWndMainDpi), MulDpi(g_uABNextTop, g_uWndMainDpi), MulDpi(AB_BUTTON_WIDTH, g_uWndMainDpi), MulDpi(AB_BUTTON_HEIGHT, g_uWndMainDpi), FALSE);
+			g_uABNextTop += AB_BUTTON_HEIGHT;
+
+			MoveWindow(g_hABCameraButton, MulDpi(g_uABNextLeft, g_uWndMainDpi), MulDpi(g_uABNextTop, g_uWndMainDpi), MulDpi(AB_BUTTON_WIDTH, g_uWndMainDpi), MulDpi(AB_BUTTON_HEIGHT, g_uWndMainDpi), FALSE);
+			g_uABNextTop += AB_BUTTON_HEIGHT;
+
+			MoveWindow(g_hABCreateButton, MulDpi(g_uABNextLeft, g_uWndMainDpi), MulDpi(g_uABNextTop, g_uWndMainDpi), MulDpi(AB_BUTTON_WIDTH, g_uWndMainDpi), MulDpi(AB_BUTTON_HEIGHT, g_uWndMainDpi), FALSE);
+			g_uABNextTop += AB_BUTTON_HEIGHT;
+
+			for(UINT i = 0, l = g_aTools.size(); i < l; ++i)
+			{
+				HWND hBtn = GetDlgItem(hWnd, IDC_AB_FIRST + i);
+
+				MoveWindow(hBtn, MulDpi(g_uABNextLeft, g_uWndMainDpi), MulDpi(g_uABNextTop, g_uWndMainDpi), MulDpi(AB_BUTTON_WIDTH, g_uWndMainDpi), MulDpi(AB_BUTTON_HEIGHT, g_uWndMainDpi), FALSE);
+				g_uABNextTop += AB_BUTTON_HEIGHT;
+			}
+
+
+			SetWindowFont(g_hStaticCurrentMatWnd, g_hWndMainFont, FALSE);
+			SetWindowFont(g_hComboCurrentMatWnd, g_hWndMainFont, FALSE);
+			SetWindowFont(g_hStaticCurrentMatSizeWnd, g_hWndMainFont, FALSE);
+			SetWindowFont(g_hButtonCurrentMatBrowseWnd, g_hWndMainFont, FALSE);
+			SetWindowFont(g_hStaticTypesWnd, g_hWndMainFont, FALSE);
+			SetWindowFont(g_hComboTypesWnd, g_hWndMainFont, FALSE);
+			SetWindowFont(g_hStaticClassesWnd, g_hWndMainFont, FALSE);
+			SetWindowFont(g_hComboClassesWnd, g_hWndMainFont, FALSE);
+			SetWindowFont(g_hCheckboxRandomScaleYawWnd, g_hWndMainFont, FALSE);
+			SetWindowFont(g_hStaticMoveSelectedToWnd, g_hWndMainFont, FALSE);
+			SetWindowFont(g_hButtonToWorldWnd, g_hWndMainFont, FALSE);
+			SetWindowFont(g_hButtonToEntityWnd, g_hWndMainFont, FALSE);
+		}
+
 		InvalidateRect(hWnd, &rect, TRUE);
 
 		if(g_pEngine)
 		{
 			RECT rcTopLeft;
 			GetClientRect(g_hTopLeftWnd, &rcTopLeft);
-			g_pEngine->getCore()->getConsole()->execCommand2("r_win_width %d\nr_win_height %d", rcTopLeft.right - rcTopLeft.left, rcTopLeft.bottom - rcTopLeft.top);
+
+			if(rcTopLeft.right - rcTopLeft.left > 0 && rcTopLeft.bottom - rcTopLeft.top > 0)
+			{
+				g_pEngine->getCore()->getConsole()->execCommand2("r_win_width %d\nr_win_height %d", rcTopLeft.right - rcTopLeft.left, rcTopLeft.bottom - rcTopLeft.top);
+			}
 		}
 
 		SendMessage(g_hStatusWnd, WM_SIZE, wParam, lParam);
@@ -1250,36 +1335,74 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 		XUpdateUndoRedo();
 
+		{
+			const XEditorMenuItem *pItem;
+			HMENU hMenu;
+			MENUITEMINFOA mii = {sizeof(mii)};
+			mii.fMask = MIIM_STATE;
+			fora(i, g_aExtMenuItems)
+			{
+				pItem = g_aExtMenuItems[i].pItem;
+				hMenu = g_aExtMenuItems[i].hMenu;
+				mii.fState = (pItem->isChecked ? MFS_CHECKED : MFS_UNCHECKED) | 
+					(pItem->isDisabled ? MFS_DISABLED : MFS_ENABLED);
+
+				SetMenuItemInfoA(hMenu, ID_EXT_MENU_FIRST + i, FALSE, &mii);
+			}
+		}
 		break;
 
 	case WM_COMMAND:
-		if(LOWORD(wParam) >= IDC_AB_FIRST && LOWORD(wParam) < IDC_AB_FIRST + g_aTools.size() && !g_is3DRotating && !g_is3DPanning)
+		if(LOWORD(wParam) >= IDC_AB_FIRST && LOWORD(wParam) < IDC_AB_FIRST + g_aTools.size())
 		{
-			Button_SetCheck(g_hABCameraButton, BST_UNCHECKED);
-
-			IXEditorTool *pNewTool = g_aTools[LOWORD(wParam) - IDC_AB_FIRST].pTool;
-			if(pNewTool != g_pCurrentTool)
+			if(!g_is3DRotating && !g_is3DPanning)
 			{
-				SAFE_CALL(g_pCurrentTool, deactivate);
-				mem_release(g_pCurrentTool);
-				add_ref(pNewTool);
-				g_pCurrentTool = pNewTool;
-				XInitTypesCombo();
-				SAFE_CALL(g_pCurrentTool, activate);
+				Button_SetCheck(g_hABCameraButton, BST_UNCHECKED);
 
-				CheckDlgButton(hWnd, g_uCurrentTool, FALSE);
-				g_uCurrentTool = LOWORD(wParam);
-				CheckDlgButton(hWnd, g_uCurrentTool, TRUE);
+				IXEditorTool *pNewTool = g_aTools[LOWORD(wParam) - IDC_AB_FIRST].pTool;
+				if(pNewTool != g_pCurrentTool)
+				{
+					SAFE_CALL(g_pCurrentTool, deactivate);
+					mem_release(g_pCurrentTool);
+					add_ref(pNewTool);
+					g_pCurrentTool = pNewTool;
+					XInitTypesCombo();
+					SAFE_CALL(g_pCurrentTool, activate);
 
-				g_xState.bCreateMode = false;
-				XUpdateGizmos();
+					CheckDlgButton(hWnd, g_uCurrentTool, FALSE);
+					g_uCurrentTool = LOWORD(wParam);
+					CheckDlgButton(hWnd, g_uCurrentTool, TRUE);
 
+					g_xState.bCreateMode = false;
+					XUpdateGizmos();
+
+				}
+				else
+				{
+					SAFE_CALL(g_pCurrentTool, onNextMode);
+				}
 			}
-			else
+
+			if(GetFocus() == (HWND)lParam)
 			{
-				SAFE_CALL(g_pCurrentTool, onNextMode);
+				SetFocus(g_hWndMain);
 			}
 		}
+		if(LOWORD(wParam) >= IDC_FILE_IMPORT_FIRST && LOWORD(wParam) < IDC_FILE_IMPORT_FIRST + g_pEditorImporters.size())
+		{
+			IXEditorImporter *pImporter = g_pEditorImporters[LOWORD(wParam) - IDC_FILE_IMPORT_FIRST];
+			pImporter->startImport();
+		}
+
+		if(LOWORD(wParam) >= ID_EXT_MENU_FIRST && LOWORD(wParam) < ID_EXT_MENU_FIRST + g_aExtMenuItems.size())
+		{
+			const XEditorMenuItem *pMenuItem = g_aExtMenuItems[LOWORD(wParam) - ID_EXT_MENU_FIRST].pItem;
+			if(pMenuItem->pfnCallback)
+			{
+				pMenuItem->pfnCallback(pMenuItem->pContext);
+			}
+		}
+
 		switch(LOWORD(wParam))
 		{
 		case ID_FILE_OPEN:
@@ -1381,6 +1504,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 		case ID_VIEW_AUTOSIZEVIEWS:
 			GetClientRect(hWnd, &rect);
+			DivDpiRect(&rect, g_uWndMainDpi);
 
 			rect.top += MARGIN_TOP;
 			rect.bottom -= MARGIN_BOTTOM;
@@ -1442,11 +1566,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					XInitTypesCombo();
 				}
 			}
+			if(GetFocus() == (HWND)lParam)
+			{
+				SetFocus(g_hWndMain);
+			}
 			break;
 		case IDC_AB_CAMERA:
 			if(!g_is3DRotating && !g_is3DPanning && g_uCurrentTool != IDC_AB_CAMERA)
 			{
-				if(g_uCurrentTool == IDC_AB_ARROW)
+				if(g_pCurrentTool && g_pCurrentTool->allowUseCamera())
+				{
+					// toggle camera
+					bool isCamera = Button_GetCheck(g_hABCameraButton) == BST_CHECKED;
+					Button_SetCheck(g_hABCameraButton, isCamera ? BST_UNCHECKED : BST_CHECKED);
+				}
+				else
 				{
 					SAFE_CALL(g_pCurrentTool, deactivate);
 					mem_release(g_pCurrentTool);
@@ -1455,14 +1589,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					CheckDlgButton(hWnd, g_uCurrentTool, BST_CHECKED);
 					g_xState.bCreateMode = false;
 					XUpdateGizmos();
-				}
-				else
-				{
-					// toggle camera
-					bool isCamera = Button_GetCheck(g_hABCameraButton) == BST_CHECKED;
-					Button_SetCheck(g_hABCameraButton, isCamera ? BST_UNCHECKED : BST_CHECKED);
-				}
-				
+				}				
+			}
+			if(GetFocus() == (HWND)lParam)
+			{
+				SetFocus(g_hWndMain);
 			}
 			break;
 		case IDC_AB_CREATE:
@@ -1479,6 +1610,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					XUpdateGizmos();
 					XInitTypesCombo();
 				}
+			}
+			if(GetFocus() == (HWND)lParam)
+			{
+				SetFocus(g_hWndMain);
 			}
 			break;
 
@@ -1504,6 +1639,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case ID_LEVEL_SNAPTOGRID:
 			g_xConfig.m_bSnapGrid = !g_xConfig.m_bSnapGrid;
 			XUpdateStatusGrid();
+			break;
+
+		case ID_LEVEL_SCENETREE:
+			g_pEditor->showSceneTree();
 			break;
 
 		case ID_EDIT_UNDO:
@@ -1539,6 +1678,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 		case ID_MAT_BROWSER:
 			g_pMaterialBrowser->browse(&g_matBrowserCallback);
+			if(GetFocus() == (HWND)lParam)
+			{
+				SetFocus(g_hWndMain);
+			}
 			break;
 
 
@@ -1548,7 +1691,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				float3 vCenterPos = (g_xState.vSelectionBoundMax + g_xState.vSelectionBoundMin) * 0.5f;
 				for(UINT i = 1; i < 4; ++i)
 				{
-					ICamera *pCamera = g_xConfig.m_pViewportCamera[i];
+					IXCamera *pCamera = g_xConfig.m_pViewportCamera[i];
 					float3 vCamPos = pCamera->getPosition();
 
 					switch(g_xConfig.m_x2DView[i])
@@ -1566,6 +1709,25 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 					pCamera->setPosition(vCamPos);
 				}
+			}
+			break;
+
+		case ID_VIEW_GOTOSELECTION:
+			if(g_xState.bHasSelection)
+			{
+				float3 vCenterPos = (g_xState.vSelectionBoundMax + g_xState.vSelectionBoundMin) * 0.5f;
+				float fRadius = SMVector3Length(g_xState.vSelectionBoundMax - g_xState.vSelectionBoundMin) * 1.1f;
+
+				IXCamera *pCamera = g_xConfig.m_pViewportCamera[XWP_TOP_LEFT];
+
+				float3 vDir = SMVector3Normalize(float3(1.0f, -1.0f, 1.0f));
+				//pCamera->setOrientation(SMQuaternion(float3(0.0f, 0.0f, 1.0f), vDir));
+				// -0.615, 5.498, 0.000
+				pCamera->setOrientation(SMQuaternion(-SM_PI / 5.0f, 'x') * SMQuaternion(SM_2PI - SM_PIDIV4, 'y'));
+
+				pCamera->setPosition(vCenterPos - vDir * fRadius);
+
+				XSetCameraRotation(pCamera->getRotation());
 			}
 			break;
 
@@ -1725,6 +1887,30 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			g_pEngine->getCore()->getConsole()->execCommand("mtl_reload");
 			break;
 
+		case ID_TOOLS_NEWMATERIAL:
+			{
+				IXMaterialSystem *pMS = (IXMaterialSystem*)g_pEngine->getCore()->getPluginManager()->getInterface(IXMATERIALSYSTEM_GUID);
+				char tmp[1024];
+				tmp[0] = 0;
+				int iMaxLen = sizeof(tmp);
+				IXMaterial *pMat;
+				while(Tools::DlgPrompt(tmp, &iMaxLen, "Material name", "Edit material", tmp))
+				{
+					if(pMS->testMaterialName(tmp))
+					{
+						pMS->loadMaterial(tmp, &pMat);
+						new CMaterialEditor(hInst, g_hWndMain, g_pEngine->getCore(), pMat);
+						break;
+					}
+					else
+					{
+						MessageBoxA(hWnd, "Cannot save material with that name!", "Edit material", MB_OK | MB_ICONERROR);
+					}
+					iMaxLen = sizeof(tmp);
+				}
+			}
+			break;
+
 		case ID_HELP_SKYXENGINEWIKI:
 			ShellExecute(0, 0, "https://wiki.skyxengine.com", 0, 0, SW_SHOW);
 			break;
@@ -1734,9 +1920,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			break;
 
 		case ID_EDIT_CLEARSELECTION:
+			if(g_pUndoManager)
 			{
 				CCommandSelect *pCmdUnselect = new CCommandSelect();
-				XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+				XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 					if(pObj->isSelected() && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent))
 					{
 						pCmdUnselect->addDeselected(pObj);
@@ -1749,7 +1936,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case ID_EDIT_SELECTALL:
 			{
 				CCommandSelect *pCmdSelect = new CCommandSelect();
-				XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+				XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 					if(!pObj->isSelected() && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent))
 					{
 						pCmdSelect->addSelected(pObj);
@@ -1831,29 +2018,89 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				{
 					SendMessage(g_hWndMain, WM_COMMAND, MAKEWPARAM(ID_EDIT_PROPERTIES, 0), NULL);
 				}
+
+				if(GetFocus() == (HWND)lParam)
+				{
+					SetFocus(g_hWndMain);
+				}
 			}
 			break;
 
 		case IDC_BACK_TO_WORLD:
-			if(IsWindowEnabled(g_hButtonToWorldWnd) && !g_xConfig.m_bIgnoreGroups)
+			if(IsWindowEnabled(g_hButtonToWorldWnd))
 			{
-				CCommandContainer *pContainer = NULL;
-				fora(i, g_apProxies)
+				if(!g_xConfig.m_bIgnoreGroups)
 				{
-					CProxyObject *pProxy = g_apProxies[i];
-					if(pProxy->isSelected())
+					CCommandContainer *pContainer = NULL;
+					fora(i, g_apProxies)
 					{
-						if(!pContainer)
+						CProxyObject *pProxy = g_apProxies[i];
+						if(pProxy->isSelected())
 						{
-							pContainer = new CCommandContainer();
+							if(!pContainer)
+							{
+								pContainer = new CCommandContainer();
+							}
+							pContainer->addCommand(new CCommandDestroyModel(pProxy));
 						}
-						pContainer->addCommand(new CCommandDestroyModel(pProxy));
+					}
+					if(pContainer)
+					{
+						XExecCommand(pContainer);
 					}
 				}
-				if(pContainer)
+				if(GetFocus() == (HWND)lParam)
 				{
-					XExecCommand(pContainer);
+					SetFocus(g_hWndMain);
 				}
+			}
+			
+			break;
+
+		case IDC_RAND_SCALE_YAW:
+			if(GetFocus() == (HWND)lParam)
+			{
+				SetFocus(g_hWndMain);
+			}
+			break;
+
+		case ID_ROTATE_90:
+		case ID_ROTATE_M90:
+			{
+				CCommandRotate *pCmd = new CCommandRotate(GetKeyState(VK_SHIFT) < 0);
+				XEnumerateObjects([pCmd](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
+					if(pObj->isSelected() && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent))
+					{
+						pCmd->addObject(pObj);
+					}
+				});
+
+				X_2D_VIEW xCurView = g_xConfig.m_x2DView[g_xState.activeWindow];
+				float fViewScale = g_xConfig.m_fViewportScale[g_xState.activeWindow];
+
+				float3 vCenter = (g_xState.vSelectionBoundMax + g_xState.vSelectionBoundMin) * 0.5f;
+
+				float fTo = LOWORD(wParam) == ID_ROTATE_90 ? 1.0f : -1.0f;
+				switch(xCurView)
+				{
+				case X2D_TOP:
+					pCmd->setStartOrigin(vCenter, float3(0.0f, 1.0f, 0.0f));
+					pCmd->setStartPos(vCenter + float3(0.0f, 0.0f, 1.0f));
+					pCmd->setCurrentPos(vCenter + float3(fTo, 0.0f, 0.0f));
+					break;
+				case X2D_FRONT:
+					pCmd->setStartOrigin(vCenter, float3(0.0f, 0.0f, 1.0f));
+					pCmd->setStartPos(vCenter + float3(0.0f, 1.0f, 0.0f));
+					pCmd->setCurrentPos(vCenter + float3(fTo, 0.0f, 0.0f));
+					break;
+				case X2D_SIDE:
+					pCmd->setStartOrigin(vCenter, float3(1.0f, 0.0f, 0.0f));
+					pCmd->setStartPos(vCenter + float3(0.0f, 1.0f, 0.0f));
+					pCmd->setCurrentPos(vCenter + float3(0.0f, 0.0f, fTo));
+					break;
+				}
+
+				XExecCommand(pCmd);
 			}
 			break;
 
@@ -1864,12 +2111,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			if(!g_xConfig.m_bIgnoreGroups)
 			{
 				//! Deselect partially selected groups
-				XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+				XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 					if(isProxy && !pParent)
 					{
 						bool hasUnselectedChild = false;
 						bool hasUnselectedProxies = false;
-						XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+						XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 							if(!pObj->isSelected())
 							{
 								if(isProxy)
@@ -1881,14 +2128,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 									hasUnselectedChild = true;
 								}
 							}
-						}, (CProxyObject*)pObj);
+						}, (ICompoundObject*)pObj);
 						if(hasUnselectedChild)
 						{
-							XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+							XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 								if(!isProxy)
 								{
 									bool hasSelectedParent = pParent->isSelected();
-									CProxyObject *pCur = pParent;
+									ICompoundObject *pCur = pParent;
 									while(!hasSelectedParent && (pCur = XGetObjectParent(pCur)))
 									{
 										hasSelectedParent = pCur->isSelected();
@@ -1905,18 +2152,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 										pCmdUnselect->addDeselected(pObj);
 									}
 								}
-							}, (CProxyObject*)pObj);
+							}, (ICompoundObject*)pObj);
 							if(pObj->isSelected())
 							{
 								pCmdUnselect->addDeselected(pObj);
 							}
 							else
 							{
-								XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+								XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 									if(isProxy)
 									{
 										bool hasSelectedParent = pParent->isSelected();
-										CProxyObject *pCur = pParent;
+										ICompoundObject *pCur = pParent;
 										while((pCur = XGetObjectParent(pCur)))
 										{
 											if(pCur->isSelected())
@@ -1930,7 +2177,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 											pCmdUnselect->addDeselected(pParent);
 										}
 									}
-								}, (CProxyObject*)pObj);
+								}, (ICompoundObject*)pObj);
 							}
 						}
 						else
@@ -1938,12 +2185,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 							if(!pObj->isSelected() || hasUnselectedProxies)
 							{
 								// deselect leaves, select root
-								XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+								XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 									if(!isProxy)
 									{
 										pCmdUnselect->addDeselected(pObj);
 									}
-								}, (CProxyObject*)pObj);
+								}, (ICompoundObject*)pObj);
 								pCmdUnselect->addSelected(pObj);
 							}
 							
@@ -1969,8 +2216,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		int                 yPos;
 
 		// Varible used to get the mouse cursor x and y co-ordinates
-		xPos = GET_X_LPARAM(lParam);
-		yPos = GET_Y_LPARAM(lParam);
+		xPos = DivDpi(GET_X_LPARAM(lParam), g_uWndMainDpi);
+		yPos = DivDpi(GET_Y_LPARAM(lParam), g_uWndMainDpi);
 
 		// Checks whether the mouse is over the splitter window
 		xSizing = g_isXResizeable && (xPos > iLeftWidth + MARGIN_LEFT - SPLITTER_BAR_WIDTH && xPos < iLeftWidth + MARGIN_LEFT + SPLITTER_BAR_WIDTH);
@@ -2007,6 +2254,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			// Get the main window dc to draw a focus rectangle
 			hdc = GetDC(hWnd);
 			GetClientRect(hWnd, &rect);
+			DivDpiRect(&rect, g_uWndMainDpi);
 
 			rect.top += MARGIN_TOP;
 			rect.bottom -= MARGIN_BOTTOM;
@@ -2019,6 +2267,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			if(xSizing)
 			{
 				SetRect(&focusrect, iLeftWidth - (WIDTH_ADJUST * 2), rect.top, iLeftWidth + WIDTH_ADJUST, rect.bottom);
+				MulDpiRect(&focusrect, g_uWndMainDpi);
 
 				// Call api to vanish the dragging rectangle 
 				DrawFocusRect(hdc, &focusrect);
@@ -2028,6 +2277,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			if(ySizing)
 			{
 				SetRect(&focusrect, rect.left, iTopHeight - (WIDTH_ADJUST * 2), rect.right, iTopHeight + WIDTH_ADJUST);
+				MulDpiRect(&focusrect, g_uWndMainDpi);
 
 				// Call api to vanish the dragging rectangle 
 				DrawFocusRect(hdc, &focusrect);
@@ -2048,10 +2298,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 		// Get the x and y co-ordinates of the mouse
 
-		xPos = GET_X_LPARAM(lParam);
-		yPos = GET_Y_LPARAM(lParam);
+		xPos = DivDpi(GET_X_LPARAM(lParam), g_uWndMainDpi);
+		yPos = DivDpi(GET_Y_LPARAM(lParam), g_uWndMainDpi);
 
 		GetClientRect(hWnd, &rect);
+		DivDpiRect(&rect, g_uWndMainDpi);
 
 		rect.top += MARGIN_TOP;
 		rect.bottom -= MARGIN_BOTTOM;
@@ -2089,6 +2340,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 
 				SetRect(&focusrect, iLeftWidth + MARGIN_LEFT - (WIDTH_ADJUST * 2), rect.top, iLeftWidth + MARGIN_LEFT + WIDTH_ADJUST, rect.bottom);
+				MulDpiRect(&focusrect, g_uWndMainDpi);
 
 				DrawFocusRect(hdc, &focusrect);
 
@@ -2097,6 +2349,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 				// Draws a focus rectangle
 				SetRect(&focusrect, iLeftWidth + MARGIN_LEFT - (SPLITTER_BAR_WIDTH * 2), rect.top, iLeftWidth + MARGIN_LEFT + SPLITTER_BAR_WIDTH, rect.bottom);
+				MulDpiRect(&focusrect, g_uWndMainDpi);
 
 				DrawFocusRect(hdc, &focusrect);
 
@@ -2109,9 +2362,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				HDC hdc;
 				hdc = GetDC(hWnd);
 				SetRect(&focusrect, rect.left, iTopHeight + MARGIN_TOP - (WIDTH_ADJUST * 2), rect.right, iTopHeight + MARGIN_TOP + WIDTH_ADJUST);
+				MulDpiRect(&focusrect, g_uWndMainDpi);
 				DrawFocusRect(hdc, &focusrect);
 				iTopHeight = yPos - MARGIN_TOP;
 				SetRect(&focusrect, rect.left, iTopHeight + MARGIN_TOP - (SPLITTER_BAR_WIDTH * 2), rect.right, iTopHeight + MARGIN_TOP + SPLITTER_BAR_WIDTH);
+				MulDpiRect(&focusrect, g_uWndMainDpi);
 				DrawFocusRect(hdc, &focusrect);
 				ReleaseDC(hWnd, hdc);
 			}
@@ -2142,17 +2397,17 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 		GetClientRect(hWnd, &rect);
 
-		rect.top += MARGIN_TOP;
-		rect.bottom -= MARGIN_BOTTOM;
-		rect.left += MARGIN_LEFT;
-		rect.right -= MARGIN_RIGHT;
+		rect.top += MulDpi(MARGIN_TOP, g_uWndMainDpi);
+		rect.bottom -= MulDpi(MARGIN_BOTTOM, g_uWndMainDpi);
+		rect.left += MulDpi(MARGIN_LEFT, g_uWndMainDpi);
+		rect.right -= MulDpi(MARGIN_RIGHT, g_uWndMainDpi);
 		if(pt.x < rect.left || pt.x > rect.right || pt.y < rect.top || pt.y > rect.bottom)
 		{
 			return(TRUE);
 		}
-		BOOL isLeft = (pt.x < rect.left + iLeftWidth),
-			isTop = (pt.y < rect.top + iTopHeight);
-		ICamera *pCamera = NULL;
+		BOOL isLeft = (pt.x < rect.left + MulDpi(iLeftWidth, g_uWndMainDpi)),
+			isTop = (pt.y < rect.top + MulDpi(iTopHeight, g_uWndMainDpi));
+		IXCamera *pCamera = NULL;
 		X_2D_VIEW x2dView;
 		HWND hTargetWnd;
 		float *pfOldScale = NULL;
@@ -2230,6 +2485,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				break;
 			}
 			*pfOldScale = fNewScale;
+			pCamera->setScale(fNewScale);
 		}
 		else
 		{
@@ -2239,8 +2495,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	}
 
 	case WM_DESTROY:
+		{
+			WINDOWPLACEMENT wp = {sizeof(wp)};
+			BOOL res = GetWindowPlacement(hWnd, &wp);
+
+			HKEY hKey;
+			if(ERROR_SUCCESS == RegCreateKeyExA(HKEY_CURRENT_USER, "SOFTWARE\\DogmaNet\\TerraX", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE | KEY_QUERY_VALUE, NULL, &hKey, NULL))
+			{
+				RegSetValueExA(hKey, "WinPos", 0, REG_BINARY, (BYTE*)&wp, wp.length);
+			}
+			RegCloseKey(hKey);
+		}
+
 		mem_delete(g_pPropWindow);
 		DestroyMenu(g_hMenu);
+		ReleaseDefaultFont(g_hWndMainFont);
 		DeleteObject(hcSizeEW);
 		DeleteObject(hcSizeNS);
 		DeleteObject(hcSizeNESW);
@@ -2324,22 +2593,21 @@ static void XTrackMouse(HWND hWnd, LPARAM lParam)
 
 	g_xState.vMousePos = {(float)GET_X_LPARAM(lParam), (float)GET_Y_LPARAM(lParam)};
 
-	ICamera *pCamera = g_xConfig.m_pViewportCamera[g_xState.activeWindow];
+	IXCamera *pCamera = g_xConfig.m_pViewportCamera[g_xState.activeWindow];
 	if(!pCamera)
 	{
 		return;
 	}
 
 	RECT rc;
-	GetWindowRect(hWnd, &rc);
+	GetClientRect(hWnd, &rc);
 	float2 vWinSize((float)(rc.right - rc.left), (float)(rc.bottom - rc.top));
 	g_xState.vWinSize = vWinSize;
 
 	if(g_xState.activeWindow == XWP_TOP_LEFT)
 	{
 		// transform by matrix
-		SMMATRIX mViewProj;
-		Core_RMatrixGet(G_RI_MATRIX_OBSERVER_VIEWPROJ, &mViewProj);
+		SMMATRIX mViewProj = g_xConfig.m_pViewportCamera[XWP_TOP_LEFT]->getViewMatrix() * g_xConfig.m_pViewportCamera[XWP_TOP_LEFT]->getProjMatrix();
 		SMMATRIX mInvVP = SMMatrixInverse(NULL, mViewProj);
 
 		float3 vScreenPos(g_xState.vMousePos / vWinSize, 0.0f);
@@ -2446,34 +2714,12 @@ void XDisableCurrentTool()
 	XInitTypesCombo();
 }
 
-static bool XIsInSelection(const float3 &vPos)
-{
-	X_2D_VIEW xCurView = g_xConfig.m_x2DView[g_xState.activeWindow];
-	bool sel = false;
-	switch(xCurView)
-	{
-	case X2D_TOP:
-		sel = ((vPos.x > g_xState.vWorldMousePos.x && vPos.x <= g_xState.vFrameSelectStart.x) || (vPos.x < g_xState.vWorldMousePos.x && vPos.x >= g_xState.vFrameSelectStart.x))
-			&& ((vPos.z > g_xState.vWorldMousePos.y && vPos.z <= g_xState.vFrameSelectStart.y) || (vPos.z < g_xState.vWorldMousePos.y && vPos.z >= g_xState.vFrameSelectStart.y));
-		break;
-	case X2D_FRONT:
-		sel = ((vPos.x > g_xState.vWorldMousePos.x && vPos.x <= g_xState.vFrameSelectStart.x) || (vPos.x < g_xState.vWorldMousePos.x && vPos.x >= g_xState.vFrameSelectStart.x))
-			&& ((vPos.y > g_xState.vWorldMousePos.y && vPos.y <= g_xState.vFrameSelectStart.y) || (vPos.y < g_xState.vWorldMousePos.y && vPos.y >= g_xState.vFrameSelectStart.y));
-		break;
-	case X2D_SIDE:
-		sel = ((vPos.z > g_xState.vWorldMousePos.x && vPos.z <= g_xState.vFrameSelectStart.x) || (vPos.z < g_xState.vWorldMousePos.x && vPos.z >= g_xState.vFrameSelectStart.x))
-			&& ((vPos.y > g_xState.vWorldMousePos.y && vPos.y <= g_xState.vFrameSelectStart.y) || (vPos.y < g_xState.vWorldMousePos.y && vPos.y >= g_xState.vFrameSelectStart.y));
-		break;
-	}
-	return(sel);
-}
-
 static bool XIsClicked(const float3 &vPos)
 {
 	X_2D_VIEW xCurView = g_xConfig.m_x2DView[g_xState.activeWindow];
 	float fViewScale = g_xConfig.m_fViewportScale[g_xState.activeWindow];
 
-	const float fWorldSize = 3.5f * fViewScale;
+	const float fWorldSize = MulDpiF(3.5f, g_uWndMainDpi) * fViewScale;
 
 	bool sel = false;
 	switch(xCurView)
@@ -2490,6 +2736,11 @@ static bool XIsClicked(const float3 &vPos)
 	}
 
 	return(sel);
+}
+
+static bool XIsCameraActive()
+{
+	return(Button_GetCheck(g_hABCameraButton) || GetKeyState(VK_SPACE) < 0);
 }
 
 LRESULT CALLBACK RenderNoninteractiveWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -2566,10 +2817,24 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 
 		SAFE_CALL(g_pCurrentTool, onMouseUp, false);
 
+		if(hWnd != g_hTopLeftWnd && XIsMouseInSelection(g_xState.activeWindow))
+		{
+			POINT pt = {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
+			MapWindowPoints(hWnd, g_hWndMain, &pt, 1);
+			DisplayContextMenu(g_hWndMain, pt, g_hMenu2, 2);
+		}
+
 		break;
 
 	case WM_LBUTTONUP:
 	{
+		if(g_is2DPanning)
+		{
+			g_is2DPanning = FALSE;
+			SSInput_SetEnable(false);
+			ReleaseCapture();
+			break;
+		}
 		SAFE_CALL(g_pCurrentTool, onMouseUp, true);
 
 		if(g_is3DRotating)
@@ -2579,25 +2844,25 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 			ReleaseCapture();
 			break;
 		}
-		if(g_xState.isFrameSelect)
+		if(g_xState.isFrameSelectInternal)
 		{
-			g_xState.isFrameSelect = false;
-			ReleaseCapture();
-			
-			if(!SMIsZero(SMVector2Length(g_xState.vWorldMousePos - g_xState.vFrameSelectStart)))
-			{
-				X_2D_VIEW xCurView = g_xConfig.m_x2DView[g_xState.activeWindow];
+			float2_t vSelectStartPos, vSelectEndPos;
+			X_2D_VIEW xCurView;
+			g_pEditor->endFrameSelect(&xCurView, &vSelectStartPos, &vSelectEndPos);
+			g_xState.isFrameSelectInternal = false;
 
+			if(!SMIsZero(SMVector2Length(vSelectEndPos - vSelectStartPos)))
+			{
 				CCommandSelect *pCmd = new CCommandSelect();
 				bool bUse = false;
-				XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+				XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 					if(!(g_xConfig.m_bIgnoreGroups && isProxy))
 					{
 						float3_t vPos = pObj->getPos();
-						bool sel = XIsInSelection(vPos);
+						bool sel = g_pEditor->isPointInFrame(vPos, vSelectStartPos, vSelectEndPos, xCurView);
 						if(!g_xConfig.m_bIgnoreGroups && pParent)
 						{
-							CProxyObject *pCur;
+							ICompoundObject *pCur;
 							while((pCur = XGetObjectParent(pParent)))
 							{
 								pParent = pCur;
@@ -2611,6 +2876,7 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 								//pObj->setSelected(true);
 								bUse = true;
 								pCmd->addSelected(pObj);
+								g_pEditor->onObjectSelected(pObj);
 							}
 						}
 						else
@@ -2619,6 +2885,7 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 							{
 								bUse = true;
 								pCmd->addSelected(pObj);
+								g_pEditor->onObjectSelected(pObj);
 								//pObj->setSelected(sel);
 							}
 							else if(pObj->isSelected() && !sel)
@@ -2720,7 +2987,7 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 					break;
 				}
 			}
-			DisplayContextMenu(hWnd, pt, IDR_MENU2, hWnd == g_hTopLeftWnd ? 0 : 1, iActiveMenu);
+			DisplayContextMenu(hWnd, pt, g_hMenu2, hWnd == g_hTopLeftWnd ? 0 : 1, iActiveMenu);
 		}
 	}
 	break;
@@ -2754,8 +3021,7 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 			float2 vWinSize((float)(rc.right - rc.left), (float)(rc.bottom - rc.top));
 
 			// transform by matrix
-			SMMATRIX mViewProj;
-			Core_RMatrixGet(G_RI_MATRIX_OBSERVER_VIEWPROJ, &mViewProj);
+			SMMATRIX mViewProj = g_xConfig.m_pViewportCamera[XWP_TOP_LEFT]->getViewMatrix() * g_xConfig.m_pViewportCamera[XWP_TOP_LEFT]->getProjMatrix();
 			SMMATRIX mInvVP = SMMatrixInverse(NULL, mViewProj);
 
 			float3 vScreenPos(g_xState.vMousePos / vWinSize, 0.0f);
@@ -2777,7 +3043,7 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 			float3 vRayEnd = vRayStart + vRayDir * 1000.0f;
 
 
-			if(Button_GetCheck(g_hABArrowButton))
+			if(Button_GetCheck(g_hABArrowButton) && !XIsCameraActive())
 			{
 				if(g_pEditor->onMouseDown())
 				{
@@ -2785,7 +3051,7 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 				}
 
 				g_aRaytracedItems.clearFast();
-				XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+				XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 					if(g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent)
 					{
 						float fDist2 = -1.0f;
@@ -2810,7 +3076,7 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 						{
 							if(!g_xConfig.m_bIgnoreGroups && pParent)
 							{
-								CProxyObject *pCur;
+								ICompoundObject *pCur;
 								while((pCur = XGetObjectParent(pParent)))
 								{
 									pParent = pCur;
@@ -2835,7 +3101,7 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 
 				XFrameRun(0.0f);
 			}
-			else if(Button_GetCheck(g_hABCreateButton))
+			else if(Button_GetCheck(g_hABCreateButton) && !XIsCameraActive())
 			{
 				struct SelectItem2
 				{
@@ -2846,7 +3112,7 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 				static Array<SelectItem2> s_aRaytracedItems;
 
 				float3 vPos, vNorm;
-				XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+				XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 					if(g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent)
 					{
 						if(pObj->hasVisualModel())
@@ -2906,22 +3172,29 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 				}
 			}
 
-			if(!Button_GetCheck(g_hABCameraButton) && g_pEditor->onMouseDown())
+			if(!XIsCameraActive() && g_pEditor->onMouseDown())
 			{
 				break;
 			}
 		}
 		else
 		{
-			if(Button_GetCheck(g_hABArrowButton))
+			if(XIsCameraActive())
+			{
+				g_is2DPanning = TRUE;
+				SetCapture(hWnd);
+				SSInput_SetEnable(true);
+			}
+			else if(Button_GetCheck(g_hABArrowButton))
 			{
 				X_2D_VIEW xCurView = g_xConfig.m_x2DView[g_xState.activeWindow];
 
 				if(g_xState.bHasSelection)
 				{
 					float fScale = g_xConfig.m_fViewportScale[g_xState.activeWindow];
-					float fPtSize = 3.0f * fScale;
-					float fPtMargin = 7.0f * fScale;
+					
+					float fPtSize = MulDpiF(3.0f, g_uWndMainDpi) * fScale;
+					float fPtMargin = MulDpiF(7.0f, g_uWndMainDpi) * fScale;
 					float2 vSelectionCenter;
 					float4 vBorder;
 
@@ -2993,7 +3266,7 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 								s_pScaleCmd->setStartAABB(g_xState.vSelectionBoundMin, g_xState.vSelectionBoundMax);
 								s_pScaleCmd->setTransformDir(dirs[g_xConfig.m_x2DView[g_xState.activeWindow]][i]);
 								s_pScaleCmd->setStartPos(vStartPos);
-								XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+								XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 									if(pObj->isSelected() && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent))
 									{
 										s_pScaleCmd->addObject(pObj);
@@ -3003,10 +3276,10 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 							else if(g_xState.xformType == X2DXF_ROTATE)
 							{
 								// create rotate command
-								s_pRotateCmd = new CCommandRotate();
+								s_pRotateCmd = new CCommandRotate(GetKeyState(VK_SHIFT) < 0);
 								s_pRotateCmd->setStartOrigin((g_xState.vSelectionBoundMax + g_xState.vSelectionBoundMin) * 0.5f * vMask, float3(1.0f) - vMask);
 								s_pRotateCmd->setStartPos(vStartPos);
-								XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+								XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 									if(pObj->isSelected() && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent))
 									{
 										s_pRotateCmd->addObject(pObj);
@@ -3027,21 +3300,21 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 				{
 					break;
 				}
-
+				
 				if(!XIsMouseInSelection(g_xState.activeWindow) || (wParam & MK_CONTROL))
 				{
 					CCommandSelect *pCmd = new CCommandSelect();
 					bool bUse = false;
 					bool wasSel = false;
 
-					XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+					XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 						if(!(g_xConfig.m_bIgnoreGroups && isProxy))
 						{
 							bool sel = XIsClicked(pObj->getPos());
 
 							if(!g_xConfig.m_bIgnoreGroups && pParent)
 							{
-								CProxyObject *pCur;
+								ICompoundObject *pCur;
 								while((pCur = XGetObjectParent(pParent)))
 								{
 									pParent = pCur;
@@ -3060,6 +3333,7 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 									else
 									{
 										pCmd->addSelected(pObj);
+										g_pEditor->onObjectSelected(pObj);
 									}
 									bUse = true;
 									wasSel = true;
@@ -3075,6 +3349,7 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 								else if(!pObj->isSelected() && sel && !wasSel)
 								{
 									pCmd->addSelected(pObj);
+									g_pEditor->onObjectSelected(pObj);
 									bUse = true;
 									wasSel = true;
 								}
@@ -3094,7 +3369,7 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 				{
 					SetCapture(hWnd);
 					SetCursor(hcPtr);
-					s_pMoveCmd = new CCommandMove();
+					s_pMoveCmd = new CCommandMove(GetKeyState(VK_SHIFT) < 0);
 					float3 vStartPos;
 					switch(xCurView)
 					{
@@ -3110,20 +3385,44 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 					}
 					s_pMoveCmd->setStartPos(XSnapToGrid(vStartPos));
 
-					XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
-						if(pObj->isSelected() && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent))
+					bool bReferenceFound = false;
+
+					float3 vBoundMin, vBoundMax;
+					XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
+						if(pObj->isSelected())
 						{
-							s_pMoveCmd->addObject(pObj);
+							if(g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent)
+							{
+								s_pMoveCmd->addObject(pObj);
+							}
+							if(!bReferenceFound && g_xConfig.m_bSnapGrid)
+							{
+								pObj->getBound(&vBoundMin, &vBoundMax);
+								if(XIsMouseInBound(g_xState.activeWindow, vBoundMin, vBoundMax))
+								{
+									bReferenceFound = true;
+								}
+							}
 						}
 					});
+
+					if(!bReferenceFound)
+					{
+						vBoundMin = g_xState.vSelectionBoundMin;
+						vBoundMax = g_xState.vSelectionBoundMax;
+					}
+
+					s_pMoveCmd->setReferenceBound(vBoundMin, vBoundMax);
+
+					
+
 					// if mouse in selected object
 					// start move
 				}
 				else
 				{ // start frame select
-					g_xState.isFrameSelect = true;
-					SetCapture(hWnd);
-					g_xState.vFrameSelectStart = g_xState.vWorldMousePos;
+					g_xState.isFrameSelectInternal = true;
+					g_pEditor->beginFrameSelect();
 				}
 			}
 			else if(Button_GetCheck(g_hABCreateButton))
@@ -3154,7 +3453,7 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 			//break;
 		}
 
-		if(!Button_GetCheck(g_hABCameraButton) && g_pCurrentTool && g_pCurrentTool->onMouseDown(true))
+		if(!XIsCameraActive() && g_pCurrentTool && g_pCurrentTool->onMouseDown(true))
 		{
 			break;
 		}
@@ -3165,7 +3464,7 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 			{
 				break;
 			}
-			if(Button_GetCheck(g_hABCameraButton))
+			if(XIsCameraActive())
 			{
 				g_is3DRotating = TRUE;
 				SetCapture(hWnd);
@@ -3179,7 +3478,7 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 
 	case WM_RBUTTONDOWN:
 	{
-		if(!Button_GetCheck(g_hABCameraButton) && g_pCurrentTool && g_pCurrentTool->onMouseDown(false))
+		if(!XIsCameraActive() && g_pCurrentTool && g_pCurrentTool->onMouseDown(false))
 		{
 			break;
 		}
@@ -3188,7 +3487,7 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 		{
 			break;
 		}
-		if(Button_GetCheck(g_hABCameraButton))
+		if(XIsCameraActive())
 		{
 			g_is3DPanning = TRUE;
 			SetCapture(hWnd);
@@ -3214,9 +3513,9 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 			ReleaseCapture();
 		}
 		break;
-
+		
 	case WM_MOUSEMOVE:
-		//SetFocus(g_hWndMain);
+		SetFocus(g_hWndMain);
 
 		if(!g_is3DRotating && !g_is3DPanning && !g_is2DPanning)
 		{
@@ -3229,7 +3528,7 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 			{
 				X_2D_VIEW xCurView = g_xConfig.m_x2DView[g_xState.activeWindow];
 #if 0
-				ICamera *pCamera = g_xConfig.m_pViewportCamera[g_xState.activeWindow];
+				IXCamera *pCamera = g_xConfig.m_pViewportCamera[g_xState.activeWindow];
 				if(!pCamera)
 				{
 					break;
@@ -3268,7 +3567,7 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 				/*if(g_is2DPanning)
 				{
 				// vWorldDelta
-				ICamera *pCamera = g_xConfig.m_pViewportCamera[g_xState.activeWindow];
+				IXCamera *pCamera = g_xConfig.m_pViewportCamera[g_xState.activeWindow];
 
 				float3 vWorldDelta = (g_xState.vMousePos - g_v2DPanningStartMouse) * fViewScale;
 
@@ -3309,7 +3608,108 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 
 					if(s_pMoveCmd)
 					{
-						s_pMoveCmd->setCurrentPos(XSnapToGrid(vCurPos));
+						if(g_xConfig.m_bSnapGrid)
+						{
+							float3_t vBoundMin, vBoundMax;
+							s_pMoveCmd->getReferenceBound(&vBoundMin, &vBoundMax);
+							
+							float3_t vCenterPoint = (vBoundMin + vBoundMax) * 0.5f;
+							float3_t vBoundSize = (vBoundMax - vBoundMin);
+							switch(xCurView)
+							{
+							case X2D_TOP:
+								vBoundSize.y = 0.0f;
+								vCenterPoint.y = 0.0f;
+								break;
+							case X2D_FRONT:
+								vBoundSize.z = 0.0f;
+								vCenterPoint.z = 0.0f;
+								break;
+							case X2D_SIDE:
+								vBoundSize.x = 0.0f;
+								vCenterPoint.x = 0.0f;
+								break;
+							}
+
+							float3_t vSnapDelta = XSnapToGrid(vCenterPoint) - vCenterPoint;
+
+							float fGridStep = XGetGridStep();
+							float3 vSnappedPos = XSnapToGrid(vCurPos);
+							float3 vDeltaPos = vCurPos - vSnappedPos;
+
+							float fThreshold = fGridStep * (1.0f / 6.0f);
+							float fX = 0.0f;
+							float fY = 0.0f;
+							float fZ = 0.0f;
+							switch(xCurView)
+							{
+							case X2D_TOP: // x/z
+								if(fabsf(vDeltaPos.x) > fThreshold)
+								{
+									fX = vDeltaPos.x > 0.0f ? 1.0f : -1.0f;
+								}
+								if(fabsf(vDeltaPos.z) > fThreshold)
+								{
+									fZ = vDeltaPos.z > 0.0f ? 1.0f : -1.0f;
+								}
+								break;
+							case X2D_FRONT: // x/y
+								if(fabsf(vDeltaPos.x) > fThreshold)
+								{
+									fX = vDeltaPos.x > 0.0f ? 1.0f : -1.0f;
+								}
+								if(fabsf(vDeltaPos.y) > fThreshold)
+								{
+									fY = vDeltaPos.y > 0.0f ? 1.0f : -1.0f;
+								}
+								break;
+							case X2D_SIDE: // z/y
+								if(fabsf(vDeltaPos.z) > fThreshold)
+								{
+									fZ = vDeltaPos.z > 0.0f ? 1.0f : -1.0f;
+								}
+								if(fabsf(vDeltaPos.y) > fThreshold)
+								{
+									fY = vDeltaPos.y > 0.0f ? 1.0f : -1.0f;
+								}
+								break;
+							}
+							if(fX != 0.0f || fY != 0.0f || fZ != 0.0f)
+							{
+								if(fmodf(vBoundSize.x, fGridStep * 2.0f) > fGridStep)
+								{
+									vSnapDelta.x += (fGridStep - fmodf(vBoundSize.x * 0.5f, fGridStep)) * fX;
+								}
+								else
+								{
+									vSnapDelta.x += fmodf(vBoundSize.x * 0.5f, fGridStep) * fX;
+								}
+
+								if(fmodf(vBoundSize.y, fGridStep * 2.0f) > fGridStep)
+								{
+									vSnapDelta.y += (fGridStep - fmodf(vBoundSize.y * 0.5f, fGridStep)) * fY;
+								}
+								else
+								{
+									vSnapDelta.y += fmodf(vBoundSize.y * 0.5f, fGridStep) * fY;
+								}
+
+								if(fmodf(vBoundSize.z, fGridStep * 2.0f) > fGridStep)
+								{
+									vSnapDelta.z += (fGridStep - fmodf(vBoundSize.z * 0.5f, fGridStep)) * fZ;
+								}
+								else
+								{
+									vSnapDelta.z += fmodf(vBoundSize.z * 0.5f, fGridStep) * fZ;
+								}
+							}
+
+							s_pMoveCmd->setCurrentPos(vSnappedPos + vSnapDelta);
+						}
+						else
+						{
+							s_pMoveCmd->setCurrentPos(vCurPos);
+						}
 					}
 					if(s_pScaleCmd)
 					{
@@ -3332,8 +3732,8 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 				else if(g_xState.bHasSelection)
 				{
 					float fScale = g_xConfig.m_fViewportScale[g_xState.activeWindow];
-					float fPtSize = 3.0f * fScale;
-					float fPtMargin = 7.0f * fScale;
+					float fPtSize = MulDpiF(3.0f, g_uWndMainDpi) * fScale;
+					float fPtMargin = MulDpiF(7.0f, g_uWndMainDpi) * fScale;
 					float2 vSelectionCenter;
 					float4 vBorder;
 
@@ -3421,7 +3821,7 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 				g_xState.vCreateOrigin = XSnapToGrid(g_xState.vCreateOrigin);
 			}
 
-			g_pEditor->onMouseMove();
+			SAFE_CALL(g_pEditor, onMouseMove);
 
 			if(g_pCurrentTool && g_pCurrentTool->onMouseMove())
 			{
@@ -3462,7 +3862,7 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 		case ID_2D_FRONT:
 		case ID_2D_SIDE:
 		{
-			ICamera *pTargetCam = g_xConfig.m_pViewportCamera[g_xState.activeWindow];
+			IXCamera *pTargetCam = g_xConfig.m_pViewportCamera[g_xState.activeWindow];
 			X_2D_VIEW *pX2DView = &g_xConfig.m_x2DView[g_xState.activeWindow];
 			g_bViewportCaptionDirty[g_xState.activeWindow] = true;
 			switch(LOWORD(wParam))
@@ -3508,6 +3908,7 @@ void XFrameRun(float fDeltaTime)
 	if(g_pSelectCmd)
 	{
 		g_fSelectDeltaTime += fDeltaTime;
+		IXEditorObject *pSelectedObject = NULL;
 
 		if(g_fSelectDeltaTime >= XSELECT_STEP_DELAY)
 		{
@@ -3515,7 +3916,7 @@ void XFrameRun(float fDeltaTime)
 
 			if(g_uSelectedIndex == ~0 && !g_isSelectionCtrl)
 			{
-				XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+				XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 					if(pObj->isSelected() && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent))
 					{
 						pObj->setSelected(false);
@@ -3537,6 +3938,7 @@ void XFrameRun(float fDeltaTime)
 					{
 						g_aRaytracedItems[g_uSelectedIndex].pObj->setSelected(true);
 						g_pSelectCmd->addSelected(g_aRaytracedItems[g_uSelectedIndex].pObj);
+						pSelectedObject = g_aRaytracedItems[g_uSelectedIndex].pObj;
 					}
 				}
 
@@ -3552,24 +3954,34 @@ void XFrameRun(float fDeltaTime)
 				{
 					g_aRaytracedItems[g_uSelectedIndex].pObj->setSelected(true);
 					g_pSelectCmd->addSelected(g_aRaytracedItems[g_uSelectedIndex].pObj);
+					pSelectedObject = g_aRaytracedItems[g_uSelectedIndex].pObj;
 				}
 			}
 		}
+
+		if(pSelectedObject)
+		{
+			g_pEditor->onObjectSelected(pSelectedObject);
+		}
 	}
 
+	g_pEditor->update(fDeltaTime);
 	g_pMaterialBrowser->update(fDeltaTime);
+	
+	XUpdateSelectionBound();
+	XUpdateGizmos();
 }
 
-void DisplayContextMenu(HWND hwnd, POINT pt, int iMenu, int iSubmenu, int iCheckItem)
+void DisplayContextMenu(HWND hwnd, POINT pt, HMENU hMenu, int iSubmenu, int iCheckItem)
 {
-	HMENU hmenu;            // top-level menu 
+	//HMENU hmenu;            // top-level menu 
 	HMENU hmenuTrackPopup;  // shortcut menu 
 
 	// Load the menu resource. 
 
-	if((hmenu = LoadMenu(hInst, MAKEINTRESOURCE(iMenu))) == NULL)
-		return;
-	hmenuTrackPopup = GetSubMenu(hmenu, iSubmenu);
+	//if((hmenu = LoadMenu(hInst, MAKEINTRESOURCE(iMenu))) == NULL)
+	//	return;
+	hmenuTrackPopup = GetSubMenu(hMenu, iSubmenu);
 
 	MENUITEMINFOA mii;
 	memset(&mii, 0, sizeof(mii));
@@ -3580,7 +3992,7 @@ void DisplayContextMenu(HWND hwnd, POINT pt, int iMenu, int iSubmenu, int iCheck
 	{
 		SetMenuItemInfoA(hmenuTrackPopup, i, TRUE, &mii);
 	}
-	if(iCheckItem)
+	if(iCheckItem > 0)
 	{
 		mii.fState = MFS_CHECKED;
 		SetMenuItemInfoA(hmenuTrackPopup, iCheckItem, FALSE, &mii);
@@ -3596,7 +4008,7 @@ void DisplayContextMenu(HWND hwnd, POINT pt, int iMenu, int iSubmenu, int iCheck
 
 	// Destroy the menu. 
 
-	DestroyMenu(hmenu);
+	//DestroyMenu(hmenu);
 }
 
 void XInitViewportLayout(X_VIEWPORT_LAYOUT layout)
@@ -3846,6 +4258,7 @@ void XUpdateUndoRedo()
 		mii.cch = sprintf(str, "Can't undo\tCtrl+Z");
 	}
 	SetMenuItemInfoA(g_hMenu, ID_EDIT_UNDO, FALSE, &mii);
+	SetMenuItemInfoA(g_hMenu2, ID_EDIT_UNDO, FALSE, &mii);
 
 	mii.fState = g_pUndoManager->canRedo() ? MFS_ENABLED : MFS_DISABLED;
 	if(g_pUndoManager->canRedo())
@@ -3857,6 +4270,7 @@ void XUpdateUndoRedo()
 		mii.cch = sprintf(str, "Can't redo\tCtrl+Y");
 	}
 	SetMenuItemInfoA(g_hMenu, ID_EDIT_REDO, FALSE, &mii);
+	SetMenuItemInfoA(g_hMenu2, ID_EDIT_REDO, FALSE, &mii);
 }
 
 //##########################################################################
@@ -3995,6 +4409,8 @@ void XCleanupUnreferencedPropGizmos()
 
 void XUpdatePropWindow()
 {
+	g_pEditor->onSelectionChanged();
+
 	g_propertyCallback.start();
 
 	const char *szFirstType = NULL;
@@ -4013,7 +4429,7 @@ void XUpdatePropWindow()
 
 	UINT uSelectedCount = 0;
 
-	XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+	XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 		if(pObj->isSelected() && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent))
 		{
 			++uSelectedCount;
@@ -4171,9 +4587,9 @@ void XMETHODCALLTYPE CGizmoMoveCallback::moveTo(const float3 &vNewPos, IXEditorG
 }
 void XMETHODCALLTYPE CGizmoMoveCallback::onStart(IXEditorGizmoMove *pGizmo)
 {
-	m_pCmd = new CCommandMove();
+	m_pCmd = new CCommandMove(GetKeyState(VK_SHIFT) < 0);
 	m_pCmd->setStartPos(pGizmo->getPos());
-	XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+	XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 		if(pObj->isSelected() && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent))
 		{
 			m_pCmd->addObject(pObj);
@@ -4206,10 +4622,10 @@ void XMETHODCALLTYPE CGizmoRotateCallback::onStart(const float3_t &vAxis, IXEdit
 	}
 	m_vOffset = vStartOffset = SMVector3Normalize(SMVector3Cross(vAxis, vStartOffset));
 
-	m_pCmd = new CCommandRotate();
+	m_pCmd = new CCommandRotate(GetKeyState(VK_SHIFT) < 0);
 	m_pCmd->setStartOrigin(pGizmo->getPos(), vAxis);
 	m_pCmd->setStartPos(pGizmo->getPos() + vStartOffset);
-	XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, CProxyObject *pParent){
+	XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 		if(pObj->isSelected() && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent))
 		{
 			m_pCmd->addObject(pObj);
@@ -4272,12 +4688,29 @@ HWND CreateToolbar(HWND hWndParent)
 		return NULL;
 
 	// Create the image list.
-	g_hImageList = ImageList_Create(bitmapSize, bitmapSize - 1,   // Dimensions of individual bitmaps.
+	g_hImageList = ImageList_Create(MulDpi(bitmapSize, g_uWndMainDpi), MulDpi(bitmapSize - 1, g_uWndMainDpi),   // Dimensions of individual bitmaps.
 		ILC_COLOR16 | ILC_MASK,   // Ensures transparent background.
 		numButtons, 0);
 
 	HBITMAP hbToolbar = LoadBitmap(hInst, MAKEINTRESOURCE(IDR_TOOLBAR1));
 	HBITMAP hbToolbarA = LoadBitmap(hInst, MAKEINTRESOURCE(IDR_TOOLBAR_A));
+	
+	if(g_uWndMainDpi != USER_DEFAULT_SCREEN_DPI)
+	{
+		HDC hDC = GetDC(hWndToolbar);
+
+		HBITMAP hbToolbarScaled = StretchBitmap(hDC, hbToolbar);
+		HBITMAP hbToolbarAScaled = StretchBitmap(hDC, hbToolbarA);
+
+		DeleteBitmap(hbToolbar);
+		DeleteBitmap(hbToolbarA);
+
+		hbToolbar = hbToolbarScaled;
+		hbToolbarA = hbToolbarAScaled;
+
+		ReleaseDC(hWndToolbar, hDC);
+	}
+
 	ImageList_Add(g_hImageList, hbToolbar, hbToolbarA);
 	DeleteBitmap(hbToolbar);
 	DeleteBitmap(hbToolbarA);
@@ -4286,6 +4719,7 @@ HWND CreateToolbar(HWND hWndParent)
 	SendMessage(hWndToolbar, TB_SETIMAGELIST,
 		(WPARAM)ImageListID,
 		(LPARAM)g_hImageList);
+
 
 	// Load the button images.
 	//SendMessage(hWndToolbar, TB_LOADIMAGES,
@@ -4332,7 +4766,7 @@ void XSetXformType(X_2DXFORM_TYPE type)
 void XInitTool(IXEditorTool *pTool, IXEditable *pEditable)
 {
 	HWND hBtn = CreateWindow("Button", "", WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_BITMAP | BS_PUSHLIKE | BS_CHECKBOX,
-		g_uABNextLeft, g_uABNextTop, AB_BUTTON_WIDTH, AB_BUTTON_HEIGHT, g_hWndMain, (HMENU)(IDC_AB_FIRST + g_aTools.size()), hInst, NULL
+		MulDpi(g_uABNextLeft, g_uWndMainDpi), MulDpi(g_uABNextTop, g_uWndMainDpi), MulDpi(AB_BUTTON_WIDTH, g_uWndMainDpi), MulDpi(AB_BUTTON_HEIGHT, g_uWndMainDpi), g_hWndMain, (HMENU)(IDC_AB_FIRST + g_aTools.size()), hInst, NULL
 	);
 	{
 		SetWindowTheme(hBtn, L" ", L" ");
@@ -4449,4 +4883,123 @@ void XInitTypesCombo()
 	}
 
 	ComboBox_Enable(g_hComboTypesWnd, iTypes > 1);
+}
+
+UINT GetWindowDPI(HWND hWnd)
+{
+	typedef HRESULT(WINAPI *PGetDpiForMonitor)(HMONITOR hmonitor, int dpiType, UINT* dpiX, UINT* dpiY);
+
+	// Try to get the DPI setting for the monitor where the given window is located.
+	// This API is Windows 8.1+.
+	HMODULE hSHcore = LoadLibraryW(L"shcore");
+	if(hSHcore)
+	{
+		PGetDpiForMonitor pGetDpiForMonitor = (PGetDpiForMonitor)GetProcAddress(hSHcore, "GetDpiForMonitor");
+		if(pGetDpiForMonitor)
+		{
+			HMONITOR hMonitor = MonitorFromWindow(hWnd, MONITOR_DEFAULTTOPRIMARY);
+			UINT uDpiX;
+			UINT uDpiY;
+			HRESULT hr = pGetDpiForMonitor(hMonitor, /*MDT_EFFECTIVE_DPI*/ 0, &uDpiX, &uDpiY);
+			if(SUCCEEDED(hr))
+			{
+				return(uDpiX);
+			}
+		}
+	}
+
+	// We couldn't get the window's DPI above, so get the DPI of the primary monitor
+	// using an API that is available in all Windows versions.
+	HDC hScreenDC = GetDC(0);
+	int iDpiX = GetDeviceCaps(hScreenDC, LOGPIXELSX);
+	ReleaseDC(0, hScreenDC);
+
+	return((UINT)iDpiX);
+}
+
+int MulDpi(int iUnscaled, UINT uCurrentDpi)
+{
+	return(MulDiv(iUnscaled, uCurrentDpi, USER_DEFAULT_SCREEN_DPI));
+}
+float MulDpiF(float fUnscaled, UINT uCurrentDpi)
+{
+	return(fUnscaled * (float)uCurrentDpi / (float)USER_DEFAULT_SCREEN_DPI);
+}
+
+int DivDpi(int iUnscaled, UINT uCurrentDpi)
+{
+	return(MulDiv(iUnscaled, USER_DEFAULT_SCREEN_DPI, uCurrentDpi));
+}
+
+void DivDpiRect(RECT *pRc, UINT uCurrentDpi)
+{
+	pRc->top = DivDpi(pRc->top, uCurrentDpi);
+	pRc->bottom = DivDpi(pRc->bottom, uCurrentDpi);
+	pRc->left = DivDpi(pRc->left, uCurrentDpi);
+	pRc->right = DivDpi(pRc->right, uCurrentDpi);
+}
+
+void MulDpiRect(RECT *pRc, UINT uCurrentDpi)
+{
+	pRc->top = MulDpi(pRc->top, uCurrentDpi);
+	pRc->bottom = MulDpi(pRc->bottom, uCurrentDpi);
+	pRc->left = MulDpi(pRc->left, uCurrentDpi);
+	pRc->right = MulDpi(pRc->right, uCurrentDpi);
+}
+
+HFONT GetDefaultFont(UINT uDpi)
+{
+	NONCLIENTMETRICSW nonClientMetrics = {sizeof(nonClientMetrics)};
+	if(SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, sizeof(nonClientMetrics), &nonClientMetrics, 0))
+	{
+		HDC hScreenDC = GetDC(0);
+		int iDpiX = GetDeviceCaps(hScreenDC, LOGPIXELSX);
+		ReleaseDC(0, hScreenDC);
+
+		//nonClientMetrics.lfMenuFont.lfHeight = -12 * (int)uDpi / 72;
+		nonClientMetrics.lfMenuFont.lfHeight = MulDiv(nonClientMetrics.lfMenuFont.lfHeight, uDpi, iDpiX);
+		HFONT hFont = CreateFontIndirectW(&nonClientMetrics.lfMenuFont);
+		if(hFont)
+		{
+			return(hFont);
+		}
+	}
+
+	return((HFONT)GetStockObject(DEFAULT_GUI_FONT));
+}
+
+void ReleaseDefaultFont(HFONT hFont)
+{
+	if(hFont != GetStockObject(DEFAULT_GUI_FONT))
+	{
+		DeleteObject(hFont);
+	}
+}
+
+HBITMAP StretchBitmap(HDC hDC, HBITMAP hBitmap)
+{
+	BITMAP bm1, bm2;
+	HBITMAP hBitmapNew;
+	HDC hDC1, hDC2;
+	hDC1 = CreateCompatibleDC(hDC);
+	hDC2 = CreateCompatibleDC(hDC);
+	
+	GetObject(hBitmap, sizeof(BITMAP), (PSTR)&bm1);
+
+	bm2 = bm1;
+	bm2.bmWidth = MulDpi(bm1.bmWidth, g_uWndMainDpi);
+	bm2.bmHeight = MulDpi(bm1.bmHeight, g_uWndMainDpi);
+	bm2.bmWidthBytes = MulDpi(bm1.bmWidthBytes, g_uWndMainDpi);
+	hBitmapNew = CreateBitmapIndirect(&bm2);
+
+	SelectObject(hDC1, hBitmap);
+	SelectObject(hDC2, hBitmapNew);
+
+	SetStretchBltMode(hDC1, HALFTONE);
+	StretchBlt(hDC2, 0, 0, bm2.bmWidth, bm2.bmHeight, hDC1, 0, 0, bm1.bmWidth, bm1.bmHeight, SRCCOPY);
+
+	DeleteDC(hDC1);
+	DeleteDC(hDC2);
+
+	return(hBitmapNew);
 }

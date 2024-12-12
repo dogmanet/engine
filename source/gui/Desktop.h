@@ -13,40 +13,43 @@ namespace gui
 		CDesktop(CDesktopStack *pDecktopStack, const StringW &sName);
 		~CDesktop();
 
-		void loadFromFile(const WCHAR *str);
+		void loadFromFile(const WCHAR *str) override;
 
-		void setWidth(UINT w);
-		void setHeight(UINT h);
-		void updateSize();
+		void setWidth(UINT w) override;
+		void setHeight(UINT h) override;
+		void updateSize() override;
 
-		void render(float fTimeDelta, bool bPresent = true);
+		void render(float fTimeDelta, bool bPresent = true) override;
 
-		CPITexture getTexture();
+		IXTexture* getTexture() override;
 
-		void dispatchEvent(IEvent ev);
+		void dispatchEvent(IEvent &ev) override;
 
-		dom::IDOMdocument* getDocument();
+		dom::IDOMdocument* getDocument() override;
 
-		void requestFocus(dom::IDOMnode *pNode);
+		void requestFocus(dom::IDOMnode *pNode) override;
 
-		dom::IDOMnode* getFocus();
+		dom::IDOMnode* getFocus() override;
 
-		const dom::IDOMnodeCollection& createFromText(const StringW &html);
+		const dom::IDOMnodeCollection& createFromText(const StringW &html) override;
 		
 		void createRenderTarget();
 		void releaseRenderTarget();
 		void setDirty();
 
-		float getParallaxFactor();
+		float getParallaxFactor() override;
+
+		void reload() override;
 
 	protected:
-
 		CDesktopStack *m_pDesktopStack;
+
+		StringW m_wsFile;
 
 		UINT m_iWidth;
 		UINT m_iHeight;
 
-		CPITexture m_txFinal = NULL;
+		IXTexture *m_txFinal = NULL;
 
 		bool m_bShowSimulatedCursor;
 		bool m_bShowSystemCursor;

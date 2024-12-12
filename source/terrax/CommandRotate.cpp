@@ -1,7 +1,19 @@
 #include "CommandRotate.h"
+#include "UndoManager.h"
+
+CCommandRotate::CCommandRotate(bool bClone)
+{
+	if(bClone)
+	{
+		extern CUndoManager *g_pUndoManager;
+		m_pDuplicateCommand = new CCommandDuplicate();
+		g_pUndoManager->execCommand(m_pDuplicateCommand, false);
+	}
+}
 
 CCommandRotate::~CCommandRotate()
 {
+	mem_release(m_pDuplicateCommand);
 	for(UINT i = 0, l = m_aObjects.size(); i < l; ++i)
 	{
 		mem_release(m_aObjects[i].pObj);
@@ -10,6 +22,10 @@ CCommandRotate::~CCommandRotate()
 
 bool XMETHODCALLTYPE CCommandRotate::exec()
 {
+	if(m_pDuplicateCommand && !m_pDuplicateCommand->exec())
+	{
+		return(false);
+	}
 	_rot_obj *pObj;
 	bool moved = false;
 	for(UINT i = 0, l = m_aObjects.size(); i < l; ++i)
@@ -30,6 +46,10 @@ bool XMETHODCALLTYPE CCommandRotate::undo()
 		pObj = &m_aObjects[i];
 		pObj->pObj->setPos(pObj->vStartPos);
 		pObj->pObj->setOrient(pObj->vStartOrient);
+	}
+	if(m_pDuplicateCommand && !m_pDuplicateCommand->undo())
+	{
+		return(false);
 	}
 	XUpdatePropWindow();
 	return(true);

@@ -392,8 +392,12 @@ public:
 
 	virtual UINT XMETHODCALLTYPE getHitboxCount() const = 0;
 	virtual void XMETHODCALLTYPE setHitboxCount(UINT uCount) = 0;
-	virtual XResourceModelHitbox * XMETHODCALLTYPE getHitbox(UINT uIndex) = 0;
-	virtual const XResourceModelHitbox * XMETHODCALLTYPE getHitbox(UINT uIndex) const = 0;
+	virtual void XMETHODCALLTYPE setHitbox(UINT uIndex, IModelPhysbox *pPhysbox, int iBone, const char *szName, XHITBOXBODYPART part) = 0;
+	virtual const IModelPhysbox* XMETHODCALLTYPE getHitbox(UINT uIndex) const = 0;
+	virtual IModelPhysbox* XMETHODCALLTYPE getHitbox(UINT uIndex) = 0;
+	virtual const char* XMETHODCALLTYPE getHitboxName(UINT uIndex) const = 0;
+	virtual int XMETHODCALLTYPE getHitboxBone(UINT uIndex) const = 0;
+	virtual XHITBOXBODYPART XMETHODCALLTYPE getHitboxBodyPart(UINT uIndex) const = 0;
 };
 
 

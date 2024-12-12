@@ -5,6 +5,8 @@
 #pragma comment(lib, "Dwmapi.lib")
 #endif
 
+UINT GetWindowDPI(HWND hWnd);
+
 struct WINCOMPATTRDATA
 {
 	DWORD attribute; // the attribute to query, see below
@@ -22,12 +24,60 @@ struct ACCENTPOLICY
 
 // typedef BOOL (WINAPI *FNPTRSetWindowCompositionAttribute)(HWND hwnd, WINCOMPATTRDATA* pAttrData);
 
-static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK CWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	CWindow *pWindow = (CWindow*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 	
 	if(pWindow)
 	{
+		if(msg == WM_ACTIVATE)
+		{
+			pWindow->AddRef();
+			if(wParam == WA_INACTIVE)
+			{
+				BYTE abKeyboardState[256];
+				if(GetKeyboardState(abKeyboardState))
+				{
+					for(UINT i = 0; i < ARRAYSIZE(abKeyboardState); ++i)
+					{
+						if(abKeyboardState[i] & 0x80)
+						{
+							pWindow->runCallback(WM_KEYUP, (WPARAM)i, 0);
+						}
+					}
+				}
+			}
+			else
+			{
+				for(UINT i = 0; i < 256; ++i)
+				{
+					if(GetAsyncKeyState(i) < 0)
+					{
+						pWindow->runCallback(WM_KEYDOWN, (WPARAM)i, 0);
+					}
+				}
+			}
+			pWindow->Release();
+		}
+
+		if(msg == WM_CHAR || msg == WM_SYSCHAR)
+		{
+			char ch = LOWORD(wParam);
+			WCHAR wch;
+			MultiByteToWideChar(CP_ACP, 0, &ch, 1, &wch, 1);
+			wParam = MAKEWPARAM(wch, HIWORD(wParam));
+		}
+
+		if(msg == WM_SHOWWINDOW)
+		{
+			pWindow->m_isVisible = (bool)wParam;
+		}
+
+		if(msg == WM_DPICHANGED)
+		{
+			pWindow->m_fScale = ((float)LOWORD(wParam) / (float)USER_DEFAULT_SCREEN_DPI);
+		}
+
 		switch(msg)
 		{
 		case WM_MOUSEWHEEL:
@@ -69,18 +119,25 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 		case WM_MOUSEMOVE:
 		case WM_ENTERSIZEMOVE:
 		case WM_EXITSIZEMOVE:
-			return(pWindow->runCallback(msg, wParam, lParam));
+		case WM_DPICHANGED:
+			add_ref(pWindow);
+			LRESULT res = pWindow->runCallback(msg, wParam, lParam);
+			mem_release(pWindow);
+			return(res);
 		}
 	}
+
 	return(DefWindowProc(hWnd, msg, wParam, lParam));
 }
 
 CWindow::CWindow(HINSTANCE hInst, UINT uId, const XWINDOW_DESC *pWindowDesc, IXWindowCallback *pCallback, IXWindow *pParent):
 	m_hInst(hInst),
 	m_uId(uId),
-	m_pCallback(pCallback)
+	m_pCallback(pCallback),
+	m_pParent(pParent)
 {
 	//assert(pCallback);
+	add_ref(pCallback);
 
 	m_windowDesc = *pWindowDesc;
 	m_windowDesc.szTitle = NULL;
@@ -106,12 +163,12 @@ CWindow::CWindow(HINSTANCE hInst, UINT uId, const XWINDOW_DESC *pWindowDesc, IXW
 	wcex.hIcon = NULL;
 	wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
 	wcex.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
-	
+
 	wcex.lpszMenuName = NULL;
 	wcex.lpszClassName = szClassName;
 	wcex.hIconSm = NULL;
 	//wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
-	
+
 	if(!RegisterClassEx(&wcex))
 	{
 		LibReport(REPORT_MSG_LEVEL_FATAL, "Unable to register window class!\n");
@@ -119,7 +176,7 @@ CWindow::CWindow(HINSTANCE hInst, UINT uId, const XWINDOW_DESC *pWindowDesc, IXW
 
 	//#############################################################################
 
-	
+
 	DWORD wndStyle = WS_OVERLAPPED | WS_CAPTION | WS_THICKFRAME;
 
 	if(pWindowDesc->flags & XWF_BUTTON_MINIMIZE)
@@ -164,12 +221,28 @@ CWindow::CWindow(HINSTANCE hInst, UINT uId, const XWINDOW_DESC *pWindowDesc, IXW
 	{
 		iPosY = (GetSystemMetrics(SM_CYSCREEN) - (rc.bottom - rc.top)) / 2;
 	}
-	
-	m_hWnd = CreateWindowExA(0/*WS_EX_APPWINDOW*/, szClassName, pWindowDesc->szTitle, wndStyle, iPosX, iPosY, rc.right - rc.left, rc.bottom - rc.top, pParent ? (HWND)pParent->getOSHandle() : NULL, NULL, wcex.hInstance, NULL);
+
+	HWND hParentWnd = NULL;
+	if(pParent)
+	{
+		FIXME("HACK: Remove that as soon as all windows is turned to xWindow");
+		if(IsWindow((HWND)pParent))
+		{
+			hParentWnd = (HWND)pParent;
+		}
+		else
+		{
+			hParentWnd = (HWND)pParent->getOSHandle();
+		}
+	}
+
+	m_hWnd = CreateWindowExA(0/*WS_EX_APPWINDOW*/, szClassName, pWindowDesc->szTitle, wndStyle, iPosX, iPosY, rc.right - rc.left, rc.bottom - rc.top, hParentWnd, NULL, wcex.hInstance, NULL);
 	if(!m_hWnd)
 	{
 		LibReport(REPORT_MSG_LEVEL_FATAL, "Unable to create window!\n");
 	}
+
+	m_fScale = ((float)GetWindowDPI(m_hWnd) / (float)USER_DEFAULT_SCREEN_DPI);
 
 	if(pWindowDesc->flags & XWF_TRANSPARENT)
 	{
@@ -201,9 +274,10 @@ CWindow::CWindow(HINSTANCE hInst, UINT uId, const XWINDOW_DESC *pWindowDesc, IXW
 
 	SetWindowLongPtr(m_hWnd, GWLP_USERDATA, (LONG_PTR)this);
 
-	ShowWindow(m_hWnd, SW_NORMAL);
-
-	
+	if(!(pWindowDesc->flags & XWF_INIT_HIDDEN))
+	{
+		ShowWindow(m_hWnd, SW_NORMAL);
+	}	
 
 	if(pWindowDesc->flags & XWF_NOBORDER)
 	{
@@ -219,9 +293,11 @@ CWindow::~CWindow()
 	char szClassName[64];
 	sprintf_s(szClassName, "XWindowClass_%u", m_uId);
 
-	UnregisterClassA(szClassName, m_hInst);
+	SetWindowLongPtr(m_hWnd, GWLP_USERDATA, NULL);
 	DestroyWindow(m_hWnd);
+	UnregisterClassA(szClassName, m_hInst);
 #endif
+	mem_release(m_pCallback);
 }
 
 XWINDOW_OS_HANDLE XMETHODCALLTYPE CWindow::getOSHandle()
@@ -317,7 +393,14 @@ void XMETHODCALLTYPE CWindow::update(const XWINDOW_DESC *pWindowDesc)
 	int iPosX = pWindowDesc->iPosX;
 	int iPosY = pWindowDesc->iPosY;
 
-	if(pWindowDesc->iPosX != XCW_USEDEFAULT && pWindowDesc->iPosY != XCW_USEDEFAULT)
+	if(bForceNoBorder)
+	{
+		iPosX = 0;
+		iPosY = 0;
+
+		uSWPflags &= ~SWP_NOMOVE;
+	}
+	else if(pWindowDesc->iPosX != XCW_USEDEFAULT && pWindowDesc->iPosY != XCW_USEDEFAULT)
 	{
 		if(iPosX == XCW_CENTER)
 		{
@@ -349,6 +432,14 @@ INT_PTR XMETHODCALLTYPE CWindow::runDefaultCallback(UINT msg, WPARAM wParam, LPA
 	case WM_CLOSE:
 		ShowWindow(m_hWnd, SW_HIDE);
 		return(TRUE);
+
+	case WM_DPICHANGED:
+		if(!(m_windowDesc.flags & XWF_NOAUTOSCALE))
+		{
+			LPRECT lpRect = (LPRECT)lParam;
+			SetWindowPos(m_hWnd, nullptr, lpRect->left, lpRect->top, lpRect->right - lpRect->left, lpRect->bottom - lpRect->top, SWP_NOZORDER | SWP_NOACTIVATE);
+		}
+		break;
 	}
 	return(DefWindowProcA(m_hWnd, msg, wParam, lParam));
 }
@@ -358,11 +449,95 @@ const XWINDOW_DESC* XMETHODCALLTYPE CWindow::getDesc()
 	return(&m_windowDesc);
 }
 
+IXWindow* XMETHODCALLTYPE CWindow::getParent()
+{
+	return(m_pParent);
+}
+
+bool XMETHODCALLTYPE CWindow::getPlacement(XWindowPlacement *pPlacement)
+{
+	pPlacement->length = sizeof(*pPlacement);
+	bool res = GetWindowPlacement(m_hWnd, pPlacement);
+
+	if(res && !m_isVisible)
+	{
+		pPlacement->showCmd = SW_HIDE;
+	}
+
+	return(res);
+}
+void XMETHODCALLTYPE CWindow::setPlacement(const XWindowPlacement &placement, bool bSkipVisibility)
+{
+	if(bSkipVisibility)
+	{
+		XWindowPlacement p = placement;
+		p.showCmd = isVisible() ? SW_SHOWNORMAL : SW_HIDE;
+		SetWindowPlacement(m_hWnd, &p);
+	}
+	else
+	{
+		SetWindowPlacement(m_hWnd, &placement);
+	}
+}
+
 INT_PTR CWindow::runCallback(UINT msg, WPARAM wParam, LPARAM lParam)
 {
+	if(msg == WM_EXITSIZEMOVE || msg == WM_SIZE)
+	{
+		RECT rc;
+		if(GetClientRect(m_hWnd, &rc))
+		{
+			m_windowDesc.iSizeX = rc.right - rc.left;
+			m_windowDesc.iSizeY = rc.bottom - rc.top;
+		}
+
+		if(GetWindowRect(m_hWnd, &rc))
+		{
+			m_windowDesc.iPosX = rc.left;
+			m_windowDesc.iPosY = rc.top;
+		}
+	}
+
 	if(m_pCallback)
 	{
 		return(m_pCallback->onMessage(msg, wParam, lParam, this));
 	}
 	return(runDefaultCallback(msg, wParam, lParam));
+}
+
+float XMETHODCALLTYPE CWindow::getScale()
+{
+	return(m_fScale);
+}
+
+UINT GetWindowDPI(HWND hWnd)
+{
+	typedef HRESULT(WINAPI *PGetDpiForMonitor)(HMONITOR hmonitor, int dpiType, UINT* dpiX, UINT* dpiY);
+
+	// Try to get the DPI setting for the monitor where the given window is located.
+	// This API is Windows 8.1+.
+	HMODULE hSHcore = LoadLibraryW(L"shcore");
+	if(hSHcore)
+	{
+		PGetDpiForMonitor pGetDpiForMonitor = (PGetDpiForMonitor)GetProcAddress(hSHcore, "GetDpiForMonitor");
+		if(pGetDpiForMonitor)
+		{
+			HMONITOR hMonitor = MonitorFromWindow(hWnd, MONITOR_DEFAULTTOPRIMARY);
+			UINT uDpiX;
+			UINT uDpiY;
+			HRESULT hr = pGetDpiForMonitor(hMonitor, /*MDT_EFFECTIVE_DPI*/ 0, &uDpiX, &uDpiY);
+			if(SUCCEEDED(hr))
+			{
+				return(uDpiX);
+			}
+		}
+	}
+
+	// We couldn't get the window's DPI above, so get the DPI of the primary monitor
+	// using an API that is available in all Windows versions.
+	HDC hScreenDC = GetDC(0);
+	int iDpiX = GetDeviceCaps(hScreenDC, LOGPIXELSX);
+	ReleaseDC(0, hScreenDC);
+
+	return((UINT)iDpiX);
 }

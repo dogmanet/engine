@@ -1,0 +1,195 @@
+.rectangle {
+	background-color: #000000D2; 
+	border-width: 2px;
+	border-style: solid;
+	border-color: #C6F0FD;
+	position: absolute;
+	top: 15vh;
+	left: 5vw;
+	right: 5vw;
+	height: 75vh;
+}
+
+#left_area {
+	position: absolute;
+	top: 1vw;
+	bottom: 1vw;
+	left: 1vw;
+	width: 13.5vw;
+	border-width: 2px;
+	border-style: solid;
+	border-color: #C6F0FD;
+	padding: 0.5vw;
+}
+
+.item_count {
+	font-size: 0.6vw;
+	top: 4vw;
+	right: 0;
+	text-align: right;
+	position: absolute;
+}
+
+.list_item {
+	border-width: 2px;
+	border-style: solid;
+	border-color: #C6F0FD;
+	padding: 1vw;
+	font-size: 1vw;
+	margin-bottom: 0.5vw;
+}
+
+.list_item:hover {
+	background-color: #FFFFFF20;
+}
+
+.list_item:checked {
+	background-color: #fe950050;
+	color: #fe9500;
+}
+
+.main_item {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	height: 10vw;
+}
+
+#recipe_items {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 10vw;
+	bottom: 5vw;
+	text-align: center;
+}
+
+.create_item {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0vw;
+	height: 5vw;
+}
+
+.right_area {
+	position: absolute;
+	top: 1vw;
+	bottom: 1vw;
+	right: 1vw;
+	left: 15vw;
+}
+
+.icon {
+	position: absolute;
+	background-size-x: 100%;
+	background-position-x: 50%;
+	background-position-y: 50%;
+	background-repeat: no-repeat;
+	background-color: #000000;
+	border-color: #C6F0FD;
+	border-width: 1px;
+}	
+
+.item_name {
+	padding: 0.1vw;
+	font-size: 0.58vw;
+}
+
+.cell {
+    display: inline-block;
+	width: 5vw; 
+	height: 5vw; 
+	background-color: #000000;
+	border-color: #C6F0FD;
+	border-width: 1px;
+	
+	background-size-x: 100%;
+	background-size-y: 100%;
+}
+
+.cell_no_item {
+    display: block;
+	width: 5vw; 
+	height: 5vw; 
+	background-color: #300000;
+	border-color: #FF0000;
+	border-width: 1px;
+	
+	background-size-x: 100%;
+	background-size-y: 100%;
+}
+
+.cell_wrapper .cell {
+	display: block;
+}
+
+.cell_wrapper {
+	display: inline-block;
+	padding: 0.5vw;
+	height: 6vw;
+	width: 6vw;
+	overflow-y: hidden;
+}
+
+#main_cell {
+	position: absolute;
+	display: block;
+	top: 0;
+	left: -2.5vw;
+}
+
+.button_offset {
+	position: absolute;
+	display: block;
+	top: 1vw;
+	left: 50%;
+}
+		
+#create_button {
+	position: absolute;
+	display: block;
+	height: 3vw;
+	width: 10vw;
+	top: 0;
+	left: -5vw;
+	font-size: 1.1vw;
+	padding-top: 0.8vw;
+	overflow-y: hidden;
+}
+
+.cell_offset {
+	position: absolute;
+	display: block;
+	top: 2.5vw;
+	left: 50%;
+}
+
+.title, .close {
+	bottom: 85vh;
+	left: 5vw;
+	right: 5vw;
+	height: 4vh;
+	position: absolute;
+	font-size: 3vh;
+}
+
+.close {
+	text-align: right;
+	font-name: seguisym;
+	left: 93vw;
+}
+
+.close:hover {
+	color: #FFFFFF;
+}
+
+html, body {
+	height: 100%;
+	width: 100%;
+	margin: 0;
+	padding: 0;
+	font-name: quick-junky-regular;
+	color: #c6f0fd;
+}

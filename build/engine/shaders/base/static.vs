@@ -47,19 +47,20 @@ VSO_SceneCommon main(VSI_Geometry IN
 	OUT.vNormal = RotateVec(qRot, IN.vNormal);
 	OUT.vTangent  = RotateVec(qRot, IN.vTangent);
 	OUT.vBinormal = RotateVec(qRot, IN.vBinormal);
+	OUT.uInstanceId.x = uInstanceId;
 	// OUT.vNormal = IN.vNormal;
 #else
 	OUT.vPosition = mul(float4(IN.vPosition, 1.0f), g_mW);
 	OUT.vNormal = /*normalize(*/mul(IN.vNormal, (float3x3)g_mW)/*)*/;
 	OUT.vTangent  = /*normalize(*/mul(IN.vTangent, (float3x3)g_mW)/*)*/;
 	OUT.vBinormal = /*normalize(*/mul(IN.vBinormal, (float3x3)g_mW)/*)*/;
-
 #endif
 
 	
 	OUT.vPosition = mul(OUT.vPosition, g_mVP);
 	OUT.vTexUV = IN.vTexUV;
 	OUT.vPos = OUT.vPosition;
+	OUT.vColor = float4(1.0f, 1.0f, 1.0f, 1.0f);
 
 	return OUT;
 }

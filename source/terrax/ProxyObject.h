@@ -3,6 +3,7 @@
 
 #include <xcommon/editor/IXEditorObject.h>
 #include <xcommon/editor/IXEditable.h>
+#include "ICompoundObject.h"
 
 
 // {48989C9B-A44C-469D-A86F-D8F61AD3114C}
@@ -27,9 +28,9 @@ private:
 
 //#############################################################################
 
-class CProxyObject final: public IXUnknownImplementation<IXEditorObject>
+class CProxyObject final: public IXUnknownImplementation<ICompoundObject>
 {
-	DECLARE_CLASS(CProxyObject, IXUnknownImplementation<IXEditorObject>);
+	DECLARE_CLASS(CProxyObject, IXUnknownImplementation<ICompoundObject>);
 public:
 	CProxyObject();
 	CProxyObject(const XGUID &guid);
@@ -94,15 +95,15 @@ public:
 
 	void onModelChanged(IXEditorModel *pModel, IXEditorObject *pObject);
 
-	void addChildObject(IXEditorObject *pObject);
-	void removeChildObject(IXEditorObject *pObject);
+	void addChildObject(IXEditorObject *pObject) override;
+	void removeChildObject(IXEditorObject *pObject) override;
 
 	IXEditorObject* getTargetObject();
 	UINT getModelCount();
 	IXEditorModel* getModel(UINT id);
 
-	UINT getObjectCount();
-	IXEditorObject* getObject(UINT id);
+	UINT getObjectCount() override;
+	IXEditorObject* getObject(UINT id) override;
 
 	void saveModel();
 

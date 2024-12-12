@@ -87,7 +87,7 @@ UINT CreatePreviewModels()
 	float4x4 mProjection = SMMatrixPerspectiveFovLH(SM_PIDIV2, 1.f, 0.025f, 100000.f);
 
 
-	ICamera *pCamera = SGCore_CrCamera();
+	IXCamera *pCamera = SGCore_CrCamera();
 	//pCamera->setFOV(SM_PIDIV2);
 
 

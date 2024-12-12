@@ -51,7 +51,7 @@ public:
 
 	//void resync();
 
-	//void onSelectionChanged(CEditorObject *pObject);
+	void onSelectionChanged(CEditorObject *pObject);
 
 	const Array<CEditorObject*>& getObjects() const
 	{
@@ -104,6 +104,8 @@ public:
 	void onModelRestored(CEditorModel *pModel);
 
 	SX_ALIGNED_OP_MEM();
+
+	CVertexTool* getVertexTool();
 
 private:
 	CEditorObject* getObjectByGUID(const XGUID &guid);

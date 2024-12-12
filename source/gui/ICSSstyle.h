@@ -60,7 +60,12 @@ namespace gui
 				DIM_EM,
 				DIM_MM,
 				DIM_PC,
-				DIM_PT
+				DIM_PT,
+				DIM_VH,
+				DIM_VW,
+				DIM_VMIN,
+				DIM_VMAX,
+				DIM_AUTO
 			};
 
 			enum TYPE_DISPLAY_e
@@ -300,7 +305,7 @@ namespace gui
 
 			virtual void setFlags(UINT f) = 0;
 
-			virtual int getPX(int base) = 0;
+			virtual int getPX(int base, UINT uWinWidth, UINT uWinHeight) = 0;
 
 			virtual void setupTransition(const ICSSproperty * pOldProperty, dom::IDOMdocument *pDoc) = 0;
 

@@ -94,10 +94,9 @@ public:
 	const float3_t& getNormal() const;
 
 	void buildContours();
-private:
 
-
-	void buildContoursRecursive(const Array<UINT> &aIn);
+private:	
+	void buildContoursRecursive(const Array<UINT> &aIn, UINT uCurDepth = 0);
 
 	void fixVertexOrder();
 
@@ -124,6 +123,7 @@ private:
 
 	bool m_isClosed = false;
 	bool m_isDirty = false;
+	bool m_isContoursFailed = false;
 
 	COutlinePointCallback m_callBack;
 

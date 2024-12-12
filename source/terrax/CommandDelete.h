@@ -33,7 +33,7 @@ protected:
 		IXEditorObject *pObject;
 		AssotiativeArray<String, String> mKeyValues;
 		bool wasSelected;
-		CProxyObject *pLocation;
+		ICompoundObject *pLocation;
 		/*float3_t vPos;
 		float3_t vSize;
 		SMQuaternion qRotate;*/

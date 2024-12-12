@@ -28,6 +28,18 @@ void XMETHODCALLTYPE CGizmoHandle::setPos(const float3_t &vPos)
 	m_vPos = vPos;
 
 	m_pEditor->setDirty();
+
+	if(m_isTracking)
+	{
+		if(m_isLockedNormal)
+		{
+			m_planeBase = SMPLANE(m_vLockNormal, m_vPos);
+		}
+		else
+		{
+			m_planeBase = SMPLANE(m_vBestPlaneNormal, m_vPos);
+		}
+	}
 }
 const float3_t& XMETHODCALLTYPE CGizmoHandle::getPos()
 {

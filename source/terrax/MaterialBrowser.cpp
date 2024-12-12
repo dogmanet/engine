@@ -3,8 +3,11 @@
 
 #include <windowsx.h>
 #include <commctrl.h>
-#include <gcore/sxgcore.h>
+#include <xcommon/render/IXRender.h>
 #include "terrax.h"
+#include <core/sxcore.h>
+
+UINT GetWindowDPI(HWND hWnd);
 
 CMaterialBrowser::CMaterialBrowser(HINSTANCE hInstance, HWND hMainWnd):
 	m_hInstance(hInstance),
@@ -30,7 +33,8 @@ CMaterialBrowser::~CMaterialBrowser()
 	mem_delete(m_pScrollbarEvent);
 
 	mem_release(m_pSurface);
-	mem_release(m_pSwapChain);
+	//mem_release(m_pSwapChain);
+	mem_release(m_pFinalTarget);
 	DestroyWindow(m_hDlgWnd);
 
 	mem_release(m_pFrameIB);
@@ -132,6 +136,9 @@ INT_PTR CALLBACK CMaterialBrowser::dlgProc(HWND hWnd, UINT msg, WPARAM wParam, L
 			Button_SetCheck(GetDlgItem(m_hDlgWnd, IDC_MAT_TRANSLATED), BST_CHECKED);
 			Button_SetCheck(GetDlgItem(m_hDlgWnd, IDC_MAT_RAWFILES), BST_CHECKED);
 
+			SetWindowLong(hWnd, GWL_EXSTYLE, GetWindowLong(hWnd, GWL_EXSTYLE) | WS_EX_DLGMODALFRAME);
+
+			m_fScale = ((float)GetWindowDPI(hWnd) / (float)USER_DEFAULT_SCREEN_DPI);
 			break;
 		}
 
@@ -149,6 +156,7 @@ INT_PTR CALLBACK CMaterialBrowser::dlgProc(HWND hWnd, UINT msg, WPARAM wParam, L
 					if(iSize)
 					{
 						m_frameSize = (FRAME_SIZE)iSize;
+						invalidateTexts();
 						layout();
 					}
 				}
@@ -179,6 +187,12 @@ INT_PTR CALLBACK CMaterialBrowser::dlgProc(HWND hWnd, UINT msg, WPARAM wParam, L
 			break;
 
 		case IDC_MAT_EDIT:
+			if(m_uSelectedItem != ~0)
+			{
+				IXMaterial *pMat;
+				m_pMaterialSystem->loadMaterial(m_aMaterials[m_uSelectedItem].sName.c_str(), &pMat);
+				new CMaterialEditor(m_hInstance, m_hMainWnd, Core_GetIXCore(), pMat);
+			}
 			break;
 
 		case IDC_MAT_KEYWORD:
@@ -199,6 +213,12 @@ INT_PTR CALLBACK CMaterialBrowser::dlgProc(HWND hWnd, UINT msg, WPARAM wParam, L
 		ShowWindow(m_hDlgWnd, SW_HIDE);
 		break;
 
+	case WM_DPICHANGED:
+		m_fScale = ((float)LOWORD(wParam) / (float)USER_DEFAULT_SCREEN_DPI);
+		m_pScrollBar->setScale(m_fScale);
+		initFont();
+
+		__fallthrough;
 	case WM_SIZE:
 		{
 			RECT rc, rcChild;
@@ -318,11 +338,49 @@ INT_PTR CALLBACK CMaterialBrowser::dlgProc(HWND hWnd, UINT msg, WPARAM wParam, L
 	return(TRUE);
 }
 
-void CMaterialBrowser::browse(IMaterialBrowserCallback *pCallback)
+void CMaterialBrowser::browse(IMaterialBrowserCallback *pCallback, bool bTextureOnly)
 {
 	m_pCallback = pCallback;
+
+	bool isDirty = false;
+	if(bTextureOnly)
+	{
+		Button_Enable(GetDlgItem(m_hDlgWnd, IDC_MAT_OPAQUE), FALSE);
+		Button_Enable(GetDlgItem(m_hDlgWnd, IDC_MAT_TRANSPARENT), FALSE);
+		Button_Enable(GetDlgItem(m_hDlgWnd, IDC_MAT_SELFILLUM), FALSE);
+		isDirty |= Button_GetCheck(GetDlgItem(m_hDlgWnd, IDC_MAT_MATERIALS)) != BST_UNCHECKED;
+		Button_SetCheck(GetDlgItem(m_hDlgWnd, IDC_MAT_MATERIALS), BST_UNCHECKED);
+		Button_Enable(GetDlgItem(m_hDlgWnd, IDC_MAT_MATERIALS), FALSE);
+		Button_Enable(GetDlgItem(m_hDlgWnd, IDC_MAT_EDIT), FALSE);
+	}
+	else
+	{
+		Button_Enable(GetDlgItem(m_hDlgWnd, IDC_MAT_OPAQUE), TRUE);
+		Button_Enable(GetDlgItem(m_hDlgWnd, IDC_MAT_TRANSPARENT), TRUE);
+		Button_Enable(GetDlgItem(m_hDlgWnd, IDC_MAT_SELFILLUM), TRUE);
+		isDirty |= Button_GetCheck(GetDlgItem(m_hDlgWnd, IDC_MAT_MATERIALS)) != BST_CHECKED;
+		Button_SetCheck(GetDlgItem(m_hDlgWnd, IDC_MAT_MATERIALS), BST_CHECKED);
+		Button_Enable(GetDlgItem(m_hDlgWnd, IDC_MAT_MATERIALS), TRUE);
+		Button_Enable(GetDlgItem(m_hDlgWnd, IDC_MAT_EDIT), TRUE);
+	}
+
+	if(isDirty)
+	{
+		filter();
+	}
+
 	ShowWindow(m_hDlgWnd, SW_SHOWNA);
 	SetFocus(m_hDlgWnd);
+}
+
+void CMaterialBrowser::abort()
+{
+	if(m_pCallback)
+	{
+		m_pCallback->onCancel();
+		m_pCallback = NULL;
+	}
+	ShowWindow(m_hDlgWnd, SW_HIDE);
 }
 
 void CMaterialBrowser::registerClass()
@@ -389,7 +447,11 @@ LRESULT CALLBACK CMaterialBrowser::wndProc(HWND hWnd, UINT msg, WPARAM wParam, L
 			{
 				int yPos = GET_Y_LPARAM(lParam);
 
+				xPos = (int)((float)xPos / m_fScale);
+				yPos = (int)((float)yPos / m_fScale);
+
 				yPos += m_iScrollPos;
+
 
 				for(UINT i = 0, l = m_aMaterials.size(); i < l; ++i)
 				{
@@ -478,14 +540,22 @@ LRESULT CALLBACK CMaterialBrowser::wndProc(HWND hWnd, UINT msg, WPARAM wParam, L
 	return(0);
 }
 
-void CMaterialBrowser::initGraphics(IGXDevice *pDev)
+void CMaterialBrowser::initGraphics(IXRender *pRender)
 {
-	m_pDev = pDev;
+	m_pRender = pRender;
+	m_pDev = m_pRender->getDevice();
 
 	m_pScrollbarEvent = new CScrollEventListener(m_hDlgWnd);
-	m_pScrollBar = new CScrollBar(m_pDev, m_pScrollbarEvent);
+	m_pScrollBar = new CScrollBar(pRender, m_pScrollbarEvent);			
+	m_pScrollBar->setScale(m_fScale);
+
 
 	initViewport();
+
+	IXRenderGraph *pRenderGraph;
+	m_pRender->getGraph("xMaterialBrowser", &pRenderGraph);
+	m_pFinalTarget->attachGraph(pRenderGraph);
+	mem_release(pRenderGraph);
 
 	initHelpers();
 
@@ -493,23 +563,19 @@ void CMaterialBrowser::initGraphics(IGXDevice *pDev)
 	m_pMaterialSystem = (IXMaterialSystem*)Core_GetIXCore()->getPluginManager()->getInterface(IXMATERIALSYSTEM_GUID);
 
 	m_pFontManager = (IXFontManager*)Core_GetIXCore()->getPluginManager()->getInterface(IXFONTMANAGER_GUID);
-	if(m_pFontManager)
-	{
-		m_pFontManager->getFont(&m_pFont, "gui/fonts/tahoma.ttf", 10);
-		m_pFontManager->getFontVertexDeclaration(&m_pTextVD);
-	}
+	initFont();
 
 	filter();
 }
 void CMaterialBrowser::render()
 {
-	if(IsWindowVisible(m_hBrowserWnd) && m_isDirty)
+	//if(IsWindowVisible(m_hBrowserWnd) && m_isDirty)
 	{
 		IGXContext *pCtx = m_pDev->getThreadContext();
 		IGXSurface *pOldRT = pCtx->getColorTarget();
 		pCtx->setColorTarget(m_pSurface);
-		IGXDepthStencilSurface *pOldDS = pCtx->getDepthStencilSurface();
-		pCtx->unsetDepthStencilSurface();
+		//IGXDepthStencilSurface *pOldDS = pCtx->getDepthStencilSurface();
+		pCtx->setDepthStencilSurface(NULL);
 
 		pCtx->clear(GX_CLEAR_COLOR, float4(0, 0, 0, 0));
 
@@ -536,12 +602,12 @@ void CMaterialBrowser::render()
 
 				if(item.pTexture)
 				{
-					if(!item.isTransparent)
+					if(!item.isTransparent && !item.isTexture)
 					{
 						pCtx->setBlendState(NULL);
 					}
 
-					SGCore_ShaderBind(m_idInnerShader);
+					m_pRender->bindShader(pCtx, m_idInnerShader);
 
 					item.pTexture->getAPITexture(&pTexture, item.uCurrentFrame);
 					pCtx->setPSTexture(pTexture);
@@ -551,7 +617,7 @@ void CMaterialBrowser::render()
 					pCtx->setRenderBuffer(m_pInnerRB);
 					pCtx->drawIndexed(m_uInnerVC, m_uInnerPC);
 
-					SGCore_ShaderUnBind();
+					m_pRender->unbindShader(pCtx);
 				}
 			}
 		}
@@ -567,22 +633,22 @@ void CMaterialBrowser::render()
 			pCtx->setRenderBuffer(m_pTextRB);
 			pCtx->setIndexBuffer(m_pTextIB);
 			pCtx->setPSConstant(m_pTextColorCB);
-			m_pTextOffsetCB->update(&float4_t(0.0f, (float)m_iScrollPos, 0.0f, 0.0f));
+			m_pTextOffsetCB->update(&float4_t(0.0f, (float)m_iScrollPos * m_fScale, 0.0f, 0.0f));
 			pCtx->setVSConstant(m_pTextOffsetCB, 6);
-			SGCore_ShaderBind(m_idTextShader);
+			m_pRender->bindShader(pCtx, m_idTextShader);
 			pCtx->drawIndexed(m_uTextVertexCount, m_uTextQuadCount * 2);
-			SGCore_ShaderUnBind();
+			m_pRender->unbindShader(pCtx);
 		}
 
-		pCtx->setDepthStencilSurface(pOldDS);
-		mem_release(pOldDS);
+		//pCtx->setDepthStencilSurface(pOldDS);
+		//mem_release(pOldDS);
 		pCtx->setColorTarget(pOldRT);
+		pCtx->downsampleColorTarget(m_pSurface, pOldRT);
 		mem_release(pOldRT);
 
 
-		IGXSurface *pRT = m_pSwapChain->getColorTarget();
-		pCtx->downsampleColorTarget(m_pSurface, pRT);
-		mem_release(pRT);
+		//IGXSurface *pRT = m_pSwapChain->getColorTarget();
+		//mem_release(pRT);
 
 		//m_isDirty = false;
 		m_bDoSwap = true;
@@ -592,7 +658,7 @@ void CMaterialBrowser::swapBuffers()
 {
 	if(IsWindowVisible(m_hBrowserWnd) && m_bDoSwap)
 	{
-		m_pSwapChain->swapBuffers();
+		//m_pSwapChain->swapBuffers();
 		m_bDoSwap = false;
 	}
 }
@@ -604,12 +670,16 @@ void CMaterialBrowser::initViewport()
 	m_uPanelWidth = rc.right - rc.left;
 	m_uPanelHeight = rc.bottom - rc.top;
 
-	mem_release(m_pSwapChain);
+	//mem_release(m_pSwapChain);
 	mem_release(m_pSurface);
-	m_pSwapChain = m_pDev->createSwapChain(m_uPanelWidth, m_uPanelHeight, m_hBrowserWnd);
-	m_pSurface = m_pDev->createColorTarget(m_uPanelWidth, m_uPanelHeight, GXFMT_A8B8G8R8, GXMULTISAMPLE_4_SAMPLES, false);
+	//m_pSwapChain = m_pDev->createSwapChain(m_uPanelWidth, m_uPanelHeight, m_hBrowserWnd);
+	m_pSurface = m_pDev->createColorTarget(m_uPanelWidth, m_uPanelHeight, GXFMT_A8B8G8R8_SRGB, GXMULTISAMPLE_4_SAMPLES);
 	//m_pDepthStencilSurface = pDev->createDepthStencilSurface(m_uPanelWidth, m_uPanelHeight, GXFMT_D24S8, GXMULTISAMPLE_NONE);
-
+	if(!m_pFinalTarget)
+	{
+		m_pRender->newFinalTarget(m_hBrowserWnd, "xMaterialBrowser", &m_pFinalTarget);
+	}
+	m_pFinalTarget->resize(m_uPanelWidth, m_uPanelHeight);
 
 	float fWidth = (float)m_uPanelWidth;
 	float fHeight = (float)m_uPanelHeight;
@@ -810,13 +880,9 @@ void CMaterialBrowser::initHelpers()
 	mem_release(pVB);
 	mem_release(pVD);
 
-
-	m_idFrameShader = SGCore_ShaderCreateKit(SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "terrax_mat_frame.vs"), SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "terrax_colored2.ps"));
+	m_idFrameShader = m_pRender->createShaderKit(m_pRender->loadShader(SHADER_TYPE_VERTEX, "terrax_mat_frame.vs"), m_pRender->loadShader(SHADER_TYPE_PIXEL, "terrax_colored2.ps"));
 
 	m_pInformCB = m_pDev->createConstantBuffer(sizeof(m_frameState));
-
-
-
 
 
 	struct InnerVertex
@@ -865,9 +931,9 @@ void CMaterialBrowser::initHelpers()
 	mem_release(pVD);
 
 
-	m_idInnerShader = SGCore_ShaderCreateKit(SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "terrax_mat_inner.vs"), SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "terrax_mat_inner.ps"));
+	m_idInnerShader = m_pRender->createShaderKit(m_pRender->loadShader(SHADER_TYPE_VERTEX, "terrax_mat_inner.vs"), m_pRender->loadShader(SHADER_TYPE_PIXEL, "terrax_mat_inner.ps"));
 
-	m_idTextShader = SGCore_ShaderCreateKit(SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "gui_text.vs"), SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "gui_main.ps"));
+	m_idTextShader = m_pRender->createShaderKit(m_pRender->loadShader(SHADER_TYPE_VERTEX, "gui_text.vs"), m_pRender->loadShader(SHADER_TYPE_PIXEL, "gui_main.ps"));
 
 	m_pTextColorCB = m_pDev->createConstantBuffer(sizeof(float4_t));
 	fBlueColor.w = 1.0f;
@@ -879,7 +945,7 @@ void CMaterialBrowser::drawFrame(int iXpos, int iYpos, FRAME_SIZE frameSize, UIN
 {
 	IGXContext *pCtx = m_pDev->getThreadContext();
 
-	SGCore_ShaderBind(m_idFrameShader);
+	m_pRender->bindShader(pCtx, m_idFrameShader);
 
 	float vSizeDiff = (float)(frameSize - 128);
 
@@ -895,6 +961,8 @@ void CMaterialBrowser::drawFrame(int iXpos, int iYpos, FRAME_SIZE frameSize, UIN
 	m_frameState.fHighlight = fSelection;
 	m_frameState.vPosition = float2_t((float)iXpos, (float)-iYpos + (float)m_iScrollPos);
 
+	m_frameState.fScale = m_fScale;
+
 	m_pInformCB->update(&m_frameState);
 	pCtx->setVSConstant(m_pInformCB, 6);
 
@@ -902,7 +970,7 @@ void CMaterialBrowser::drawFrame(int iXpos, int iYpos, FRAME_SIZE frameSize, UIN
 	pCtx->setRenderBuffer(m_pFrameRB);
 	pCtx->drawIndexed(m_uFrameVC, m_uFramePC);
 
-	SGCore_ShaderUnBind();
+	m_pRender->unbindShader(pCtx);
 }
 
 void CMaterialBrowser::layout()
@@ -913,6 +981,8 @@ void CMaterialBrowser::layout()
 	UINT uXVal = 0;
 	UINT uYVal = 0;
 
+	UINT uPanelWidth = (UINT)((float)m_uPanelWidth / m_fScale);
+
 	for(UINT i = 0, l = m_aMaterials.size(); i < l; ++i)
 	{
 		MaterialItem &item = m_aMaterials[i];
@@ -921,7 +991,7 @@ void CMaterialBrowser::layout()
 		item.uYpos = uYVal;
 
 		uXVal += c_uXInterval;
-		if(uXVal + c_uXInterval >= m_uPanelWidth - m_pScrollBar->getWidth())
+		if(uXVal + c_uXInterval >= uPanelWidth - m_pScrollBar->getWidth())
 		{
 			uXVal = 0;
 			uYVal += c_uYInterval;
@@ -934,7 +1004,7 @@ void CMaterialBrowser::layout()
 	}
 
 
-	m_iScrollHeight = (int)(uYVal + c_uYInterval) - (int)m_uPanelHeight;
+	m_iScrollHeight = (int)(uYVal + c_uYInterval) - (int)(m_uPanelHeight / m_fScale);
 	if(m_iScrollHeight < 0)
 	{
 		m_iScrollHeight = 0;
@@ -961,7 +1031,7 @@ void CMaterialBrowser::filter()
 	UINT uListSize = m_pMaterialSystem->getScannedMaterialsCount();
 
 	IXMaterial *pMat;
-	bool isTexture, isTranslated;
+	bool isTexture, isTranslated, isMaterial;
 	const char *szName; 
 	
 
@@ -979,11 +1049,11 @@ void CMaterialBrowser::filter()
 	GetDlgItemText(m_hDlgWnd, IDC_MAT_FILTER, szFilter, sizeof(szFilter));
 	szFilter[sizeof(szFilter) - 1] = 0;
 
-	bool isIncludeTransparent = Button_GetCheck(GetDlgItem(m_hDlgWnd, IDC_MAT_TRANSPARENT)) == BST_CHECKED;
-	bool isIncludeOpaque = Button_GetCheck(GetDlgItem(m_hDlgWnd, IDC_MAT_OPAQUE)) == BST_CHECKED;
-	bool isIncludeSelfillum = Button_GetCheck(GetDlgItem(m_hDlgWnd, IDC_MAT_SELFILLUM)) == BST_CHECKED;
+	bool isIncludeTransparent = !IsWindowEnabled(GetDlgItem(m_hDlgWnd, IDC_MAT_TRANSPARENT)) || Button_GetCheck(GetDlgItem(m_hDlgWnd, IDC_MAT_TRANSPARENT)) == BST_CHECKED;
+	bool isIncludeOpaque = !IsWindowEnabled(GetDlgItem(m_hDlgWnd, IDC_MAT_OPAQUE)) || Button_GetCheck(GetDlgItem(m_hDlgWnd, IDC_MAT_OPAQUE)) == BST_CHECKED;
+	bool isIncludeSelfillum = !IsWindowEnabled(GetDlgItem(m_hDlgWnd, IDC_MAT_SELFILLUM)) || Button_GetCheck(GetDlgItem(m_hDlgWnd, IDC_MAT_SELFILLUM)) == BST_CHECKED;
 
-	bool isMaterial = Button_GetCheck(GetDlgItem(m_hDlgWnd, IDC_MAT_MATERIALS)) == BST_CHECKED;
+	bool isMaterialF = Button_GetCheck(GetDlgItem(m_hDlgWnd, IDC_MAT_MATERIALS)) == BST_CHECKED;
 	bool isTextureF = Button_GetCheck(GetDlgItem(m_hDlgWnd, IDC_MAT_TEXTURES)) == BST_CHECKED;
 	bool isTranslatedF = Button_GetCheck(GetDlgItem(m_hDlgWnd, IDC_MAT_TRANSLATED)) == BST_CHECKED;
 	bool isRawfile = Button_GetCheck(GetDlgItem(m_hDlgWnd, IDC_MAT_RAWFILES)) == BST_CHECKED;
@@ -991,7 +1061,7 @@ void CMaterialBrowser::filter()
 
 	for(UINT i = 0; i < uListSize; ++i)
 	{
-		szName = m_pMaterialSystem->getScannedMaterial(i, &pMat, &isTexture, &isTranslated);
+		szName = m_pMaterialSystem->getScannedMaterial(i, &pMat, &isTexture, &isTranslated, &isMaterial);
 
 		if(strcasestr(szName, szFilter))
 		{
@@ -1000,7 +1070,7 @@ void CMaterialBrowser::filter()
 
 			if(
 				(
-					isMaterial && !isTexture ||
+					isMaterialF && isMaterial ||
 					isTextureF && isTexture
 				) &&
 				(
@@ -1019,6 +1089,7 @@ void CMaterialBrowser::filter()
 				MaterialItem &item = m_aMaterials[m_aMaterials.size()];
 				item.sName = szName;
 				item.isTexture = isTexture;
+				item.isMaterial = isMaterial;
 				item.isTranslated = isTranslated;
 				item.pMaterial = pMat;
 				item.pTexture = NULL;
@@ -1049,7 +1120,7 @@ void CMaterialBrowser::preload()
 	UINT uEndItem = ~0;
 
 
-	UINT uMaxTitle = m_frameSize - 39;
+	UINT uMaxTitle = (UINT)((float)(m_frameSize - 39) * m_fScale);
 	UINT uTotalQuads = 0;
 
 	int iYStart = m_iScrollPos - m_frameSize * 3;
@@ -1084,6 +1155,7 @@ void CMaterialBrowser::preload()
 					++cr;
 				}
 				item.uQuads = cr - m_aCharRects;
+				item.uTitleWidth = (UINT)((float)item.uTitleWidth / m_fScale);
 			}
 			uTotalQuads += item.uQuads;
 
@@ -1119,8 +1191,8 @@ void CMaterialBrowser::preload()
 					{
 						m_aTextVB.push_back(item.pVertices[j * 4 + k]);
 						m_aTextVB[m_aTextVB.size() - 1].vPos.y *= -1.0f;
-						m_aTextVB[m_aTextVB.size() - 1].vPos.x += item.uXpos + 7;
-						m_aTextVB[m_aTextVB.size() - 1].vPos.y -= item.uYpos;
+						m_aTextVB[m_aTextVB.size() - 1].vPos.x += (item.uXpos + 7) * m_fScale;
+						m_aTextVB[m_aTextVB.size() - 1].vPos.y -= item.uYpos * m_fScale;
 					}
 				}
 			}
@@ -1185,7 +1257,7 @@ void CMaterialBrowser::preload()
 				}
 				else
 				{
-					m_pMaterialSystem->loadTexture(item.sName.c_str(), &item.pTexture);
+					m_pMaterialSystem->loadTexture((item.sName + "|from_srgb").c_str(), &item.pTexture);
 				}
 
 				item.uCurrentFrame = 0;
@@ -1247,6 +1319,28 @@ void CMaterialBrowser::scheduleFilterIn(float fSeconds)
 	m_fFilterTimer = 0.0f;
 	m_fFilterAt = fSeconds;
 	m_isFilterScheduled = true;
+}
+
+void CMaterialBrowser::initFont()
+{
+	if(m_pFontManager)
+	{
+		mem_release(m_pFont);
+		m_pFontManager->getFont(&m_pFont, "gui/fonts/tahoma.ttf", (UINT)(10.0f * m_fScale));
+		m_pFontManager->getFontVertexDeclaration(&m_pTextVD);
+
+		invalidateTexts();
+	}
+}
+void CMaterialBrowser::invalidateTexts()
+{
+	m_uFontGenStart = ~0;
+	m_uFontGenEnd = ~0;
+
+	for(UINT i = 0, l = m_aMaterials.size(); i < l; ++i)
+	{
+		mem_delete_a(m_aMaterials[i].pVertices);
+	}
 }
 
 //#############################################################################

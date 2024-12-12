@@ -16,8 +16,6 @@ See the license in LICENSE
 #ifndef __POINT_CAMERA_H
 #define __POINT_CAMERA_H
 
-#include <gcore/sxgcore.h>
-
 #include "PointEntity.h"
 
 //! Класс камеры
@@ -30,7 +28,7 @@ public:
 	~CPointCamera();
 
 	//! Возвращает объект камеры из графической либы
-	ICamera* getCamera();
+	IXCamera* getCamera();
 
 	void setPos(const float3 &pos) override;
 	void setOrient(const SMQuaternion &q) override;
@@ -40,7 +38,7 @@ private:
 	void inDeactivate(inputdata_t *pInputdata);
 
 private:
-	ICamera *m_pSXC;
+	IXCamera *m_pSXC;
 };
 
 #endif

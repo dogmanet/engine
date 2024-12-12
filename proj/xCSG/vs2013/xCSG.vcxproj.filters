@@ -79,6 +79,12 @@
     <ClCompile Include="..\..\..\source\xcsg\Combiner.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\source\xcsg\VertexTool.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\xcsg\CommandMorph.cpp">
+      <Filter>Source Files\cmd</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\source\xcsg\EditorExtension.h">
@@ -135,6 +141,12 @@
     <ClInclude Include="..\..\..\source\xcsg\Combiner.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\source\xcsg\VertexTool.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\xcsg\CommandMorph.h">
+      <Filter>Header Files\cmd</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\..\..\source\xcsg\xcsg.rc">
@@ -167,6 +179,12 @@
       <Filter>Resource Files</Filter>
     </Image>
     <Image Include="..\..\..\source\xcsg\resource\ab_cut.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="resource\ab_vertex.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="..\..\..\source\xcsg\resource\ab_vertex.bmp">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>

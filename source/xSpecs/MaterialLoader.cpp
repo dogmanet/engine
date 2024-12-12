@@ -58,6 +58,12 @@ bool XMETHODCALLTYPE CMaterialLoader::open(const char *szFileName, const char *s
 {
 	assert(!m_pConfig && "File already opened!");
 
+	if(forSave)
+	{
+		IFile *pFile = m_pCore->getFileSystem()->openFile(szFileName, FILE_MODE_WRITE);
+		mem_release(pFile);
+	}
+
 	char szTmpPath[1024];
 	if(m_pCore->getFileSystem()->resolvePath(szFileName, szTmpPath, sizeof(szTmpPath)))
 	{
@@ -66,6 +72,11 @@ bool XMETHODCALLTYPE CMaterialLoader::open(const char *szFileName, const char *s
 		{
 			mem_release(m_pConfig);
 			return(false);
+		}
+
+		if(forSave)
+		{
+			m_pConfig->clear();
 		}
 	}
 	

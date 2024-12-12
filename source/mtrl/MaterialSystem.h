@@ -10,6 +10,8 @@
 #include <xcommon/resource/IXResourceTexture.h>
 #include <xcommon/IXTextureFilter.h>
 #include <xcommon/XEvents.h>
+#include <xcommon/IXCore.h>
+#include <xcommon/render/IXRender.h>
 #include <common/ConcurrentQueue.h>
 #include <common/aastring.h>
 
@@ -19,7 +21,8 @@ class CMaterialSystem;
 class CTexture: public IXUnknownImplementation<IXTexture>
 {
 public:
-	CTexture(CMaterialSystem *pMaterialSystem, IXResourceTexture *m_pResource);
+	CTexture(CMaterialSystem *pMaterialSystem, IXResourceTexture *pResource);
+	CTexture(CMaterialSystem *pMaterialSystem, IGXBaseTexture *pGXTexture);
 	~CTexture();
 	void XMETHODCALLTYPE getAPITexture(IGXBaseTexture **ppTexture, UINT uFrame = 0) override;
 	bool XMETHODCALLTYPE isReady() const override;
@@ -34,12 +37,14 @@ public:
 	UINT XMETHODCALLTYPE getDepth() const override;
 
 	void setName(const char *szName);
-	const char* getName() const;
+	const char* XMETHODCALLTYPE getName() const override;
+
+	void replace(IGXBaseTexture *pGXTexture);
 
 	void initGPUresources();
 protected:
 	CMaterialSystem *m_pMaterialSystem;
-	IXResourceTexture *m_pResource;
+	IXResourceTexture *m_pResource = NULL;
 
 	IGXBaseTexture **m_ppGXTexture = NULL;
 	const char *m_szName = NULL;
@@ -193,6 +198,9 @@ public:
 	void XMETHODCALLTYPE setEditorial(bool bValue) override;
 	bool XMETHODCALLTYPE isEditorial() const override;
 
+	void XMETHODCALLTYPE setTwoSided(bool bValue) override;
+	bool XMETHODCALLTYPE isTwoSided() const override;
+
 	bool isDirty() const
 	{
 		return(m_pCurrentPass->isDirty);
@@ -294,6 +302,7 @@ private:
 	CMaterialFlag *m_pBlurred = NULL;
 	CMaterialFlag *m_pEmissive = NULL;
 	CMaterialFlag *m_pEditorial = NULL;
+	CMaterialFlag *m_pTwoSided = NULL;
 };
 
 class CMaterialInfo: public CMaterial
@@ -332,7 +341,7 @@ class IFileSystem;
 class CMaterialSystem final: public IXUnknownImplementation<IXMaterialSystem>
 {
 public:
-	CMaterialSystem();
+	CMaterialSystem(IXCore *pCore);
 	~CMaterialSystem();
 
 	void XMETHODCALLTYPE loadMaterial(const char *szName, IXMaterial **ppMaterial, const char *szDefaultShader = NULL) override;
@@ -384,9 +393,40 @@ public:
 	void XMETHODCALLTYPE scanMaterials() override;
 
 	UINT XMETHODCALLTYPE getScannedMaterialsCount() override;
-	const char* XMETHODCALLTYPE getScannedMaterial(UINT uIdx, IXMaterial **ppOut, bool *pisTexture = NULL, bool *pisTranslated = NULL) override;
+	const char* XMETHODCALLTYPE getScannedMaterial(UINT uIdx, IXMaterial **ppOut, bool *pisTexture = NULL, bool *pisTranslated = NULL, bool *pisMaterial = NULL) override;
 
 	bool XMETHODCALLTYPE isMaterialLoaded(const char *szName) override;
+
+	void XMETHODCALLTYPE addTexture(const char *szName, IGXBaseTexture *pGXTexture, IXTexture **ppTexture) override;
+
+	void XMETHODCALLTYPE setFillMode(GXFILL_MODE fillMode) override
+	{
+		m_fillMode = fillMode;
+	}
+	GXFILL_MODE XMETHODCALLTYPE getFillMode() const override
+	{
+		return(m_fillMode);
+	}
+	void XMETHODCALLTYPE setCullMode(GXCULL_MODE cullMode = GXCULL_BACK) override
+	{
+		m_cullMode = cullMode;
+	}
+	GXCULL_MODE XMETHODCALLTYPE getCullMode() const override
+	{
+		return(m_cullMode);
+	}
+
+	UINT XMETHODCALLTYPE getMaterialPropertyCount(IXMaterial *pMat) const override;
+	UINT XMETHODCALLTYPE getMaterialProperties(XMaterialProperty *pOut, IXMaterial *pMat, bool bSkipInactive = false) const override;
+
+	void XMETHODCALLTYPE getMaterialShadersIterator(IKeyIterator **ppOut) override;
+
+	bool XMETHODCALLTYPE testMaterialName(const char *szName) override;
+
+	IGXDevice* getDevice()
+	{
+		return(m_pDevice);
+	}
 
 protected:
 	struct CObjectData
@@ -396,6 +436,8 @@ protected:
 		//	SMMATRIX m_mWVP;
 	} m_objectData;
 	IGXConstantBuffer *m_pObjectConstantBuffer = NULL;
+
+	float m_fCurrentTime = 0.0f;
 
 	MemAlloc<CTexture> m_poolTextures;
 	Array<IXTextureProxy*> m_aTextureProxies;
@@ -408,12 +450,14 @@ protected:
 	{
 		IXMaterialLoader *pLoader;
 		bool canSave;
+		SpinLock slock;
 	};
 
 	Array<IXMaterialProxy*> m_aMaterialProxies;
 	AssotiativeArray<AAString, Array<MaterialLoader>> m_mapMaterialLoaders;
 	Array<XFormatName> m_aMaterialExts;
 	Map<String, CMaterial*> m_mapMaterials;
+	SpinLock m_slMaterials;
 
 	IEventChannel<XEventMaterialChanged> *m_pNotifyChannel = NULL;
 
@@ -600,6 +644,8 @@ protected:
 			return("float3");
 		case GXDECLTYPE_FLOAT4:
 			return("float4");
+		case GXDECLTYPE_UBYTE4:
+			return("uint4");
 		}
 		assert(!"Unknown type");
 		return("");
@@ -615,6 +661,8 @@ protected:
 		case GXDECLTYPE_FLOAT3:
 			return(3);
 		case GXDECLTYPE_FLOAT4:
+			return(4);
+		case GXDECLTYPE_UBYTE4:
 			return(4);
 		}
 		assert(!"Unknown type");
@@ -671,13 +719,44 @@ private:
 		String sName;
 		bool isTranslated;
 		bool isTexture;
+		bool isMaterial;
 		CMaterialInfo *pMatInfo;
+
+		ScanItem() = default;
+
+		ScanItem(ScanItem &&other):
+			sName(std::move(other.sName)),
+			isTranslated(other.isTranslated),
+			isTexture(other.isTexture),
+			isMaterial(other.isMaterial),
+			pMatInfo(other.pMatInfo)
+		{
+		}
+
+		ScanItem& operator=(ScanItem &&other)
+		{
+			sName = std::move(other.sName);
+			isTranslated = other.isTranslated;
+			isTexture = other.isTexture;
+			isMaterial = other.isMaterial;
+			pMatInfo = other.pMatInfo;
+			return(*this);
+		}
 	};
 
 	Array<ScanItem> m_aScanCache;
 
 	void scanForExtension(IFileSystem *pFS, const char *szDir, const char *szExt, Map<String, bool> &mapFiles, bool isTexture);
 	void clearScanCache();
+
+private:
+	GXFILL_MODE m_fillMode = GXFILL_SOLID;
+	GXCULL_MODE m_cullMode = GXCULL_BACK;
+	// m_apRasterizerStates[GXFILL_MODE][GXCULL_MODE];
+	IGXRasterizerState *m_aapRasterizerStates[2][3];
+
+	IGXDevice *m_pDevice = NULL;
+	IXRender *m_pRender = NULL;
 };
 
 #endif

@@ -63,6 +63,11 @@ public:
 		return(false);
 	}
 
+	bool XMETHODCALLTYPE allowUseCamera() override
+	{
+		return(true);
+	}
+
 private:
 	CEditable *m_pEditable;
 	IXEditor *m_pEditor;

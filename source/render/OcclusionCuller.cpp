@@ -1,7 +1,8 @@
 #include "OcclusionCuller.h"
 //#include <physics/sxphysics.h>
 
-#include <gcore/sxgcore.h>
+#include <core/sxcore.h>
+#include <xcommon/IXCamera.h>
 
 /*struct CAllHitsResultCallback: public btCollisionWorld::RayResultCallback
 {
@@ -46,7 +47,7 @@ COcclusionCuller::~COcclusionCuller()
 	// mem_release(m_pCamera);
 }
 
-void XMETHODCALLTYPE COcclusionCuller::update(ICamera *pCamera, float fFOV, float fAspectRatio, float fFarPlane)
+void XMETHODCALLTYPE COcclusionCuller::update(IXCamera *pCamera, float fFOV, float fAspectRatio, float fFarPlane)
 {
 	XPROFILE_FUNCTION();
 	assert(pCamera);

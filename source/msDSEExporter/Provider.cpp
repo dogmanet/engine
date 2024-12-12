@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include <exporter_base/stdafx.h>
 #include "Provider.h"
 
 CProvider::CProvider(msModel *pModel):
@@ -11,248 +11,251 @@ bool CProvider::canExportTB()
 	return(false);
 }
 
-bool CProvider::prepare(IProgress *pProgress, bool forStaticExport)
+bool CProvider::prepare(IProgress *pProgress, bool forStaticExport, bool bPrepareMesh, bool bPrepareTB)
 {
 	m_isStatic = forStaticExport;
-	
+
 	char szTmp[4096];
-	int iMeshesCount = msModel_GetMeshCount(m_pModel);
-	for(int i = 0; i < iMeshesCount; i++)
+	if(bPrepareMesh)
 	{
-		//meshes[i]->GetNodeParent();
-		msMesh *pMesh = msModel_GetMeshAt(m_pModel, i);
-		int iLod = 0;
-
-		getConfigStr(pMesh, "layer", szTmp, sizeof(szTmp));
-
-		int iLayer = m_aLayers.indexOf(szTmp, [](const Layer &pLayer, const char *szLayer){
-			return(!fstrcmp(pLayer.sName.c_str(), szLayer));
-		});
-		if(iLayer < 0)
+		int iMeshesCount = msModel_GetMeshCount(m_pModel);
+		for(int i = 0; i < iMeshesCount; i++)
 		{
-			iLayer = (int)m_aLayers.size();
-			m_aLayers[iLayer].sName = szTmp;
-		}
+			//meshes[i]->GetNodeParent();
+			msMesh *pMesh = msModel_GetMeshAt(m_pModel, i);
+			int iLod = 0;
 
-		Object &obj = m_aLayers[iLayer].aObjects[m_aLayers[iLayer].aObjects.size()];
+			getConfigStr(pMesh, "layer", szTmp, sizeof(szTmp));
 
-		msVec3 v3;
-		msModel_GetPosition(m_pModel, v3);
-		obj.vPosition = toPosition(v3);
-		msModel_GetRotation(m_pModel, v3);
-		obj.qRotation = toRotation(v3);
-
-		msMesh_GetName(pMesh, szTmp, sizeof(szTmp));
-		obj.sName = szTmp;
-
-		Subset &ss = obj.aSubsets[0];
-
-		msMaterial *pMtl = msModel_GetMaterialAt(m_pModel, msMesh_GetMaterialIndex(pMesh));
-		msMaterial_GetDiffuseTexture(pMtl, szTmp, sizeof(szTmp));
-		ss.sTexture = szTmp;
-
-		// ss.aIndices
-		int iVertexCount = msMesh_GetVertexCount(pMesh);
-		int iTriangleCount = msMesh_GetTriangleCount(pMesh);
-
-		ss.aIndices.reserve(iTriangleCount * 3);
-
-		if(forStaticExport)
-		{
-			struct StaticVertexCache
+			int iLayer = m_aLayers.indexOf(szTmp, [](const Layer &pLayer, const char *szLayer){
+				return(!fstrcmp(pLayer.sName.c_str(), szLayer));
+			});
+			if(iLayer < 0)
 			{
-				int idVertex;
-				int idNormal;
-				//float2_t vTexCoord;
-
-				bool operator<(const StaticVertexCache &other) const
-				{
-					return(memcmp(this, &other, sizeof(*this)) < 0);
-				}
-				bool operator==(const StaticVertexCache &other) const
-				{
-					return(memcmp(this, &other, sizeof(*this)) == 0);
-				}
-			};
-			AssotiativeArray<StaticVertexCache, UINT> mVertexCache;
-			const AssotiativeArray<StaticVertexCache, UINT>::Node *pNode;
-			StaticVertexCache svc = {};
-			word pVtxs[3] = {};
-			word pNrmls[3] = {};
-			msVec2 vTexCoord = {};
-			msVec3 vPos = {};
-			UINT idx;
-			msVertex *pVtx;
-			msTriangle *pTri;
-			//msTriangleEx *pTriEx;
-
-
-			ss.aVerticesStatic.reserve(iVertexCount);
-
-			for(int j = 0; j < iTriangleCount; ++j)
-			{
-				pTri = msMesh_GetTriangleAt(pMesh, j);
-				//pTriEx = msMesh_GetTriangleExAt(pMesh, j);
-
-				msTriangle_GetVertexIndices(pTri, pVtxs);
-				msTriangle_GetNormalIndices(pTri, pNrmls);
-				// msTriangle_GetSmoothingGroup(pTri);
-
-				for(UINT k = 0; k < 3; ++k)
-				{
-					//msTriangleEx_GetTexCoord(pTriEx, k, vTexCoord);
-
-					svc.idVertex = pVtxs[k];
-					svc.idNormal = pNrmls[k];
-					//svc.vTexCoord = float2_t(vTexCoord[0], vTexCoord[1]);
-
-					if(mVertexCache.KeyExists(svc, &pNode))
-					{
-						idx = *pNode->Val;
-					}
-					else
-					{
-						mVertexCache[svc] = idx = ss.aVerticesStatic.size();
-
-						pVtx = msMesh_GetVertexAt(pMesh, svc.idVertex);
-						msVertex_GetVertex(pVtx, vPos);
-						ss.aVerticesStatic[idx].Pos = float3_t(vPos[0], vPos[1], -vPos[2]);
-
-						msMesh_GetVertexNormalAt(pMesh, svc.idNormal, vPos);
-						ss.aVerticesStatic[idx].Norm = float3_t(vPos[0], vPos[1], -vPos[2]);
-
-						msVertex_GetTexCoords(pVtx, vTexCoord);
-						ss.aVerticesStatic[idx].Tex = float2_t(vTexCoord[0], vTexCoord[1]);
-					}
-
-					if(k == 2)
-					{
-						UINT uLI = ss.aIndices[ss.aIndices.size() - 1];
-						ss.aIndices[ss.aIndices.size() - 1] = idx;
-						idx = uLI;
-					}
-					ss.aIndices.push_back(idx);
-				}
+				iLayer = (int)m_aLayers.size();
+				m_aLayers[iLayer].sName = szTmp;
 			}
-		}
-		else
-		{
-			struct AnimatedVertexCache
+
+			Object &obj = m_aLayers[iLayer].aObjects[m_aLayers[iLayer].aObjects.size()];
+
+			msVec3 v3;
+			msModel_GetPosition(m_pModel, v3);
+			obj.vPosition = toPosition(v3);
+			msModel_GetRotation(m_pModel, v3);
+			obj.qRotation = toRotation(v3);
+
+			msMesh_GetName(pMesh, szTmp, sizeof(szTmp));
+			obj.sName = szTmp;
+
+			Subset &ss = obj.aSubsets[0];
+
+			msMaterial *pMtl = msModel_GetMaterialAt(m_pModel, msMesh_GetMaterialIndex(pMesh));
+			msMaterial_GetDiffuseTexture(pMtl, szTmp, sizeof(szTmp));
+			ss.sTexture = szTmp;
+
+			// ss.aIndices
+			int iVertexCount = msMesh_GetVertexCount(pMesh);
+			int iTriangleCount = msMesh_GetTriangleCount(pMesh);
+
+			ss.aIndices.reserve(iTriangleCount * 3);
+
+			if(forStaticExport)
 			{
-				int idVertex;
-				int idNormal;
-				//float2_t vTexCoord;
-
-				char		nBoneIndices[4];
-				byte		nBoneWeights[4];
-
-				bool operator<(const AnimatedVertexCache &other) const
+				struct StaticVertexCache
 				{
-					return(memcmp(this, &other, sizeof(*this)) < 0);
-				}
-				bool operator==(const AnimatedVertexCache &other) const
+					int idVertex;
+					int idNormal;
+					//float2_t vTexCoord;
+
+					bool operator<(const StaticVertexCache &other) const
+					{
+						return(memcmp(this, &other, sizeof(*this)) < 0);
+					}
+					bool operator==(const StaticVertexCache &other) const
+					{
+						return(memcmp(this, &other, sizeof(*this)) == 0);
+					}
+				};
+				AssotiativeArray<StaticVertexCache, UINT> mVertexCache;
+				const AssotiativeArray<StaticVertexCache, UINT>::Node *pNode;
+				StaticVertexCache svc = {};
+				word pVtxs[3] = {};
+				word pNrmls[3] = {};
+				msVec2 vTexCoord = {};
+				msVec3 vPos = {};
+				UINT idx;
+				msVertex *pVtx;
+				msTriangle *pTri;
+				//msTriangleEx *pTriEx;
+
+
+				ss.aVerticesStatic.reserve(iVertexCount);
+
+				for(int j = 0; j < iTriangleCount; ++j)
 				{
-					return(memcmp(this, &other, sizeof(*this)) == 0);
-				}
-			};
-			AssotiativeArray<AnimatedVertexCache, UINT> mVertexCache;
-			const AssotiativeArray<AnimatedVertexCache, UINT>::Node *pNode;
-			AnimatedVertexCache avc = {};
-			word pVtxs[3] = {};
-			word pNrmls[3] = {};
-			msVec2 vTexCoord = {};
-			msVec3 vPos = {};
-			UINT idx;
-			msVertex *pVtx;
-			msVertexEx *pVtxEx;
-			msTriangle *pTri;
-			byte u8WeightSum;
-			//msTriangleEx *pTriEx;
+					pTri = msMesh_GetTriangleAt(pMesh, j);
+					//pTriEx = msMesh_GetTriangleExAt(pMesh, j);
 
-			ss.aVerticesAnimated.reserve(iVertexCount);
+					msTriangle_GetVertexIndices(pTri, pVtxs);
+					msTriangle_GetNormalIndices(pTri, pNrmls);
+					// msTriangle_GetSmoothingGroup(pTri);
 
-			for(int j = 0; j < iTriangleCount; ++j)
-			{
-				pTri = msMesh_GetTriangleAt(pMesh, j);
-				//pTriEx = msMesh_GetTriangleExAt(pMesh, j);
-
-				msTriangle_GetVertexIndices(pTri, pVtxs);
-				msTriangle_GetNormalIndices(pTri, pNrmls);
-				// msTriangle_GetSmoothingGroup(pTri);
-
-				for(UINT k = 0; k < 3; ++k)
-				{
-					avc.idVertex = pVtxs[k];
-					avc.idNormal = pNrmls[k];
-
-					pVtx = msMesh_GetVertexAt(pMesh, avc.idVertex);
-					pVtxEx = msMesh_GetVertexExAt(pMesh, avc.idVertex);
-
-
-					avc.nBoneIndices[0] = msVertex_GetBoneIndex(pVtx);
-					u8WeightSum = 0;
-					for(UINT s = 0; s < 3; ++s)
+					for(UINT k = 0; k < 3; ++k)
 					{
-						avc.nBoneIndices[s + 1] = msVertexEx_GetBoneIndices(pVtxEx, s);
-						avc.nBoneWeights[s] = msVertexEx_GetBoneWeights(pVtxEx, s);
-						u8WeightSum += avc.nBoneWeights[s];
-					}
-					avc.nBoneWeights[3] = u8WeightSum < 100 ? (100 - u8WeightSum) : 0;
-					assert(u8WeightSum <= 100);
-					//if(avc.nBoneIndices[0] == -1)
-					//{
-					//	// if the vertex is not attached to any bones, attach it to the root bone
-					//	avc.nBoneIndices[0] = 0;
-					//}
-					if(avc.nBoneIndices[1] == -1)
-					{
-						// Force verts that are attached to a single bone to have 100% weight
-						avc.nBoneWeights[0] = 100;
-						avc.nBoneWeights[1] = 0;
-						avc.nBoneWeights[2] = 0;
-						avc.nBoneWeights[3] = 0;
-					}
+						//msTriangleEx_GetTexCoord(pTriEx, k, vTexCoord);
 
-					if(mVertexCache.KeyExists(avc, &pNode))
-					{
-						idx = *pNode->Val;
-					}
-					else
-					{
-						mVertexCache[avc] = idx = ss.aVerticesAnimated.size();
-						
-						msVertex_GetVertex(pVtx, vPos);
-						ss.aVerticesAnimated[idx].Pos = float3_t(vPos[0], vPos[1], -vPos[2]);
+						svc.idVertex = pVtxs[k];
+						svc.idNormal = pNrmls[k];
+						//svc.vTexCoord = float2_t(vTexCoord[0], vTexCoord[1]);
 
-						msMesh_GetVertexNormalAt(pMesh, avc.idNormal, vPos);
-						ss.aVerticesAnimated[idx].Norm = float3_t(vPos[0], vPos[1], -vPos[2]);
-
-						msVertex_GetTexCoords(pVtx, vTexCoord);
-						ss.aVerticesAnimated[idx].Tex = float2_t(vTexCoord[0], vTexCoord[1]);
-
-						for(UINT s = 0; s < 4; ++s)
+						if(mVertexCache.KeyExists(svc, &pNode))
 						{
-							ss.aVerticesAnimated[idx].BoneIndices[s] = (byte)avc.nBoneIndices[s];
+							idx = *pNode->Val;
 						}
-						ss.aVerticesAnimated[idx].BoneWeights.x = (float)avc.nBoneWeights[0] / 100.0f;
-						ss.aVerticesAnimated[idx].BoneWeights.y = (float)avc.nBoneWeights[1] / 100.0f;
-						ss.aVerticesAnimated[idx].BoneWeights.z = (float)avc.nBoneWeights[2] / 100.0f;
-						ss.aVerticesAnimated[idx].BoneWeights.w = (float)avc.nBoneWeights[3] / 100.0f;
-						
-					}
+						else
+						{
+							mVertexCache[svc] = idx = ss.aVerticesStatic.size();
 
-					if(k == 2)
-					{
-						UINT uLI = ss.aIndices[ss.aIndices.size() - 1];
-						ss.aIndices[ss.aIndices.size() - 1] = idx;
-						idx = uLI;
+							pVtx = msMesh_GetVertexAt(pMesh, svc.idVertex);
+							msVertex_GetVertex(pVtx, vPos);
+							ss.aVerticesStatic[idx].Pos = float3_t(vPos[0], vPos[1], -vPos[2]);
+
+							msMesh_GetVertexNormalAt(pMesh, svc.idNormal, vPos);
+							ss.aVerticesStatic[idx].Norm = float3_t(vPos[0], vPos[1], -vPos[2]);
+
+							msVertex_GetTexCoords(pVtx, vTexCoord);
+							ss.aVerticesStatic[idx].Tex = float2_t(vTexCoord[0], vTexCoord[1]);
+						}
+
+						if(k == 2)
+						{
+							UINT uLI = ss.aIndices[ss.aIndices.size() - 1];
+							ss.aIndices[ss.aIndices.size() - 1] = idx;
+							idx = uLI;
+						}
+						ss.aIndices.push_back(idx);
 					}
-					ss.aIndices.push_back(idx);
 				}
 			}
-		}
+			else
+			{
+				struct AnimatedVertexCache
+				{
+					int idVertex;
+					int idNormal;
+					//float2_t vTexCoord;
 
-		pProgress->setProgress((float)(i + 1) / (float)iMeshesCount);
+					char		nBoneIndices[4];
+					byte		nBoneWeights[4];
+
+					bool operator<(const AnimatedVertexCache &other) const
+					{
+						return(memcmp(this, &other, sizeof(*this)) < 0);
+					}
+					bool operator==(const AnimatedVertexCache &other) const
+					{
+						return(memcmp(this, &other, sizeof(*this)) == 0);
+					}
+				};
+				AssotiativeArray<AnimatedVertexCache, UINT> mVertexCache;
+				const AssotiativeArray<AnimatedVertexCache, UINT>::Node *pNode;
+				AnimatedVertexCache avc = {};
+				word pVtxs[3] = {};
+				word pNrmls[3] = {};
+				msVec2 vTexCoord = {};
+				msVec3 vPos = {};
+				UINT idx;
+				msVertex *pVtx;
+				msVertexEx *pVtxEx;
+				msTriangle *pTri;
+				byte u8WeightSum;
+				//msTriangleEx *pTriEx;
+
+				ss.aVerticesAnimated.reserve(iVertexCount);
+
+				for(int j = 0; j < iTriangleCount; ++j)
+				{
+					pTri = msMesh_GetTriangleAt(pMesh, j);
+					//pTriEx = msMesh_GetTriangleExAt(pMesh, j);
+
+					msTriangle_GetVertexIndices(pTri, pVtxs);
+					msTriangle_GetNormalIndices(pTri, pNrmls);
+					// msTriangle_GetSmoothingGroup(pTri);
+
+					for(UINT k = 0; k < 3; ++k)
+					{
+						avc.idVertex = pVtxs[k];
+						avc.idNormal = pNrmls[k];
+
+						pVtx = msMesh_GetVertexAt(pMesh, avc.idVertex);
+						pVtxEx = msMesh_GetVertexExAt(pMesh, avc.idVertex);
+
+
+						avc.nBoneIndices[0] = msVertex_GetBoneIndex(pVtx);
+						u8WeightSum = 0;
+						for(UINT s = 0; s < 3; ++s)
+						{
+							avc.nBoneIndices[s + 1] = msVertexEx_GetBoneIndices(pVtxEx, s);
+							avc.nBoneWeights[s] = msVertexEx_GetBoneWeights(pVtxEx, s);
+							u8WeightSum += avc.nBoneWeights[s];
+						}
+						avc.nBoneWeights[3] = u8WeightSum < 100 ? (100 - u8WeightSum) : 0;
+						assert(u8WeightSum <= 100);
+						//if(avc.nBoneIndices[0] == -1)
+						//{
+						//	// if the vertex is not attached to any bones, attach it to the root bone
+						//	avc.nBoneIndices[0] = 0;
+						//}
+						if(avc.nBoneIndices[1] == -1)
+						{
+							// Force verts that are attached to a single bone to have 100% weight
+							avc.nBoneWeights[0] = 100;
+							avc.nBoneWeights[1] = 0;
+							avc.nBoneWeights[2] = 0;
+							avc.nBoneWeights[3] = 0;
+						}
+
+						if(mVertexCache.KeyExists(avc, &pNode))
+						{
+							idx = *pNode->Val;
+						}
+						else
+						{
+							mVertexCache[avc] = idx = ss.aVerticesAnimated.size();
+
+							msVertex_GetVertex(pVtx, vPos);
+							ss.aVerticesAnimated[idx].Pos = float3_t(vPos[0], vPos[1], -vPos[2]);
+
+							msMesh_GetVertexNormalAt(pMesh, avc.idNormal, vPos);
+							ss.aVerticesAnimated[idx].Norm = float3_t(vPos[0], vPos[1], -vPos[2]);
+
+							msVertex_GetTexCoords(pVtx, vTexCoord);
+							ss.aVerticesAnimated[idx].Tex = float2_t(vTexCoord[0], vTexCoord[1]);
+
+							for(UINT s = 0; s < 4; ++s)
+							{
+								ss.aVerticesAnimated[idx].BoneIndices[s] = (byte)avc.nBoneIndices[s];
+							}
+							ss.aVerticesAnimated[idx].BoneWeights.x = (float)avc.nBoneWeights[0] / 100.0f;
+							ss.aVerticesAnimated[idx].BoneWeights.y = (float)avc.nBoneWeights[1] / 100.0f;
+							ss.aVerticesAnimated[idx].BoneWeights.z = (float)avc.nBoneWeights[2] / 100.0f;
+							ss.aVerticesAnimated[idx].BoneWeights.w = (float)avc.nBoneWeights[3] / 100.0f;
+
+						}
+
+						if(k == 2)
+						{
+							UINT uLI = ss.aIndices[ss.aIndices.size() - 1];
+							ss.aIndices[ss.aIndices.size() - 1] = idx;
+							idx = uLI;
+						}
+						ss.aIndices.push_back(idx);
+					}
+				}
+			}
+
+			pProgress->setProgress((float)(i + 1) / (float)iMeshesCount);
+		}
 	}
 
 	if(!forStaticExport)

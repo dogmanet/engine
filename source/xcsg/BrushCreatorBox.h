@@ -11,6 +11,27 @@
 class CEditable;
 //class CEditorObject;
 
+class CBrushCreatorBox;
+class CBrushCreatorHandleCallback: public IXEditorGizmoHandleCallback
+{
+public:
+	CBrushCreatorHandleCallback(CBrushCreatorBox *pBrushCreator):
+		m_pBrushCreator(pBrushCreator)
+	{
+	}
+
+	void XMETHODCALLTYPE moveTo(const float3 &vNewPos, IXEditorGizmoHandle *pGizmo) override;
+	void XMETHODCALLTYPE onStart(IXEditorGizmoHandle *pGizmo) override;
+	void XMETHODCALLTYPE onEnd(IXEditorGizmoHandle *pGizmo) override;
+
+private:
+	CBrushCreatorBox *m_pBrushCreator;
+	//bool m_isMoved = false;
+	//bool m_isFirstMov = false;
+};
+
+//##########################################################################
+
 class CBrushCreatorBox final: public IXUnknownImplementation<IBrushCreator>
 {
 public:
@@ -38,7 +59,12 @@ public:
 
 	bool isValid();
 
+	void onHandleMove(const float3 &vNewPos, IXEditorGizmoHandle *pHandle);
+
 	SX_ALIGNED_OP_MEM();
+
+private:
+	void placeHandlers();
 
 private:
 	CEditable *m_pEditable;
@@ -58,6 +84,8 @@ private:
 
 	bool m_isBoxMode = true;
 
+	IXEditorGizmoHandle *m_apHandlers[6];
+	CBrushCreatorHandleCallback m_handlerCallback;
 };
 
 #endif

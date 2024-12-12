@@ -291,7 +291,7 @@ bool XMETHODCALLTYPE CTextureLoader::loadAs2D(IXResourceTexture2D *pResource)
 
 	bool isBC = isBlockCompressed(info.format);
 
-	pResource->init(info.uWidth, info.uHeight, info.format, info.uMipCount, (UINT)(m_iXFrames * m_iYFrames - m_iSkipFrames));
+	pResource->init(info.uWidth, info.uHeight, info.format, info.uMipCount == 1 ? IXRESOURCE_TEXTURE_AUTO_MIPS : info.uMipCount, (UINT)(m_iXFrames * m_iYFrames - m_iSkipFrames));
 
 	byte *pData = new byte[pResource->getTextureBytes(info.format, m_ddsHeader.width, m_ddsHeader.height)];
 
@@ -427,7 +427,7 @@ bool XMETHODCALLTYPE CTextureLoader::loadAsCube(IXResourceTextureCube *pResource
 
 	bool isBC = isBlockCompressed(info.format);
 
-	pResource->init(info.uWidth, info.format, info.uMipCount, 1);
+	pResource->init(info.uWidth, info.format, info.uMipCount == 1 ? IXRESOURCE_TEXTURE_AUTO_MIPS : info.uMipCount);
 
 	byte *pData = new byte[pResource->getTextureBytes(info.format, m_ddsHeader.width, m_ddsHeader.height)];
 

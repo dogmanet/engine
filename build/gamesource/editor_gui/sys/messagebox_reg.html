@@ -1,0 +1,58 @@
+<html onkeydown="mbox_click">
+	<head>
+		<link type="text/css" rel="stylesheet" href="mbox_reg.css"/>
+	</head>
+	<body class="">
+		<div style="position: absolute; top: 50%; left: 0; right: 0; bottom: 0; text-align: center; overflow: visible;">
+			<div style="width: 300px;display: inline-block;text-align: left">
+				<div style="position: relative; top: -50px;">
+					<div class="mbox-header" id="mb_title">WARNING</div>
+					<div class="mbox-body">
+						<div class="mbox-message" id="mb_text">Alert message</div>
+						
+						<!-- XMBF_OK -->
+						<div class="mbox-buttons-wrap" style="display: none;" id="XMBF_OK">
+							<div style="position: absolute; top: 5px; bottom: 0; left: 15px; right: 15px; padding: 0 5px"><button name="IDOK" onclick="mbox_click">OK</button></div>
+						</div>
+						
+						<!-- XMBF_YESNO -->
+						<div class="mbox-buttons-wrap" style="display: none;" id="XMBF_YESNO">
+							<div style="position: absolute; top: 5px; bottom: 0; left: 15px; right: 50%; padding: 0 5px"><button name="IDYES" onclick="mbox_click">Yes</button></div>
+							<div style="position: absolute; top: 5px; bottom: 0; left: 50%; right: 15px; padding: 0 5px"><button name="IDNO" onclick="mbox_click">No</button></div>
+						</div>
+						
+						<!-- XMBF_YESNOCANCEL -->
+						<div class="mbox-buttons-wrap" style="display: none;" id="XMBF_YESNOCANCEL">
+							<div style="position: absolute; top: 5px; bottom: 0; left: 15px; right: 12px;">
+								<div style="width: 33%; display: inline-block; padding: 0 5px"><button name="IDYES" onclick="mbox_click">Yes</button></div>
+								<div style="width: 33%; display: inline-block; padding: 0 5px"><button name="IDNO" onclick="mbox_click">No</button></div>
+								<div style="width: 33%; display: inline-block; padding: 0 5px"><button name="IDCANCEL" onclick="mbox_click">Cancel</button></div>
+							</div>
+						</div>
+						
+						<!-- XMBF_CANCELTRYCONTINUE -->
+						<div class="mbox-buttons-wrap" style="display: none;" id="XMBF_CANCELTRYCONTINUE">
+							<div style="position: absolute; top: 5px; bottom: 0; left: 15px; right: 12px;">
+								<div style="width: 33%; display: inline-block; padding: 0 5px"><button name="IDCANCEL" onclick="mbox_click">Cancel</button></div>
+								<div style="width: 33%; display: inline-block; padding: 0 5px"><button name="IDTRYAGAIN" onclick="mbox_click">Try Again</button></div>
+								<div style="width: 33%; display: inline-block; padding: 0 5px"><button name="IDCONTINUE" onclick="mbox_click">Continue</button></div>
+							</div>
+						</div>
+						
+						<!-- XMBF_OKCANCEL -->
+						<div class="mbox-buttons-wrap" style="display: none;" id="XMBF_OKCANCEL">
+							<div style="position: absolute; top: 5px; bottom: 0; left: 15px; right: 50%; padding: 0 5px"><button name="IDOK" onclick="mbox_click">OK</button></div>
+							<div style="position: absolute; top: 5px; bottom: 0; left: 50%; right: 15px; padding: 0 5px"><button name="IDCANCEL" onclick="mbox_click">Cancel</button></div>
+						</div>
+						
+						<!-- XMBF_RETRYCANCEL -->
+						<div class="mbox-buttons-wrap" style="display: none;" id="XMBF_RETRYCANCEL">
+							<div style="position: absolute; top: 5px; bottom: 0; left: 15px; right: 50%; padding: 0 5px"><button name="IDRETRY" onclick="mbox_click">Retry</button></div>
+							<div style="position: absolute; top: 5px; bottom: 0; left: 50%; right: 15px; padding: 0 5px"><button name="CANCEL" onclick="mbox_click">Cancel</button></div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>

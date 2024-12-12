@@ -1,7 +1,7 @@
 #include "EditorObject.h"
 
 //#include <render/sxrender.h>
-#include <mtrl/sxmtrl.h>
+#include <xcommon/IPluginManager.h>
 #include <xcommon/resource/IXResourceManager.h>
 
 #include "Editable.h"
@@ -14,6 +14,10 @@ CEditorObject::CEditorObject(CEditable *pEditable):
 	pEditable->onObjectCreated(this);
 	//m_szClassName = CEntityFactoryMap::GetInstance()->getClassNamePtr(szClassName);
 	//assert(m_szClassName);
+
+	m_vColor.x = 0.0f;
+	m_vColor.y = randf(0.1f, 1.0f);
+	m_vColor.z = randf(0.1f, 1.0f);
 }
 
 CEditorObject::~CEditorObject()
@@ -129,41 +133,6 @@ void XMETHODCALLTYPE CEditorObject::render(bool is3D, bool bRenderSelection, IXG
 			m_aBrushes[i]->renderSelection(is3D, pGizmoRenderer, m_pEditable->getClipPlaneState(), m_pEditable->getClipPlane());
 		}
 	}
-
-#if 0
-	if(!m_pEntity)
-	{
-		return;
-	}
-
-	IGXDevice *pDevice = SGCore_GetDXDevice();
-	IGXContext *pCtx = pDevice->getThreadContext();
-
-	IGXBlendState *pOldBlendState = pCtx->getBlendState();
-	IGXRasterizerState *pOldRS = pCtx->getRasterizerState();
-
-	m_pEditable->m_pMaterialSystem->bindTexture(m_pEditable->m_pWhiteTexture);
-	//pDevice->setTexture(m_pEditable->m_pWhiteTexture);
-	pCtx->setBlendState(m_pEditable->m_pBlendColorFactor);
-
-	if(is3D)
-	{
-		pCtx->setBlendFactor(GX_COLOR_ARGB(70, 255, 0, 0));
-		m_pEntity->renderEditor(is3D);
-
-		SAFE_CALL(m_pModel, render, 0, MF_OPAQUE | MF_TRANSPARENT);
-	}
-
-	pCtx->setRasterizerState(m_pEditable->m_pRSWireframe);
-	pCtx->setBlendFactor(GX_COLOR_ARGB(255, 255, 255, 0));
-	m_pEntity->renderEditor(is3D);
-	SAFE_CALL(m_pModel, render, 0, MF_OPAQUE | MF_TRANSPARENT);
-
-	pCtx->setBlendState(pOldBlendState);
-	pCtx->setRasterizerState(pOldRS);
-	mem_release(pOldBlendState);
-	mem_release(pOldRS);
-#endif
 }
 
 bool XMETHODCALLTYPE CEditorObject::rayTest(const float3 &vStart, const float3 &vEnd, float3 *pvOut, float3 *pvNormal, ID *pidMtrl, bool bReturnNearestPoint)
@@ -230,6 +199,8 @@ void XMETHODCALLTYPE CEditorObject::remove()
 		m_aBrushes[i]->enable(false);
 	}
 	m_isVisible = false;
+
+	m_pEditable->onSelectionChanged(this);
 }
 void XMETHODCALLTYPE CEditorObject::preSetup()
 {
@@ -266,11 +237,25 @@ void CEditorObject::setKV(const char *szKey, const char *szValue, bool bSkipFixP
 			mem_release(pRoot);
 		}
 
+		m_pEditable->getVertexTool()->onObjectTopologyChanged(this);
+
 		fixPos();
 	}
 	else if(!fstrcmp(szKey, "guid"))
 	{
 		XGUIDFromString(&m_guid, szValue);
+	}
+	else if(!fstrcmp(szKey, "color"))
+	{
+		sscanf(szValue, "%f %f %f", &m_vColor.x, &m_vColor.y, &m_vColor.z);
+		fora(i, m_aBrushes)
+		{
+			m_aBrushes[i]->setColor(m_vColor);
+		}
+	}
+	else if(!fstrcmp(szKey, "name"))
+	{
+		m_sName = szValue;
 	}
 	//if(m_pEntity)
 	//{
@@ -288,6 +273,7 @@ void CEditorObject::setKV(const char *szKey, IXJSONItem *pValue, bool bSkipFixPo
 			for(UINT i = m_aBrushes.size(), l = pArray->size(); i < l; ++i)
 			{
 				m_aBrushes[i] = new CBrushMesh(m_pEditable->getCore());
+				m_aBrushes[i]->setColor(m_vColor);
 			}
 
 			for(UINT i = pArray->size(), l = m_aBrushes.size(); i < l; ++i)
@@ -325,6 +311,20 @@ void CEditorObject::setKV(const char *szKey, IXJSONItem *pValue, bool bSkipFixPo
 		SAFE_CALL(m_pModel, onObjectChanged, this);
 	}
 	else if(!fstrcmp(szKey, "guid"))
+	{
+		if(pValue->getType() == XJI_STRING)
+		{
+			setKV(szKey, pValue->getString());
+		}
+	}
+	else if(!fstrcmp(szKey, "color"))
+	{
+		if(pValue->getType() == XJI_STRING)
+		{
+			setKV(szKey, pValue->getString());
+		}
+	}
+	else if(!fstrcmp(szKey, "name"))
 	{
 		if(pValue->getType() == XJI_STRING)
 		{
@@ -381,7 +381,27 @@ const char* CEditorObject::getKV(const char *szKey, bool forJSON)
 		m_sGUID = tmp;
 		return(m_sGUID.c_str());
 	}
-
+	else if(!fstrcmp(szKey, "color"))
+	{
+		if(forJSON)
+		{
+			sprintf_s(m_szColor, "\"%f %f %f\"", m_vColor.x, m_vColor.y, m_vColor.z);
+		}
+		else
+		{
+			sprintf_s(m_szColor, "%f %f %f", m_vColor.x, m_vColor.y, m_vColor.z);
+		}
+		return(m_szColor);
+	}
+	else if(!fstrcmp(szKey, "name"))
+	{
+		if(forJSON)
+		{
+			m_sQuotedName = String("\"") + m_sName + "\"";
+			return(m_sQuotedName.c_str());
+		}
+		return(m_sName.c_str());
+	}
 	//if(!m_pEntity)
 	{
 		return(NULL);
@@ -406,18 +426,24 @@ const X_PROP_FIELD* XMETHODCALLTYPE CEditorObject::getPropertyMeta(UINT uKey)
 {
 	static X_PROP_FIELD s_prop0 = {"brush", "brush", XPET_TEXT, NULL, ""};
 	static X_PROP_FIELD s_prop1 = {"guid", "GUID", XPET_TEXT, NULL, "", true};
+	static X_PROP_FIELD s_prop2 = {"color", "color", XPET_TEXT, NULL, ""};
+	static X_PROP_FIELD s_prop3 = {"name", "Name", XPET_TEXT, NULL, ""};
 	switch(uKey)
 	{
 	case 0:
 		return(&s_prop0);
 	case 1:
 		return(&s_prop1);
+	case 2:
+		return(&s_prop2);
+	case 3:
+		return(&s_prop3);
 	}
 	return(NULL);
 }
 UINT XMETHODCALLTYPE CEditorObject::getProperyCount()
 {
-	return(2);
+	return(4);
 }
 
 const char* XMETHODCALLTYPE CEditorObject::getTypeName()
@@ -433,7 +459,7 @@ void XMETHODCALLTYPE CEditorObject::setSelected(bool set)
 {
 	m_isSelected = set;
 
-	//m_pEditable->onSelectionChanged(this);
+	m_pEditable->onSelectionChanged(this);
 }
 
 void XMETHODCALLTYPE CEditorObject::setSimulationMode(bool set)
@@ -448,6 +474,7 @@ bool XMETHODCALLTYPE CEditorObject::hasVisualModel()
 
 void CEditorObject::addBrush(CBrushMesh *pBrushMesh)
 {
+	pBrushMesh->setColor(m_vColor);
 	m_aBrushes.push_back(pBrushMesh);
 }
 
@@ -689,4 +716,149 @@ void CEditorObject::buildPhysbox(IXResourceModel *pResource)
 	{
 		m_aBrushes[i]->buildPhysbox(pResource);
 	}
+}
+
+UINT CEditorObject::getVertexCount()
+{
+	UINT uVertexCount = 0;
+	for(UINT i = 0, l = m_aBrushes.size(); i < l; ++i)
+	{
+		uVertexCount += m_aBrushes[i]->getVertexCount();
+	}
+	return(uVertexCount);
+}
+
+const float3_t& CEditorObject::getVertexAt(UINT uVertex)
+{
+	UINT uVertexCount;
+	CBrushMesh *pBrush;
+	for(UINT i = 0, l = m_aBrushes.size(); i < l; ++i)
+	{
+		pBrush = m_aBrushes[i];
+		uVertexCount = pBrush->getVertexCount();
+		if(uVertex >= uVertexCount)
+		{
+			uVertex -= uVertexCount;
+			continue;
+		}
+
+		return(pBrush->getVertexAt(uVertex));
+	}
+
+	assert(!"Invalid index!");
+	static float3_t a;
+	return(a);
+}
+
+UINT CEditorObject::moveVertices(UINT *puAffectedVertices, UINT uVertexCount, const float3 &vDeltaPos)
+{
+	if(uVertexCount == getVertexCount())
+	{
+		setPos((float3)(getPos() + vDeltaPos));
+		return(0);
+	}
+
+	bool isSorted = true;
+	for(UINT i = 1; i < uVertexCount; ++i)
+	{
+		if(puAffectedVertices[i - 1] >= puAffectedVertices[i])
+		{
+			isSorted = false;
+		}
+	}
+	assert(isSorted);
+	if(!isSorted)
+	{
+		return(0);
+	}
+
+	{
+		UINT uStart = 0;
+		UINT uBrush = 0;
+		UINT uBrushVC;
+		UINT uCount;
+		UINT uOffset = 0;
+		while(uStart < uVertexCount && uBrush < m_aBrushes.size())
+		{
+			uBrushVC = m_aBrushes[uBrush]->getVertexCount();
+
+			uCount = 0;
+			for(UINT i = uStart; i < uVertexCount; ++i)
+			{
+				if(puAffectedVertices[i] < uBrushVC + uOffset)
+				{
+					++uCount;
+				}
+				else
+				{
+					break;
+				}
+			}
+
+			if(uCount)
+			{
+				if(!m_aBrushes[uBrush]->couldMoveVertices(puAffectedVertices + uStart, uCount, uOffset, vDeltaPos))
+				{
+					// couldn't move
+					return(0);
+				}
+				uStart += uCount;
+			}
+
+			++uBrush;
+			uOffset += uBrushVC;
+		}
+	}
+
+	UINT uTotalRemoved = 0;
+	{
+		UINT uStart = 0;
+		UINT uCount;
+		UINT uBrush = 0;
+		UINT uBrushVC;
+		UINT uWriteStart = 0;
+		UINT uRemoved;
+		UINT uOffset = 0;
+		while(uStart < uVertexCount && uBrush < m_aBrushes.size())
+		{
+			uBrushVC = m_aBrushes[uBrush]->getVertexCount();
+
+			uCount = 0;
+			for(UINT i = uStart; i < uVertexCount; ++i)
+			{
+				if(puAffectedVertices[i] < uBrushVC)
+				{
+					++uCount;
+				}
+				else
+				{
+					puAffectedVertices[i] -= uBrushVC;
+				}
+			}
+
+			if(uCount)
+			{
+				uRemoved = m_aBrushes[uBrush]->moveVertices(puAffectedVertices + uStart, uCount, vDeltaPos, puAffectedVertices + uWriteStart);
+				if(uRemoved)
+				{
+					uTotalRemoved += uRemoved;
+					for(UINT i = uWriteStart, l = uWriteStart + uRemoved; i < l; ++i)
+					{
+						puAffectedVertices[i] += uOffset;
+					}
+					uWriteStart += uRemoved;
+				}
+				uStart += uCount;
+			}
+
+			uOffset += uBrushVC;
+			++uBrush;
+		}
+	}
+	
+	fixPos();
+
+	SAFE_CALL(m_pModel, onObjectChanged, this);
+
+	return(uTotalRemoved);
 }

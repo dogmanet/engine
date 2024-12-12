@@ -214,10 +214,10 @@ struct XEventCvarChanged
 // {5CEC2355-1F1E-4A1D-8E69-5B92850B62D2}
 #define EVENT_OBSERVER_CHANGED_GUID DEFINE_XGUID(0x5cec2355, 0x1f1e, 0x4a1d, 0x8e, 0x69, 0x5b, 0x92, 0x85, 0xb, 0x62, 0xd2)
 
-class ICamera;
+class IXCamera;
 struct XEventObserverChanged
 {
-	ICamera *pCamera;
+	IXCamera *pCamera;
 };
 
 
@@ -258,6 +258,17 @@ enum X_2DXFORM_TYPE
 struct XEventEditorXformType
 {
 	X_2DXFORM_TYPE newXformType;
+};
+
+#define EVENT_INVENTORY_CHANGED_GUID DEFINE_GUID(0xe08d7a34, 0x8c88, 0x4713, 0xa4, 0x7b, 0x1e, 0xe5, 0x98, 0x19, 0x39, 0xf0);
+struct XEventInventoryChanged
+{
+	enum TYPE
+	{
+		TYPE_UPDATE
+		//TYPE_ADD_ITEM,
+		//TYPE_REMOVE_ITEM
+	};
 };
 
 #endif

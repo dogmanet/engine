@@ -24,12 +24,6 @@ See the license in LICENSE
 #include <gdefines.h>
 #include <common/Math.h>
 
-#if defined(_DEBUG)
-#pragma comment(lib, "sxmtrl_d.lib")
-#else
-#pragma comment(lib, "sxmtrl.lib")
-#endif
-
 #undef SX_LIB_API
 #define SX_LIB_API extern "C" __declspec (dllimport)
 #include <mtrl/sxmtrl.h>

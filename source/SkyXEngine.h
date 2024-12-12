@@ -294,7 +294,9 @@ QT стиль документирования (!) и QT_AUTOBRIEF - корот�
 
 #define SKYXENGINE_VERSION "X.12.0-dev"
 
-#define SKYXENGINE_VERSION4EDITORS "SkyXEngine version " ## SKYXENGINE_VERSION
+#define SKYXENGINE_BUILD_NUMBER "$BUILD_NO$"
+
+#define SKYXENGINE_VERSION4EDITORS "SkyXEngine version " ## SKYXENGINE_VERSION ## "+" ## SKYXENGINE_BUILD_NUMBER
 
 #define SKYXENGINE_PREVIEW_SIZE 256
 
@@ -331,20 +333,6 @@ QT стиль документирования (!) и QT_AUTOBRIEF - корот�
 #include <input/sxinput.h>
 
 #if defined(_DEBUG)
-#pragma comment(lib, "sxgcore_d.lib")
-#else
-#pragma comment(lib, "sxgcore.lib")
-#endif
-#include <gcore/sxgcore.h>
-
-#if defined(_DEBUG)
-#pragma comment(lib, "sxmtrl_d.lib")
-#else
-#pragma comment(lib, "sxmtrl.lib")
-#endif
-#include <mtrl/sxmtrl.h>
-
-#if defined(_DEBUG)
 #pragma comment(lib, "sxphysics_d.lib")
 #else
 #pragma comment(lib, "sxphysics.lib")
@@ -358,12 +346,7 @@ QT стиль документирования (!) и QT_AUTOBRIEF - корот�
 #endif
 #include <game/sxgame.h>
 
-#if defined(_DEBUG)
-#pragma comment(lib, "sxrender_d.lib")
-#else
-#pragma comment(lib, "sxrender.lib")
-#endif
-#include <render/sxrender.h>
+//#include <render/sxrender.h>
 
 //}
 

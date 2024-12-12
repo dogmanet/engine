@@ -177,6 +177,7 @@ float4 main(VSO_ResPos IN):COLOR0
 	// vColor.rgb /= (fAdaptedLum + vColor.rgb);
 #pragma warning(push)
 #pragma warning(disable: 3571)
+	return(vColor);
 	return float4(pow(vColor.rgb, 1.0/2.2), vColor.a);
 #pragma warning(pop)
 	// return float4(vColor.rgb, vColor.a);

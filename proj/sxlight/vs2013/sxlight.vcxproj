@@ -176,6 +176,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\source\light\GIGraphNode.cpp" />
+    <ClCompile Include="..\..\..\source\light\GIGraphNodeData.cpp" />
     <ClCompile Include="..\..\..\source\light\light.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
@@ -187,14 +189,22 @@
     <ClCompile Include="..\..\..\source\light\shadow.cpp" />
     <ClCompile Include="..\..\..\source\light\ShadowCache.cpp" />
     <ClCompile Include="..\..\..\source\light\sxlight_dll.cpp" />
+    <ClCompile Include="..\..\..\source\light\TonemappingGraphNode.cpp" />
+    <ClCompile Include="..\..\..\source\light\TonemappingGraphNodeData.cpp" />
+    <ClCompile Include="..\..\..\source\light\Updatable.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\source\light\GIGraphNode.h" />
+    <ClInclude Include="..\..\..\source\light\GIGraphNodeData.h" />
     <ClInclude Include="..\..\..\source\light\LightSystem.h" />
     <ClInclude Include="..\..\..\source\light\IXLight.h" />
     <ClInclude Include="..\..\..\source\light\IXLightSystem.h" />
     <ClInclude Include="..\..\..\source\light\light.h" />
     <ClInclude Include="..\..\..\source\light\shadow.h" />
     <ClInclude Include="..\..\..\source\light\ShadowCache.h" />
+    <ClInclude Include="..\..\..\source\light\TonemappingGraphNode.h" />
+    <ClInclude Include="..\..\..\source\light\TonemappingGraphNodeData.h" />
+    <ClInclude Include="..\..\..\source\light\Updatable.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

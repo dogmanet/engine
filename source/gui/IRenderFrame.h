@@ -25,7 +25,7 @@ namespace gui
 				virtual ~IRenderFrame();
 
 				virtual UINT layout(bool changed=true);
-				virtual void render(UINT lvl);
+				virtual void render(UINT lvl, float fDT);
 
 				virtual void onCreated();
 
@@ -53,6 +53,8 @@ namespace gui
 					Array<RECT> *m_prc;
 
 					CRenderElement *m_pNextREl;
+
+					IRenderFrame *m_pBlock = NULL;
 				};
 
 				/*enum CUT_TYPE
@@ -111,6 +113,8 @@ namespace gui
 				UINT getClientLeft();
 
 				CDOMnode* getNode();
+				void clearNode();
+				void setNode(CDOMnode *pNode);
 
 				UINT getContentTop();
 				UINT getContentLeft();
@@ -122,29 +126,32 @@ namespace gui
 				void textClear();
 				void textBreak();
 				void textAppend(CRenderElement *rel, int iLineIdx);
+				void textDel(CRenderElement *rel, int iLineIdx);
 				int textGetLineIdx();
 				UINT textFixUp();
 
-				void updateStyles();
+				IRenderFrame* updateStyles();
 
 				void updateBorderColor();
 
 				void resetLayout(bool first = true, bool bForce = false);
 
 				RECT getClientRect();
-				RECT getVisibleRect();
+				RECT getVisibleRect(bool *puseForceCrop = NULL, RECT *prcForceCrop = NULL);
 
-				int getScrollLeft();
+				virtual float getScrollLeft();
 				int getScrollLeftMax();
-				void setScrollLeft(int x);
+				virtual void setScrollLeft(float x);
 
-				int getScrollTop();
+				virtual float getScrollTop();
 				int getScrollTopMax();
-				void setScrollTop(int x, bool _check_bounds = false);
+				virtual void setScrollTop(float x, bool _check_bounds = false);
 
-				void setScrollSpeedX(int x);
-				void setScrollSpeedY(int x);
-				void updateScroll();
+				void setScrollSpeedX(float x);
+				void setScrollSpeedY(float y);
+				float getScrollSpeedX();
+				float getScrollSpeedY();
+				void updateScroll(float fDT);
 
 				void findElementByXY(int x, int y, IDOMnode **ppNode, bool sendEnterLeave = false);
 
@@ -203,7 +210,7 @@ namespace gui
 					return(m_bFreezed);
 				}
 
-				void removeChild(IRenderFrame *prf);
+				void removeChild(IRenderFrame *prf, IRenderFrame *pReplaceWith = NULL);
 
 			protected:
 
@@ -220,7 +227,7 @@ namespace gui
 				int m_iTCBackground;
 
 				void updateBorder();
-				void updateBackground();
+				virtual void updateBackground();
 
 				void renderBackground(UINT lvl);
 
@@ -233,7 +240,7 @@ namespace gui
 				int m_iBackgroundOffsetX = 0;
 				int m_iBackgroundOffsetY = 0;
 
-				CPITexture m_pBackgroundImage = NULL;
+				IXTexture *m_pBackgroundImage = NULL;
 
 				CDOMnode *m_pNode;
 				css::CCSSstyle m_ComputedStyle;
@@ -255,12 +262,10 @@ namespace gui
 
 				bool isWidthSet = true;
 
-				int m_iScrollTop = 0;
-				int m_iScrollLeft = 0;
+				//int m_iScrollTop = 0;
+				//int m_iScrollLeft = 0;
 				int m_iScrollTopMax = 0;
 				int m_iScrollLeftMax = 0;
-				int m_iScrollSpeedX = 0;
-				int m_iScrollSpeedY = 0;
 
 				bool m_bBackgroundRepeatX = true;
 				bool m_bBackgroundRepeatY = true;
@@ -294,8 +299,8 @@ namespace gui
 				DECLARE_CLASS(IRenderBlock, IRenderFrame);
 			public:
 				IRenderBlock(CDOMnode *pNode, IRenderFrame *pRootNode);
-				UINT layout(bool changed = true);
-				void render(UINT lvl);
+				UINT layout(bool changed = true) override;
+				void render(UINT lvl, float fDT) override;
 			};
 
 			class IRenderAnonymousBlock: public IRenderFrame
@@ -303,8 +308,8 @@ namespace gui
 				DECLARE_CLASS(IRenderAnonymousBlock, IRenderFrame);
 			public:
 				IRenderAnonymousBlock(IRenderFrame * pRootNode);
-				UINT layout(bool changed = true);
-				void render(UINT lvl);
+				UINT layout(bool changed = true) override;
+				void render(UINT lvl, float fDT) override;
 			};
 
 
@@ -313,7 +318,7 @@ namespace gui
 				DECLARE_CLASS(IRenderInlineBlock, IRenderBlock);
 			public:
 				IRenderInlineBlock(CDOMnode * pNode, IRenderFrame * pRootNode);
-				UINT layout(bool changed = true);
+				UINT layout(bool changed = true) override;
 				//void render(UINT lvl);
 			};
 
@@ -322,8 +327,8 @@ namespace gui
 				DECLARE_CLASS(IRenderInline, IRenderFrame);
 			public:
 				IRenderInline(CDOMnode * pNode, IRenderFrame * pRootNode);
-				UINT layout(bool changed = true);
-				void render(UINT lvl);
+				UINT layout(bool changed = true) override;
+				void render(UINT lvl, float fDT) override;
 			};
 
 #if 0
@@ -361,14 +366,15 @@ namespace gui
 					BaseClass(pNode, pRootNode)
 				{
 				}
+				~IRenderTextNew();
 
-				UINT layout(bool changed = true);
-				void render(UINT lvl);
+				UINT layout(bool changed = true) override;
+				void render(UINT lvl, float fDT) override;
 
 				UINT getCaretPos();
-				void setCaretPos(int cp, bool force = false);
-				void moveCaretPos(int shift);
-				void moveCaretLine(int shift);
+				void setCaretPos(int cp, bool force = false, bool bPreserveSelection = false);
+				void moveCaretPos(int shift, bool bPreserveSelection = false);
+				void moveCaretLine(int shift, bool bPreserveSelection = false);
 				UINT getCaretMaxPos();
 
 
@@ -418,8 +424,8 @@ namespace gui
 				DECLARE_CLASS(IRenderImageBlock, IRenderBlock);
 			public:
 				IRenderImageBlock(CDOMnode * pNode, IRenderFrame * pRootNode);
-				UINT layout(bool changed = true);
-				void render(UINT lvl);
+				UINT layout(bool changed = true) override;
+				void render(UINT lvl, float fDT) override;
 			};
 
 			class IRenderImageInlineBlock: public IRenderInlineBlock
@@ -427,22 +433,48 @@ namespace gui
 				DECLARE_CLASS(IRenderImageInlineBlock, IRenderInlineBlock);
 			public:
 				IRenderImageInlineBlock(CDOMnode *pNode, IRenderFrame *pRootNode);
-				UINT layout(bool changed = true);
-				void render(UINT lvl);
+				UINT layout(bool changed = true) override;
+				void render(UINT lvl, float fDT) override;
 			};
 
 			class IRenderSelectBlock: public IRenderBlock
 			{
 				DECLARE_CLASS(IRenderSelectBlock, IRenderBlock);
+				friend class ISELECT;
 			public:
 				IRenderSelectBlock(CDOMnode *pNode, IRenderFrame *pRootNode):
 					BaseClass(pNode, pRootNode)
 				{
+					//LogInfo("IRenderSelectBlock(%p)\n", this);
+				}
+				~IRenderSelectBlock()
+				{
+					//LogInfo("~IRenderSelectBlock(%p)\n", this);
+					if(m_pOptionsFrame && m_pOptionsFrame->getParent())
+					{
+						m_pOptionsFrame->getParent()->removeChild(m_pOptionsFrame);
+					}
 				}
 
-				UINT layout(bool changed = true);
+				UINT layout(bool changed = true) override;
 
-				void onCreated();
+				void onCreated() override;
+
+				float getScrollLeft() override
+				{
+					return(0.0f);
+				}
+				void setScrollLeft(float x) override
+				{}
+
+				float getScrollTop() override
+				{
+					return(0.0f);
+				}
+				void setScrollTop(float x, bool _check_bounds = false) override
+				{
+
+				}
 
 			protected:
 				IRenderFrame *m_pOptionsFrame = NULL;
@@ -451,11 +483,24 @@ namespace gui
 			class IRenderSelectOptionsBlock: public IRenderBlock
 			{
 				DECLARE_CLASS(IRenderSelectOptionsBlock, IRenderBlock);
+				friend class ISELECT;
 			public:
 				IRenderSelectOptionsBlock(IRenderFrame * pSelectFrame, IRenderFrame * pRootNode);
 
-				UINT layout(bool changed = true);
-				void render(UINT lvl);
+				~IRenderSelectOptionsBlock()
+				{
+					//LogInfo("~IRenderSelectOptionsBlock(%p)\n", this);
+					//m_pParent->removeChild(this);
+				}
+
+				UINT layout(bool changed = true) override;
+				void render(UINT lvl, float fDT) override;
+
+				void updateBackground() override
+				{
+					return;
+				}
+
 
 			protected:
 				IRenderFrame *m_pSelectFrame;

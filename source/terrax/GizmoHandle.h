@@ -3,7 +3,9 @@
 
 #include <xcommon/editor/IXEditorGizmo.h>
 #include <xcommon/render/IXRenderUtils.h>
-//#include "terrax.h"
+
+
+float MulDpiF(float fUnscaled, UINT uCurrentDpi);
 
 class CEditor;
 class CGizmoHandle final: public IXUnknownImplementation<IXEditorGizmoHandle>
@@ -29,7 +31,9 @@ public:
 
 	float getOnscreenSize() const
 	{
-		return(7.0f);
+		extern UINT g_uWndMainDpi;
+
+		return(MulDpiF(7.0f, g_uWndMainDpi));
 	}
 
 	void setBestPlaneNormal(const float3_t &vNormal)

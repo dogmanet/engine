@@ -46,6 +46,7 @@ public:
 //! @todo find more appropriate place for that
 enum XACCEL_FLAG
 {
+	XAF_NONE = 0,
 	XAF_ALT = 0x01, //!< The ALT key must be held down when the accelerator key is pressed.
 	XAF_CTRL = 0x02, //!< The CTRL key must be held down when the accelerator key is pressed.
 	XAF_SHIFT = 0x04, //!< The SHIFT key must be held down when the accelerator key is pressed.
@@ -86,6 +87,49 @@ public:
 	virtual UINT XMETHODCALLTYPE getClassCount() = 0;
 	virtual const char* XMETHODCALLTYPE getClassAt(UINT idx) = 0;
 	virtual bool XMETHODCALLTYPE useClass(const char *szClassName) = 0;
+
+	virtual bool XMETHODCALLTYPE allowUseCamera() = 0;
+};
+
+//##########################################################################
+
+class IXEditorResourceBrowserCallback
+{
+public:
+	virtual void XMETHODCALLTYPE onSelected(const char *szFile) = 0;
+	virtual void XMETHODCALLTYPE onCancelled() = 0;
+};
+
+//--------------------------------------------------------------------------
+
+class IXEditorResourceBrowser: public IXUnknown
+{
+public:
+	virtual UINT XMETHODCALLTYPE getResourceTypeCount() = 0;
+	virtual const char* XMETHODCALLTYPE getResourceType(UINT uId) = 0;
+
+	virtual void XMETHODCALLTYPE browse(const char *szType, const char *szOldValue, IXEditorResourceBrowserCallback *pCallback) = 0;
+	virtual void XMETHODCALLTYPE cancel() = 0;
+};
+
+//##########################################################################
+
+typedef void(*XEditorMenuCallback)(void*);
+
+struct XEditorMenuItem
+{
+	const char *szText;
+	XEditorMenuCallback pfnCallback;
+	void *pContext;
+
+	const XAccelItem *pAccel;
+	void *pPlacement;
+
+	const XEditorMenuItem *aItems;
+	UINT uItemCount;
+
+	bool isDisabled;
+	bool isChecked;
 };
 
 //##########################################################################
@@ -103,6 +147,12 @@ public:
 	virtual bool XMETHODCALLTYPE getTool(UINT uId, IXEditorTool **ppOut) = 0;
 
 	virtual void XMETHODCALLTYPE render(bool is3D) = 0;
+
+	virtual UINT XMETHODCALLTYPE getResourceBrowserCount() = 0;
+	virtual bool XMETHODCALLTYPE getResourceBrowser(UINT uId, IXEditorResourceBrowser **ppOut) = 0;
+
+	virtual UINT XMETHODCALLTYPE getMenuCount() = 0;
+	virtual const XEditorMenuItem* XMETHODCALLTYPE getMenu(UINT uId) = 0;
 };
 
 #endif

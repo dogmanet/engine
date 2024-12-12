@@ -475,6 +475,7 @@ void CFont::regen()
 		cd.xoffset = list[i].xo;
 		//cd.yoffset = m_iFontSize - list[i].yo - 15.0f / 72.0f * (float)m_iFontSize;
 		cd.yoffset = (int)m_uFontSize - list[i].yo;
+		cd.texid = 0;
 		m_chars[cd.id] = cd;
 	}
 
@@ -1139,17 +1140,23 @@ void XMETHODCALLTYPE CFont::buildString(const char *szString, const XFontBuildPa
 
 			*/
 
+			byte u8TexId = 0;// cd->texid;
+
 			pVB[CV].vPos = float2_t(cx + (bFirstLine ? (float)params.uFirstLineShift : 0) + (float)cd->xoffset, cy + (float)cd->yoffset);
 			pVB[CV].vTex = float2_t(cd->tx, cd->ty + cd->theight);
+			pVB[CV].uTexIdx = u8TexId;
 			CV++;
 			pVB[CV].vPos = float2_t(cx + (bFirstLine ? (float)params.uFirstLineShift : 0) + (float)cd->xoffset + (float)cd->width, cy + (float)cd->yoffset);
 			pVB[CV].vTex = float2_t(cd->tx + cd->twidth, cd->ty + cd->theight);
+			pVB[CV].uTexIdx = u8TexId;
 			CV++;
 			pVB[CV].vPos = float2_t(cx + (bFirstLine ? (float)params.uFirstLineShift : 0) + (float)cd->xoffset, cy + cd->height + (float)cd->yoffset);
 			pVB[CV].vTex = float2_t(cd->tx, cd->ty);
+			pVB[CV].uTexIdx = u8TexId;
 			CV++;
 			pVB[CV].vPos = float2_t(cx + (bFirstLine ? (float)params.uFirstLineShift : 0) + (float)cd->xoffset + (float)cd->width, cy + cd->height + (float)cd->yoffset);
 			pVB[CV].vTex = float2_t(cd->tx + cd->twidth, cd->ty);
+			pVB[CV].uTexIdx = u8TexId;
 			CV++;
 
 			//	pVB[CV] = {{cx + (bFirstLine ? (float)iFirstShift : 0) + (float)cd->xoffset, cy + (float)cd->yoffset, 0.0f}, {cd->tx, cd->ty + cd->theight}}; CV++;
@@ -1212,15 +1219,19 @@ void XMETHODCALLTYPE CFont::buildString(const char *szString, const XFontBuildPa
 		{
 			pVB[CV].vPos = float2_t(0.0f, alx[i].y);
 			pVB[CV].vTex = float2_t(0.0f, 1.0f);
+			pVB[CV].uTexIdx = 0;
 			CV++;
 			pVB[CV].vPos = float2_t(alx[i].x, alx[i].y);
 			pVB[CV].vTex = float2_t(1.0f, 1.0f);
+			pVB[CV].uTexIdx = 0;
 			CV++;
 			pVB[CV].vPos = float2_t(0.0f, alx[i].y + lineHeight);
 			pVB[CV].vTex = float2_t(0.0f, 0.0f);
+			pVB[CV].uTexIdx = 0;
 			CV++;
 			pVB[CV].vPos = float2_t(alx[i].x, alx[i].y + lineHeight);
 			pVB[CV].vTex = float2_t(1.0f, 0.0f);
+			pVB[CV].uTexIdx = 0;
 			CV++;
 
 			//	pVB[CV] = {{0.0f, alx[i].y, 0.0f}, {0.0f, 1.0f}}; CV++;
@@ -1232,15 +1243,19 @@ void XMETHODCALLTYPE CFont::buildString(const char *szString, const XFontBuildPa
 		{
 			pVB[CV].vPos = float2_t(0.0f, alx[i].y + (float)m_uFontSize - lineHeight);
 			pVB[CV].vTex = float2_t(0.0f, 1.0f);
+			pVB[CV].uTexIdx = 0;
 			CV++;
 			pVB[CV].vPos = float2_t(alx[i].x, alx[i].y + (float)m_uFontSize - lineHeight);
 			pVB[CV].vTex = float2_t(1.0f, 1.0f);
+			pVB[CV].uTexIdx = 0;
 			CV++;
 			pVB[CV].vPos = float2_t(0.0f, alx[i].y + (float)m_uFontSize);
 			pVB[CV].vTex = float2_t(0.0f, 0.0f);
+			pVB[CV].uTexIdx = 0;
 			CV++;
 			pVB[CV].vPos = float2_t(alx[i].x, alx[i].y + (float)m_uFontSize);
 			pVB[CV].vTex = float2_t(1.0f, 0.0f);
+			pVB[CV].uTexIdx = 0;
 			CV++;
 
 			//	pVB[CV] = {{0.0f, alx[i].y + (float)m_iFontSize - lineHeight, 0.0f}, {0.0f, 1.0f}}; CV++;
@@ -1252,15 +1267,19 @@ void XMETHODCALLTYPE CFont::buildString(const char *szString, const XFontBuildPa
 		{
 			pVB[CV].vPos = float2_t(0.0f, alx[i].y + (float)m_uFontSize * 0.5f);
 			pVB[CV].vTex = float2_t(0.0f, 1.0f);
+			pVB[CV].uTexIdx = 0;
 			CV++;
 			pVB[CV].vPos = float2_t(alx[i].x, alx[i].y + (float)m_uFontSize * 0.5f);
 			pVB[CV].vTex = float2_t(1.0f, 1.0f);
+			pVB[CV].uTexIdx = 0;
 			CV++;
 			pVB[CV].vPos = float2_t(0.0f, alx[i].y + lineHeight + (float)m_uFontSize * 0.5f);
 			pVB[CV].vTex = float2_t(0.0f, 0.0f);
+			pVB[CV].uTexIdx = 0;
 			CV++;
 			pVB[CV].vPos = float2_t(alx[i].x, alx[i].y + lineHeight + (float)m_uFontSize * 0.5f);
 			pVB[CV].vTex = float2_t(1.0f, 0.0f);
+			pVB[CV].uTexIdx = 0;
 			CV++;
 
 			//	pVB[CV] = {{0.0f, alx[i].y + (float)m_iFontSize * 0.5f, 0.0f}, {0.0f, 1.0f}}; CV++;

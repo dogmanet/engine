@@ -25,51 +25,43 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="..\..\..\source\msDSEExporter\dllmain.cpp" />
-    <ClCompile Include="..\..\..\source\msDSEExporter\Exporter.cpp" />
-    <ClCompile Include="..\..\..\source\msDSEExporter\Extended.cpp" />
-    <ClCompile Include="..\..\..\source\msDSEExporter\ExtendedActs.cpp" />
-    <ClCompile Include="..\..\..\source\msDSEExporter\ExtendedAnim.cpp" />
-    <ClCompile Include="..\..\..\source\msDSEExporter\ExtendedDeps.cpp">
+    <ClCompile Include="..\..\..\source\exporter_base\dllmain.cpp" />
+    <ClCompile Include="..\..\..\source\exporter_base\Exporter.cpp" />
+    <ClCompile Include="..\..\..\source\exporter_base\Extended.cpp" />
+    <ClCompile Include="..\..\..\source\exporter_base\ExtendedActs.cpp" />
+    <ClCompile Include="..\..\..\source\exporter_base\ExtendedAnim.cpp" />
+    <ClCompile Include="..\..\..\source\exporter_base\ExtendedDeps.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\..\source\msDSEExporter\ExtendedLods.cpp" />
-    <ClCompile Include="..\..\..\source\msDSEExporter\ExtendedPhys.cpp" />
-    <ClCompile Include="..\..\..\source\msDSEExporter\ExtendedSkin.cpp" />
-    <ClCompile Include="..\..\..\source\msDSEExporter\GeomDetector.cpp" />
+    <ClCompile Include="..\..\..\source\exporter_base\ExtendedLods.cpp" />
+    <ClCompile Include="..\..\..\source\exporter_base\ExtendedPhys.cpp" />
+    <ClCompile Include="..\..\..\source\exporter_base\ExtendedSkin.cpp" />
+    <ClCompile Include="..\..\..\source\exporter_base\GeomDetector.cpp" />
+    <ClCompile Include="..\..\..\source\exporter_base\stdafx.cpp" />
     <ClCompile Include="..\..\..\source\msDSEExporter\Plugin.cpp" />
     <ClCompile Include="..\..\..\source\msDSEExporter\Provider.cpp" />
-    <ClCompile Include="..\..\..\source\msDSEExporter\stdafx.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\source\msDSEExporter\Exporter.h" />
-    <ClInclude Include="..\..\..\source\msDSEExporter\Extended.h" />
-    <ClInclude Include="..\..\..\source\msDSEExporter\ExtendedActs.h" />
-    <ClInclude Include="..\..\..\source\msDSEExporter\ExtendedAnim.h" />
-    <ClInclude Include="..\..\..\source\msDSEExporter\ExtendedDeps.h" />
-    <ClInclude Include="..\..\..\source\msDSEExporter\ExtendedLods.h" />
-    <ClInclude Include="..\..\..\source\msDSEExporter\ExtendedPhys.h" />
-    <ClInclude Include="..\..\..\source\msDSEExporter\ExtendedSkin.h" />
-    <ClInclude Include="..\..\..\source\msDSEExporter\GeomDetector.h" />
-    <ClInclude Include="..\..\..\source\msDSEExporter\IExtendedTab.h" />
+    <ClInclude Include="..\..\..\source\exporter_base\Exporter.h" />
+    <ClInclude Include="..\..\..\source\exporter_base\Extended.h" />
+    <ClInclude Include="..\..\..\source\exporter_base\ExtendedActs.h" />
+    <ClInclude Include="..\..\..\source\exporter_base\ExtendedAnim.h" />
+    <ClInclude Include="..\..\..\source\exporter_base\ExtendedDeps.h" />
+    <ClInclude Include="..\..\..\source\exporter_base\ExtendedLods.h" />
+    <ClInclude Include="..\..\..\source\exporter_base\ExtendedPhys.h" />
+    <ClInclude Include="..\..\..\source\exporter_base\ExtendedSkin.h" />
+    <ClInclude Include="..\..\..\source\exporter_base\GeomDetector.h" />
+    <ClInclude Include="..\..\..\source\exporter_base\IExtendedTab.h" />
+    <ClInclude Include="..\..\..\source\exporter_base\resource.h" />
+    <ClInclude Include="..\..\..\source\exporter_base\stdafx.h" />
     <ClInclude Include="..\..\..\source\msDSEExporter\Plugin.h" />
     <ClInclude Include="..\..\..\source\msDSEExporter\Provider.h" />
-    <ClInclude Include="..\..\..\source\msDSEExporter\resource.h" />
-    <ClInclude Include="..\..\..\source\msDSEExporter\stdafx.h" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="..\..\..\source\msDSEExporter\msDSEExporter.rc" />
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="..\..\..\source\msDSEExporter\logo.bmp" />
+    <ResourceCompile Include="..\..\..\source\exporter_base\exporter_base.rc" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{BE42C295-1262-4499-9CD8-7C3B0044EC3D}</ProjectGuid>
@@ -152,7 +144,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -171,7 +163,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN64;_CRT_SECURE_NO_WARNINGS;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -191,7 +183,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -212,7 +204,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>

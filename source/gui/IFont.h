@@ -42,7 +42,7 @@ namespace gui
 			int iYoffs;
 		};
 
-		virtual const IGXTexture2D *getAPITexture(UINT i) = 0;
+		virtual IGXTexture2D* getAPITexture(UINT i) = 0;
 
 		virtual void getStringMetrics(const StringW & str, UINT * width, UINT * height, UINT * vertexCount, UINT * indexCount, UINT * strCount, char_rects * pcr = NULL) = 0;
 

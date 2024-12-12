@@ -79,6 +79,8 @@ public:
 	void toggleFlashlight();
 	//! Переключает режим стрельбы активного оружия
 	void nextFireMode();
+	//! Выкинуть предмет из инвентаря
+	void dropItem(CBaseItem *pItem);
 
 	//! Находится ли игрок на земле
 	bool onGround();
@@ -99,7 +101,7 @@ public:
 	}
 	void initHitboxes();
 	void releaseHitboxes();
-	void updateHitboxes();
+	void updateHitboxes(bool bForceUpdate = false);
 
 	void initPhysics();
 	void releasePhysics();
@@ -139,6 +141,14 @@ public:
 	void mountToLadder(CFuncLadder *pLadder);
 
 	void dismountFromLadder();
+
+	void renderEditor(bool is3D, bool bRenderSelection, IXGizmoRenderer *pRenderer) override;
+
+	void mountToLadder(CFuncLadder *pLadder);
+
+	void dismountFromLadder();
+
+	void renderEditor(bool is3D, bool bRenderSelection, IXGizmoRenderer *pRenderer) override;
 
 protected:
 	//! Фонарик

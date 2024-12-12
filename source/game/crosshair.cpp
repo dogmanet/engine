@@ -8,20 +8,9 @@ See the license in LICENSE
 #include <common/Math.h>
 #include "GameData.h"
 
-CCrosshair::CCrosshair():
-	m_bDirty(true),
-	m_bBuildBuff(false),
-	m_fSize(0),
-	m_bHidden(true),
-	m_fMaxSize(0.7f), // 70% of screen height
-	m_style(SPLIT_MOVE),
-	m_fFixedRadius(0.0f),
-	m_fAngle(0.0f),
-	m_iNumSegs(4),
-	m_u8ActiveBuffer(0),
-	m_pTexture(NULL)
+CCrosshair::CCrosshair(IXRender *pRender):
+	m_pRender(pRender)
 {
-	m_pDev = SGCore_GetDXDevice();
 	int iNumSegs = CROSSHAIR_MAXSEGS * 2;
 	int segs = iNumSegs;
 	while(segs < CROSSHAIR_MINSEGS)
@@ -42,15 +31,17 @@ CCrosshair::CCrosshair():
 		GX_DECL_END()
 	};
 
-	m_pVertexDeclaration = m_pDev->createVertexDeclaration(vel);
-	//@TODO: Change to GXBUFFER_USAGE_STREAM (can be lost in DX9)
-	m_pVertexBuffer = m_pDev->createVertexBuffer(sizeof(Vertex)* iVC, GXBUFFER_USAGE_DYNAMIC);
-	m_pIndexBuffer = m_pDev->createIndexBuffer(sizeof(USHORT)* iIC, GXBUFFER_USAGE_DYNAMIC, GXIT_UINT16);
-	m_pRenderBuffer = m_pDev->createRenderBuffer(1, &m_pVertexBuffer, m_pVertexDeclaration);
+	IGXDevice *pDev = m_pRender->getDevice();
 
-	m_idVS = SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "pp_quad_render.vs");
-	m_idPS = SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "pp_quad_render.ps");
-	m_idShaderKit = SGCore_ShaderCreateKit(m_idVS, m_idPS);
+	m_pVertexDeclaration = pDev->createVertexDeclaration(vel);
+	//@TODO: Change to GXBUFFER_USAGE_STREAM (can be lost in DX9)
+	m_pVertexBuffer = pDev->createVertexBuffer(sizeof(Vertex)* iVC, GXBUFFER_USAGE_DYNAMIC);
+	m_pIndexBuffer = pDev->createIndexBuffer(sizeof(USHORT)* iIC, GXBUFFER_USAGE_DYNAMIC, GXIT_UINT16);
+	m_pRenderBuffer = pDev->createRenderBuffer(1, &m_pVertexBuffer, m_pVertexDeclaration);
+
+	m_idVS = m_pRender->loadShader(SHADER_TYPE_VERTEX, "pp_quad_render.vs");
+	m_idPS = m_pRender->loadShader(SHADER_TYPE_PIXEL, "pp_quad_render.ps");
+	m_idShaderKit = m_pRender->createShaderKit(m_idVS, m_idPS);
 
 	GXBlendDesc blendDesc;
 	//blendDesc.renderTarget[0].blendSrcColor = blendDesc.renderTarget[0].blendSrcAlpha = GXBLEND_SRC_ALPHA;
@@ -58,16 +49,16 @@ CCrosshair::CCrosshair():
 	blendDesc.renderTarget[0].blendSrcColor = blendDesc.renderTarget[0].blendSrcAlpha = GXBLEND_ONE;
 	blendDesc.renderTarget[0].blendDestColor = blendDesc.renderTarget[0].blendDestAlpha = GXBLEND_ONE;
 	blendDesc.renderTarget[0].useBlend = TRUE;
-	m_pBlendState = m_pDev->createBlendState(&blendDesc);
+	m_pBlendState = pDev->createBlendState(&blendDesc);
 
 	GXDepthStencilDesc dsDesc;
 	dsDesc.useDepthTest = FALSE;
 	dsDesc.useDepthWrite = FALSE;
-	m_pDepthState = m_pDev->createDepthStencilState(&dsDesc);
+	m_pDepthState = pDev->createDepthStencilState(&dsDesc);
 
 	GXSamplerDesc sampDesc;
 	sampDesc.filter = GXFILTER_MIN_MAG_MIP_LINEAR;
-	m_pSamplerState = m_pDev->createSamplerState(&sampDesc);
+	m_pSamplerState = pDev->createSamplerState(&sampDesc);
 }
 
 CCrosshair::~CCrosshair()
@@ -134,8 +125,8 @@ void CCrosshair::update()
 			segs += m_iNumSegs;
 		}
 
-		Vertex * pVertices = m_pVertices[m_u8ActiveBuffer ? 0 : 1];
-		USHORT * pIndices = m_pIndices[m_u8ActiveBuffer ? 0 : 1];
+		Vertex *pVertices = m_pVertices[m_u8ActiveBuffer ? 0 : 1];
+		USHORT *pIndices = m_pIndices[m_u8ActiveBuffer ? 0 : 1];
 		int iCurVtx = 0,
 			iCurIdx = 0,
 			iStopIdx = 0;
@@ -379,9 +370,9 @@ void CCrosshair::render()
 			m_pIndexBuffer->unlock();
 		}
 	}
-	IGXContext *pCtx = m_pDev->getThreadContext();
+	IGXContext *pCtx = m_pRender->getDevice()->getThreadContext();
 
-	SGCore_ShaderBind(m_idShaderKit);
+	m_pRender->bindShader(pCtx, m_idShaderKit);
 	pCtx->setBlendState(m_pBlendState);
 	pCtx->setSamplerState(m_pSamplerState, 0);
 	pCtx->setIndexBuffer(m_pIndexBuffer);
@@ -395,6 +386,8 @@ void CCrosshair::render()
 	pCtx->setDepthStencilState(m_pDepthState);
 	pCtx->setPrimitiveTopology(GXPT_TRIANGLELIST);
 	pCtx->drawIndexed(m_iVertexCount[m_u8ActiveBuffer], m_iIndexCount[m_u8ActiveBuffer] / 3);
+
+	m_pRender->unbindShader(pCtx);
 }
 void CCrosshair::onSync()
 {

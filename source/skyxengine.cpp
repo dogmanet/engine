@@ -445,7 +445,7 @@ void SkyXEngine_Init(HWND hWnd3D, HWND hWndParent3D, const char * szCmdLine)
 
 
 #if !defined(SX_GAME) && !defined(SX_SERVER)
-	ICamera *pCamera = SGCore_CrCamera();
+	IXCamera *pCamera = SGCore_CrCamera();
 	static const float *r_default_fov = GET_PCVAR_FLOAT("r_default_fov");
 	pCamera->setFOV(*r_default_fov);
 
@@ -578,7 +578,7 @@ void SkyXEngine_CreateLoadCVar()
 	Core_0RegisterCVarInt("r_win_width", 800, "Размер окна по горизонтали (в пикселях)");
 	Core_0RegisterCVarInt("r_win_height", 600, "Размер окна по вертикали (в пикселях)");
 	Core_0RegisterCVarBool("r_win_windowed", true, "Режим рендера true - оконный, false - полноэкранный");
-	Core_0RegisterCVarFloat("r_default_fov", SM_PI * 0.25f, "Дефолтный fov в радианах");
+	Core_0RegisterCVarFloat("r_default_fov", 45.0f /*SM_PI * 0.25f*/, "Дефолтный fov в градусах");
 	Core_0RegisterCVarFloat("r_near", 0.025f, "Ближняя плоскость отсчечения");
 	Core_0RegisterCVarFloat("r_far", 800, "Дальняя плоскость отсечения (дальность видимости)");
 
@@ -916,7 +916,7 @@ void SkyXEngine_Frame(DWORD timeDelta)
 		static const float * sense = GET_PCVAR_FLOAT("cl_mousesense");
 		float dx = (float)x * *sense * 10.0f;
 		float dy = (float)y * *sense * 10.0f;
-		ICamera *pCamera = SRender_GetCamera();
+		IXCamera *pCamera = SRender_GetCamera();
 
 		if(g_is3DRotating)
 		{
@@ -1051,10 +1051,10 @@ void SkyXEngine_Frame(DWORD timeDelta)
 	IGXSwapChain *p2DSwapChains[] = {g_pTopRightSwapChain, g_pBottomLeftSwapChain, g_pBottomRightSwapChain};
 	IGXDepthStencilSurface *p2DDepthStencilSurfaces[] = {g_pTopRightDepthStencilSurface, g_pBottomLeftDepthStencilSurface, g_BottomRightDepthStencilSurface};
 
-	ICamera **pCameras = g_xConfig.m_pViewportCamera + 1;
+	IXCamera **pCameras = g_xConfig.m_pViewportCamera + 1;
 	float *fScales = g_xConfig.m_fViewportScale + 1;
 	X_2D_VIEW *views = g_xConfig.m_x2DView + 1;
-	ICamera *p3DCamera = SRender_GetCamera();
+	IXCamera *p3DCamera = SRender_GetCamera();
 	pDXDevice->setSamplerState(NULL, 0);
 	//#############################################################################
 
@@ -1278,7 +1278,7 @@ void SkyXEngine_Frame(DWORD timeDelta)
 		static const float * sense = GET_PCVAR_FLOAT("cl_mousesense");
 		float dx = (float)x * *sense * 10.0f;
 		float dy = (float)y * *sense * 10.0f;
-		ICamera *pCamera = SRender_GetCamera();
+		IXCamera *pCamera = SRender_GetCamera();
 
 		if(g_is3DRotating)
 		{
@@ -1579,10 +1579,10 @@ void SkyXEngine_Frame(DWORD timeDelta)
 	//	float3 pv2DEyeDirs[] = {float3(0.0f, -1.0f, 0.0f), float3(-1.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, -1.0f)};
 	//	float3 pv2DUPs[] = {float3(0.0f, 0.0f, 1.0f), float3(0.0f, 1.0f, 0.0f), float3(0.0f, 1.0f, 0.0f)};
 
-	ICamera **pCameras = g_xConfig.m_pViewportCamera + 1;
+	IXCamera **pCameras = g_xConfig.m_pViewportCamera + 1;
 	float *fScales = g_xConfig.m_fViewportScale + 1;
 	X_2D_VIEW *views = g_xConfig.m_x2DView + 1;
-	ICamera *p3DCamera = SRender_GetCamera();
+	IXCamera *p3DCamera = SRender_GetCamera();
 	pDXDevice->setSamplerState(NULL, 0);
 	//#############################################################################
 

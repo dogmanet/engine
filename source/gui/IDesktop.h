@@ -26,9 +26,9 @@ namespace gui
 
 		virtual void render(float fTimeDelta, bool bPresent=true) = 0;
 
-		virtual const CTexture* getTexture() = 0;
+		virtual IXTexture* getTexture() = 0;
 
-		virtual void dispatchEvent(IEvent ev) = 0;
+		virtual void dispatchEvent(IEvent &ev) = 0;
 
 		virtual dom::IDOMdocument* getDocument() = 0;
 
@@ -39,6 +39,8 @@ namespace gui
 		virtual const dom::IDOMnodeCollection& createFromText(const StringW &html) = 0;
 
 		virtual float getParallaxFactor() = 0;
+
+		virtual void reload() = 0;
 	};
 };
 

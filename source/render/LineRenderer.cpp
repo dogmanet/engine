@@ -1,5 +1,4 @@
 #include "LineRenderer.h"
-#include <gcore/sxgcore.h>
 
 std::atomic_uint CLineRenderer::s_uResRefCount{0};
 IGXBlendState *CLineRenderer::s_pBlendAlpha = NULL;
@@ -10,8 +9,9 @@ IGXVertexDeclaration *CLineRenderer::s_pLinesVD = NULL;
 bool CLineRenderer::s_isShadersLoaded = false;
 ID CLineRenderer::s_idShaders[2][2][2][2]; // [isTextured][is3D][isFixed][isBackward]
 
-CLineRenderer::CLineRenderer(IGXDevice *pDev):
-	m_pDev(pDev)
+CLineRenderer::CLineRenderer(IXRender *pRender):
+	m_pRender(pRender),
+	m_pDev(pRender->getDevice())
 {
 	if(!s_uResRefCount)
 	{
@@ -29,17 +29,17 @@ CLineRenderer::CLineRenderer(IGXDevice *pDev):
 		blendDesc.renderTarget[0].useBlend = true;
 		blendDesc.renderTarget[0].blendSrcColor = blendDesc.renderTarget[0].blendSrcAlpha = GXBLEND_SRC_ALPHA;
 		blendDesc.renderTarget[0].blendDestColor = blendDesc.renderTarget[0].blendDestAlpha = GXBLEND_INV_SRC_ALPHA;
-		s_pBlendAlpha = pDev->createBlendState(&blendDesc);
+		s_pBlendAlpha = m_pDev->createBlendState(&blendDesc);
 
 		GXDepthStencilDesc dsDesc;
 		dsDesc.useDepthWrite = false;
-		s_pDSState2D = pDev->createDepthStencilState(&dsDesc);
+		s_pDSState2D = m_pDev->createDepthStencilState(&dsDesc);
 
 		dsDesc.cmpFuncDepth = GXCMP_GREATER_EQUAL;
-		s_pDSState3D = pDev->createDepthStencilState(&dsDesc);
+		s_pDSState3D = m_pDev->createDepthStencilState(&dsDesc);
 
 		dsDesc.useDepthTest = false;
-		s_pDSStateNoZ = pDev->createDepthStencilState(&dsDesc);
+		s_pDSStateNoZ = m_pDev->createDepthStencilState(&dsDesc);
 	}
 
 	++s_uResRefCount;
@@ -65,18 +65,18 @@ CLineRenderer::CLineRenderer(IGXDevice *pDev):
 			{"IS_BACKWARD", "1"},
 			GX_MACRO_END()
 		};
-		ID idPixelForward = SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "dev_lines.ps");
-		ID idPixelBackward = SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "dev_lines.ps", NULL, aMacro4);
+		ID idPixelForward = m_pRender->loadShader(SHADER_TYPE_PIXEL, "dev_lines.ps");
+		ID idPixelBackward = m_pRender->loadShader(SHADER_TYPE_PIXEL, "dev_lines.ps", aMacro4);
 
-		s_idShaders[0][1][0][0] = SGCore_ShaderCreateKit(SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "dev_lines.vs"), idPixelForward);
-		s_idShaders[0][1][1][0] = SGCore_ShaderCreateKit(SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "dev_lines.vs", 0, aMacro2), idPixelForward);
-		s_idShaders[0][0][0][0] = SGCore_ShaderCreateKit(SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "dev_lines.vs", 0, aMacro1), idPixelForward);
-		s_idShaders[0][0][1][0] = SGCore_ShaderCreateKit(SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "dev_lines.vs", 0, aMacro3), idPixelForward);
+		s_idShaders[0][1][0][0] = m_pRender->createShaderKit(m_pRender->loadShader(SHADER_TYPE_VERTEX, "dev_lines.vs"), idPixelForward);
+		s_idShaders[0][1][1][0] = m_pRender->createShaderKit(m_pRender->loadShader(SHADER_TYPE_VERTEX, "dev_lines.vs", aMacro2), idPixelForward);
+		s_idShaders[0][0][0][0] = m_pRender->createShaderKit(m_pRender->loadShader(SHADER_TYPE_VERTEX, "dev_lines.vs", aMacro1), idPixelForward);
+		s_idShaders[0][0][1][0] = m_pRender->createShaderKit(m_pRender->loadShader(SHADER_TYPE_VERTEX, "dev_lines.vs", aMacro3), idPixelForward);
 
-		s_idShaders[0][1][0][1] = SGCore_ShaderCreateKit(SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "dev_lines.vs"), idPixelBackward);
-		s_idShaders[0][1][1][1] = SGCore_ShaderCreateKit(SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "dev_lines.vs", 0, aMacro2), idPixelBackward);
-		s_idShaders[0][0][0][1] = SGCore_ShaderCreateKit(SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "dev_lines.vs", 0, aMacro1), idPixelBackward);
-		s_idShaders[0][0][1][1] = SGCore_ShaderCreateKit(SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "dev_lines.vs", 0, aMacro3), idPixelBackward);
+		s_idShaders[0][1][0][1] = m_pRender->createShaderKit(m_pRender->loadShader(SHADER_TYPE_VERTEX, "dev_lines.vs"), idPixelBackward);
+		s_idShaders[0][1][1][1] = m_pRender->createShaderKit(m_pRender->loadShader(SHADER_TYPE_VERTEX, "dev_lines.vs", aMacro2), idPixelBackward);
+		s_idShaders[0][0][0][1] = m_pRender->createShaderKit(m_pRender->loadShader(SHADER_TYPE_VERTEX, "dev_lines.vs", aMacro1), idPixelBackward);
+		s_idShaders[0][0][1][1] = m_pRender->createShaderKit(m_pRender->loadShader(SHADER_TYPE_VERTEX, "dev_lines.vs", aMacro3), idPixelBackward);
 
 
 		GXMacro aMacro[] = {
@@ -89,18 +89,18 @@ CLineRenderer::CLineRenderer(IGXDevice *pDev):
 			GX_MACRO_END()
 		};
 
-		ID idPixelTexForward = SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "dev_lines.ps", NULL, aMacro);
-		ID idPixelTexBackward = SGCore_ShaderLoad(SHADER_TYPE_PIXEL, "dev_lines.ps", NULL, aMacro5);
+		ID idPixelTexForward = m_pRender->loadShader(SHADER_TYPE_PIXEL, "dev_lines.ps", aMacro);
+		ID idPixelTexBackward = m_pRender->loadShader(SHADER_TYPE_PIXEL, "dev_lines.ps", aMacro5);
 
-		s_idShaders[1][1][0][0] = SGCore_ShaderCreateKit(SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "dev_lines.vs"), idPixelTexForward);
-		s_idShaders[1][1][1][0] = SGCore_ShaderCreateKit(SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "dev_lines.vs", 0, aMacro2), idPixelTexForward);
-		s_idShaders[1][0][0][0] = SGCore_ShaderCreateKit(SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "dev_lines.vs", 0, aMacro1), idPixelTexForward);
-		s_idShaders[1][0][1][0] = SGCore_ShaderCreateKit(SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "dev_lines.vs", 0, aMacro3), idPixelTexForward);
+		s_idShaders[1][1][0][0] = m_pRender->createShaderKit(m_pRender->loadShader(SHADER_TYPE_VERTEX, "dev_lines.vs"), idPixelTexForward);
+		s_idShaders[1][1][1][0] = m_pRender->createShaderKit(m_pRender->loadShader(SHADER_TYPE_VERTEX, "dev_lines.vs", aMacro2), idPixelTexForward);
+		s_idShaders[1][0][0][0] = m_pRender->createShaderKit(m_pRender->loadShader(SHADER_TYPE_VERTEX, "dev_lines.vs", aMacro1), idPixelTexForward);
+		s_idShaders[1][0][1][0] = m_pRender->createShaderKit(m_pRender->loadShader(SHADER_TYPE_VERTEX, "dev_lines.vs", aMacro3), idPixelTexForward);
 
-		s_idShaders[1][1][0][1] = SGCore_ShaderCreateKit(SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "dev_lines.vs"), idPixelTexBackward);
-		s_idShaders[1][1][1][1] = SGCore_ShaderCreateKit(SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "dev_lines.vs", 0, aMacro2), idPixelTexBackward);
-		s_idShaders[1][0][0][1] = SGCore_ShaderCreateKit(SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "dev_lines.vs", 0, aMacro1), idPixelTexBackward);
-		s_idShaders[1][0][1][1] = SGCore_ShaderCreateKit(SGCore_ShaderLoad(SHADER_TYPE_VERTEX, "dev_lines.vs", 0, aMacro3), idPixelTexBackward);
+		s_idShaders[1][1][0][1] = m_pRender->createShaderKit(m_pRender->loadShader(SHADER_TYPE_VERTEX, "dev_lines.vs"), idPixelTexBackward);
+		s_idShaders[1][1][1][1] = m_pRender->createShaderKit(m_pRender->loadShader(SHADER_TYPE_VERTEX, "dev_lines.vs", aMacro2), idPixelTexBackward);
+		s_idShaders[1][0][0][1] = m_pRender->createShaderKit(m_pRender->loadShader(SHADER_TYPE_VERTEX, "dev_lines.vs", aMacro1), idPixelTexBackward);
+		s_idShaders[1][0][1][1] = m_pRender->createShaderKit(m_pRender->loadShader(SHADER_TYPE_VERTEX, "dev_lines.vs", aMacro3), idPixelTexBackward);
 	}
 }
 CLineRenderer::~CLineRenderer()
@@ -265,7 +265,7 @@ void XMETHODCALLTYPE CLineRenderer::render(bool isOrtho, bool useConstantSize, b
 	for(UINT i = 0, l = m_aLineRanges.size(); i < l; ++i)
 	{
 		LineRange &lr = m_aLineRanges[i];
-		SGCore_ShaderBind(s_idShaders[lr.u8Texture != 0xFF ? 1 : 0][isOrtho ? 0 : 1][useConstantSize ? 1 : 0][0]);
+		m_pRender->bindShader(pCtx, s_idShaders[lr.u8Texture != 0xFF ? 1 : 0][isOrtho ? 0 : 1][useConstantSize ? 1 : 0][0]);
 		
 		if(lr.u8Texture != 0xFF)
 		{
@@ -273,10 +273,10 @@ void XMETHODCALLTYPE CLineRenderer::render(bool isOrtho, bool useConstantSize, b
 		}
 		if(useDepthTest)
 		{
-			SGCore_ShaderBind(s_idShaders[lr.u8Texture != 0xFF ? 1 : 0][isOrtho ? 0 : 1][useConstantSize ? 1 : 0][0]);
+			m_pRender->bindShader(pCtx, s_idShaders[lr.u8Texture != 0xFF ? 1 : 0][isOrtho ? 0 : 1][useConstantSize ? 1 : 0][0]);
 			pCtx->setDepthStencilState(isOrtho ? s_pDSState2D : s_pDSState3D);
 			pCtx->drawPrimitive(lr.uStartVtx, lr.uTriangleCount);
-			SGCore_ShaderBind(s_idShaders[lr.u8Texture != 0xFF ? 1 : 0][isOrtho ? 0 : 1][useConstantSize ? 1 : 0][1]);
+			m_pRender->bindShader(pCtx, s_idShaders[lr.u8Texture != 0xFF ? 1 : 0][isOrtho ? 0 : 1][useConstantSize ? 1 : 0][1]);
 			pCtx->setDepthStencilState(isOrtho ? s_pDSState3D : s_pDSState2D);
 			pCtx->drawPrimitive(lr.uStartVtx, lr.uTriangleCount);
 		}
@@ -285,7 +285,7 @@ void XMETHODCALLTYPE CLineRenderer::render(bool isOrtho, bool useConstantSize, b
 			pCtx->drawPrimitive(lr.uStartVtx, lr.uTriangleCount);
 		}
 	}
-	SGCore_ShaderUnBind();
+	m_pRender->unbindShader(pCtx);
 	pCtx->setPrimitiveTopology(GXPT_TRIANGLELIST);
 
 	pCtx->setRasterizerState(pRS);

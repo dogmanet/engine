@@ -40,11 +40,12 @@ static int g_iNumSam = 8;
 #endif
 
 //##########################################################################
-
 float4 main(VSO_ResPos IN):COLOR0
 {
 	float fDepth = g_txDepth.Sample(g_sPointClamp, IN.vTexUV).r;
-	float3 vRndVec = normalize(2.0 * g_txNoise.Sample(g_sLinearWrap, IN.vTexUV * 16.0).rgb - 1.0);
+	// float3 vRndVec = normalize(2.0 * g_txNoise.Sample(g_sLinearWrap, IN.vTexUV * 0.03125 / g_vNearFar.zw).bgr - 1.0);
+	// float3 vRndVec = normalize(2.0 * g_txNoise.Sample(g_sLinearWrap, IN.vTexUV * 0.03125 / g_vNearFar.zw).bgr - 1.0);
+	float3 vRndVec = normalize(2.0 * g_txNoise.Sample(g_sLinearWrap, IN.vTexUV * 0.25 / g_vNearFar.zw).bgr - 1.0);
 	
 	if(fDepth >= 1.0)
 	{
@@ -54,40 +55,36 @@ float4 main(VSO_ResPos IN):COLOR0
 	float3 vPosition = float3(g_vObserverPosCam.xyz + IN.vWorldRay * fDepth);
 		
 	float3 vNormal = normalize(NormalDecode(g_txNormals.Sample(g_sPointClamp, IN.vTexUV).xyz).xyz);
+	
+	float3 vTangent = normalize(vRndVec - vNormal * dot(vRndVec, vNormal));
+	float3 vBitangent = cross(vNormal, vTangent);
+	float3x3 mTBN = float3x3(vTangent, vBitangent, vNormal);
+	
 	// return float4(vNormal /** 0.5 + 0.5*/, 1);
 	float fOcclusion = 0.0;
-	[unroll]for(int i=0; i < g_iNumSam; ++i)
+	[unroll]for(int i = 0; i < g_iNumSam; ++i)
 	{
-		float3 vRay = reflect(g_aRndVectors[i].xyz, vRndVec);
-		float3 vHemiRay = vRay * sign(dot(vRay, vNormal));
+		float3 vHemiRay = mul(g_aRndVectors[i].xyz, mTBN);
 		float4 vNewPos = float4(vPosition + vHemiRay * g_vParams.x, 1);
-
+		
 		vNewPos = mul(vNewPos, g_mObserverVP);
+		float fNewDepth = 1.0f - (vNewPos.z / g_vObserverNearFar.x);
 		vNewPos /= vNewPos.w;
 		vNewPos.x = vNewPos.x * 0.5 + 0.5;
 		vNewPos.y = vNewPos.y * -0.5 + 0.5;
-
-		float newdepth = g_txDepth.Sample(g_sPointClamp, vNewPos.xy).r;
-		if(newdepth >= 1.0)
-		{
-			fOcclusion += 1.0;
-		}
-		float fDifference = (newdepth - fDepth) * g_vObserverNearFar.y;
 		
-		float fDistanceCheck = min(g_vParams.z, g_vParams.x / abs(fDifference));
-		if(abs(fDifference) < g_vParams.y)
-		{
-			fOcclusion += g_vParams.z;
-		}
-		else
-		{
-			fOcclusion += 1.0 - step(fDifference, g_vParams.w / g_vObserverNearFar.y) * fDistanceCheck;
-		}
+		float fSampleDepth = g_txDepth.Sample(g_sPointClamp, vNewPos.xy).r;
+		
+		float rangeCheck = smoothstep(0.0, 1.0, g_vParams.x / abs((fSampleDepth - fDepth) * g_vObserverNearFar.y));
+
+		fOcclusion += (fSampleDepth >= fNewDepth ? 0.0 : rangeCheck);  
 	}
-	fOcclusion = clamp(saturate(fOcclusion / g_iNumSam), 0.2, 1.0);
-	fOcclusion = lerp(1.0, fOcclusion, 0.6);
-	fOcclusion = pow(fOcclusion, 2);
-	fOcclusion = lerp(1.0, fOcclusion, saturate((fDepth * g_vObserverNearFar.y) / PP_SSAO_DIST_EMERSION));
+
+	fOcclusion = 1.0 - saturate(fOcclusion / g_iNumSam);
+	
+	// fOcclusion = lerp(1.0, fOcclusion, 0.6);
+	// fOcclusion = pow(fOcclusion, 2);
+	// fOcclusion = lerp(1.0, fOcclusion, saturate((fDepth * g_vObserverNearFar.y) / PP_SSAO_DIST_EMERSION));
 	
 	return(float4(fOcclusion, fOcclusion, fOcclusion, 1));
 }

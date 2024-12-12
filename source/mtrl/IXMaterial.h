@@ -118,6 +118,9 @@ public:
 
 	virtual void XMETHODCALLTYPE setEditorial(bool bValue) = 0;
 	virtual bool XMETHODCALLTYPE isEditorial() const = 0;
+
+	virtual void XMETHODCALLTYPE setTwoSided(bool bValue) = 0;
+	virtual bool XMETHODCALLTYPE isTwoSided() const = 0;
 };
 
 #endif

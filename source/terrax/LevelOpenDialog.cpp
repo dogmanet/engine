@@ -1,5 +1,6 @@
 #include "LevelOpenDialog.h"
 #include "resource.h"
+#include <core/sxcore.h>
 
 #include <windowsx.h>
 #include <commctrl.h>

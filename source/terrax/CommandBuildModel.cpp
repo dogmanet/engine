@@ -34,7 +34,7 @@ bool XMETHODCALLTYPE CCommandBuildModel::exec()
 	if(!m_isLocationsSaved)
 	{
 		IXEditorObject *pObj;
-		const Map<IXEditorObject*, CProxyObject*>::Node *pNode;
+		const Map<IXEditorObject*, ICompoundObject*>::Node *pNode;
 		for(auto i = g_mObjectsLocation.begin(); i; ++i)
 		{
 			if((*i.first)->isSelected())
