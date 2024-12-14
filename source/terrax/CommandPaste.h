@@ -33,6 +33,9 @@ public:
 	UINT addProxy(const XGUID &guid);
 	void addProxyObject(UINT uProxy, const XGUID &guid);
 
+	UINT addGroup(const XGUID &guid);
+	void addGroupObject(UINT uGroup, const XGUID &guid);
+
 protected:
 	struct _paste_obj
 	{
@@ -57,6 +60,14 @@ protected:
 	Array<_proxy_obj> m_aProxies;
 
 	Map<XGUID, XGUID> m_mapGuids;
+
+	struct _group_obj
+	{
+		XGUID guid;
+		CGroupObject *pGroup;
+		Array<XGUID> aObjects;
+	};
+	Array<_group_obj> m_aGroups;
 };
 
 #endif

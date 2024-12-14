@@ -207,6 +207,15 @@
     <ClCompile Include="..\..\..\source\terrax\SceneTreeWindow.cpp">
       <Filter>Source Files\windows</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\source\terrax\GroupObject.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\terrax\CommandGroup.cpp">
+      <Filter>Source Files\cmd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\terrax\CommandUngroup.cpp">
+      <Filter>Source Files\cmd</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\..\..\source\terrax\terrax.rc">
@@ -399,6 +408,15 @@
     </ClInclude>
     <ClInclude Include="..\..\..\source\terrax\ICompoundObject.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\terrax\GroupObject.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\terrax\CommandGroup.h">
+      <Filter>Header Files\cmd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\terrax\CommandUngroup.h">
+      <Filter>Header Files\cmd</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

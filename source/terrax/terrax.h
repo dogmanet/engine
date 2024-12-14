@@ -36,6 +36,7 @@
 #include "MaterialEditor.h"
 #include "Editor.h"
 #include "ProxyObject.h"
+#include "GroupObject.h"
 
 enum X_VIEWPORT_LAYOUT
 {
@@ -216,9 +217,17 @@ extern Array<IXEditorObject*> g_pLevelObjects;
 extern Map<XGUID, IXEditorModel*> g_apLevelModels;
 extern Map<IXEditorObject*, ICompoundObject*> g_mObjectsLocation;
 extern Array<CProxyObject*> g_apProxies;
+extern Array<CGroupObject*> g_apGroups;
+
+enum XENUMERATE_OBJECTS_RESULT
+{
+	XEOR_CONTINUE,
+	XEOR_SKIP_CHILDREN,
+	XEOR_STOP
+};
 
 template<typename T, class L>
-void XEnumerateObjects(const T &Func, L *pWhere)
+XENUMERATE_OBJECTS_RESULT XEnumerateObjects(const T &Func, L *pWhere)
 {
 	void *isProxy;
 	if(pWhere)
@@ -228,10 +237,19 @@ void XEnumerateObjects(const T &Func, L *pWhere)
 			IXEditorObject *pObj = pWhere->getObject(i);
 			isProxy = NULL;
 			pObj->getInternalData(&X_IS_COMPOUND_GUID, &isProxy);
-			Func(pObj, isProxy ? true : false, pWhere);
-			if(isProxy)
+			XENUMERATE_OBJECTS_RESULT res = Func(pObj, isProxy ? true : false, pWhere);
+			if(res == XEOR_STOP)
 			{
-				XEnumerateObjects(Func, (ICompoundObject*)pObj);
+				return(XEOR_STOP);
+			}
+
+			if(isProxy && res != XEOR_SKIP_CHILDREN)
+			{
+				res = XEnumerateObjects(Func, (ICompoundObject*)pObj);
+				if(res == XEOR_STOP)
+				{
+					return(XEOR_STOP);
+				}
 			}
 		}
 	}
@@ -242,19 +260,30 @@ void XEnumerateObjects(const T &Func, L *pWhere)
 			IXEditorObject *pObj = g_pLevelObjects[i];
 			isProxy = NULL;
 			pObj->getInternalData(&X_IS_COMPOUND_GUID, &isProxy);
-			Func(pObj, isProxy ? true : false, pWhere);
-			if(isProxy)
+			XENUMERATE_OBJECTS_RESULT res = Func(pObj, isProxy ? true : false, pWhere);
+			if(res == XEOR_STOP)
 			{
-				XEnumerateObjects(Func, (ICompoundObject*)pObj);
+				return(XEOR_STOP);
+			}
+
+			if(isProxy && res != XEOR_SKIP_CHILDREN)
+			{
+				res = XEnumerateObjects(Func, (ICompoundObject*)pObj);
+				if(res == XEOR_STOP)
+				{
+					return(XEOR_STOP);
+				}
 			}
 		}
 	}
+
+	return(XEOR_CONTINUE);
 }
 
 template<typename T>
-void XEnumerateObjects(const T &Func)
+XENUMERATE_OBJECTS_RESULT XEnumerateObjects(const T &Func)
 {
-	XEnumerateObjects(Func, (ICompoundObject*)NULL);
+	return(XEnumerateObjects(Func, (ICompoundObject*)NULL));
 }
 
 void XDrawBorder(GXCOLOR color, const float3_t &vA, const float3_t &vB, const float3_t &vC, const float3_t &vD, float fViewportScale = 0.01f);
@@ -292,6 +321,7 @@ IXEditorObject* XFindObjectByGUID(const XGUID &guid);
 ICompoundObject* XGetObjectParent(IXEditorObject *pObject);
 
 void CheckToolbarButton(int iCmd, BOOL isChecked);
+void EnableToolbarButton(int iCmd, BOOL isChecked);
 
 
 int DivDpi(int iUnscaled, UINT uCurrentDpi);

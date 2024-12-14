@@ -75,6 +75,7 @@ Map<AAString, IXEditable*> g_mEditableSystems;
 Map<XGUID, IXEditorModel*> g_apLevelModels;
 Map<IXEditorObject*, ICompoundObject*> g_mObjectsLocation;
 Array<CProxyObject*> g_apProxies;
+Array<CGroupObject*> g_apGroups;
 //SGeom_GetCountModels()
 Array<IXEditorImporter*> g_pEditorImporters;
 
@@ -1005,6 +1006,12 @@ int main(int argc, char **argv)
 				mem_release(g_apProxies[i]);
 			}
 			g_apProxies.clear();
+
+			fora(i, g_apGroups)
+			{
+				mem_release(g_apGroups[i]);
+			}
+			g_apGroups.clear();
 			
 			for(Map<XGUID, IXEditorModel*>::Iterator i = g_apLevelModels.begin(); i; ++i)
 			{
@@ -1075,72 +1082,118 @@ int main(int argc, char **argv)
 				pCfg->save();
 				mem_release(pCfg);
 
-				// save proxies
-				sprintf(szPathLevel, "levels/%s/editor/proxies.json", pData->szLevelName);
-				
+
+				// save groups
+				sprintf(szPathLevel, "levels/%s/editor/groups.json", pData->szLevelName);
+
 				IFile *pFile = pFS->openFile(szPathLevel, FILE_MODE_WRITE);
 				if(!pFile)
 				{
 					LibReport(REPORT_MSG_LEVEL_ERROR, "Unable to save data '%s'\n", szPathLevel);
-					return;
 				}
-
-				pFile->writeText("[\n");
-
-				sprintf(szPathLevel, "levels/%s/models", pData->szLevelName);
-				pFS->deleteDirectory(szPathLevel);
-				//IFileIterator *pIter = pFS->getFileList(szPathLevel, "dse");
-				//const char *szFile;
-				//while((szFile = pIter->next()))
-				//{
-				//	//printf("%s\n", szFile);
-				//	pFS->deleteFile(szFile);
-				//}
-
-				bool isFirst = true;
-				char tmp[64];
-				fora(i, g_apProxies)
+				else
 				{
-					CProxyObject *pProxy = g_apProxies[i];
-					if(pProxy->isRemoved())
+					pFile->writeText("[\n");
+
+					bool isFirst = true;
+					char tmp[64];
+					fora(i, g_apGroups)
 					{
-						continue;
-					}
-					pFile->writeText("\t%s{\n", isFirst ? "" : ",");
-					isFirst = false;
+						CGroupObject *pGroup = g_apGroups[i];
 
-					XGUIDToSting(*pProxy->getGUID(), tmp, sizeof(tmp));
-					pFile->writeText("\t\t\"guid\": \"%s\"\n", tmp);
-					XGUIDToSting(*pProxy->getTargetObject()->getGUID(), tmp, sizeof(tmp));
-					pFile->writeText("\t\t,\"t\": \"%s\"\n", tmp);
-					pFile->writeText("\t\t,\"s\": [\n", tmp);
+						pFile->writeText("\t%s{\n", isFirst ? "" : ",");
+						isFirst = false;
 
-					// TODO don't save empty models!
+						XGUIDToSting(*pGroup->getGUID(), tmp, sizeof(tmp));
+						pFile->writeText("\t\t\"guid\": \"%s\"\n", tmp);
+						pFile->writeText("\t\t,\"name\": \"%s\"\n", pGroup->getKV("name"));
 
-					for(UINT j = 0, jl = pProxy->getModelCount(); j < jl; ++j)
-					{
-						XGUIDToSting(*pProxy->getModel(j)->getGUID(), tmp, sizeof(tmp));
-						pFile->writeText("\t\t\t%s\"%s\"\n", j == 0 ? "" : ",", tmp);
-					}
+						pFile->writeText("\t\t,\"o\": [\n", tmp);
 
-					pFile->writeText("\t\t]\n\t\t,\"o\": [\n", tmp);
+						for(UINT j = 0, jl = pGroup->getObjectCount(); j < jl; ++j)
+						{
+							XGUIDToSting(*pGroup->getObject(j)->getGUID(), tmp, sizeof(tmp));
+							pFile->writeText("\t\t\t%s\"%s\"\n", j == 0 ? "" : ",", tmp);
+						}
 
-					for(UINT j = 0, jl = pProxy->getObjectCount(); j < jl; ++j)
-					{
-						XGUIDToSting(*pProxy->getObject(j)->getGUID(), tmp, sizeof(tmp));
-						pFile->writeText("\t\t\t%s\"%s\"\n", j == 0 ? "" : ",", tmp);
+						pFile->writeText("\t\t]\n", tmp);
+
+						pFile->writeText("\t}\n");
 					}
 
-					pFile->writeText("\t\t]\n", tmp);
+					pFile->writeText("]\n");
 
-					pFile->writeText("\t}\n");
-
-					pProxy->saveModel();
+					mem_release(pFile);
 				}
 
-				pFile->writeText("\n]\n");
 
-				mem_release(pFile);
+				// save proxies
+				sprintf(szPathLevel, "levels/%s/editor/proxies.json", pData->szLevelName);
+				
+				pFile = pFS->openFile(szPathLevel, FILE_MODE_WRITE);
+				if(!pFile)
+				{
+					LibReport(REPORT_MSG_LEVEL_ERROR, "Unable to save data '%s'\n", szPathLevel);
+				}
+				else
+				{
+					pFile->writeText("[\n");
+
+					sprintf(szPathLevel, "levels/%s/models", pData->szLevelName);
+					pFS->deleteDirectory(szPathLevel);
+					//IFileIterator *pIter = pFS->getFileList(szPathLevel, "dse");
+					//const char *szFile;
+					//while((szFile = pIter->next()))
+					//{
+					//	//printf("%s\n", szFile);
+					//	pFS->deleteFile(szFile);
+					//}
+
+					bool isFirst = true;
+					char tmp[64];
+					fora(i, g_apProxies)
+					{
+						CProxyObject *pProxy = g_apProxies[i];
+						if(pProxy->isRemoved())
+						{
+							continue;
+						}
+						pFile->writeText("\t%s{\n", isFirst ? "" : ",");
+						isFirst = false;
+
+						XGUIDToSting(*pProxy->getGUID(), tmp, sizeof(tmp));
+						pFile->writeText("\t\t\"guid\": \"%s\"\n", tmp);
+						XGUIDToSting(*pProxy->getTargetObject()->getGUID(), tmp, sizeof(tmp));
+						pFile->writeText("\t\t,\"t\": \"%s\"\n", tmp);
+						pFile->writeText("\t\t,\"s\": [\n", tmp);
+
+						// TODO don't save empty models!
+
+						for(UINT j = 0, jl = pProxy->getModelCount(); j < jl; ++j)
+						{
+							XGUIDToSting(*pProxy->getModel(j)->getGUID(), tmp, sizeof(tmp));
+							pFile->writeText("\t\t\t%s\"%s\"\n", j == 0 ? "" : ",", tmp);
+						}
+
+						pFile->writeText("\t\t]\n\t\t,\"o\": [\n", tmp);
+
+						for(UINT j = 0, jl = pProxy->getObjectCount(); j < jl; ++j)
+						{
+							XGUIDToSting(*pProxy->getObject(j)->getGUID(), tmp, sizeof(tmp));
+							pFile->writeText("\t\t\t%s\"%s\"\n", j == 0 ? "" : ",", tmp);
+						}
+
+						pFile->writeText("\t\t]\n", tmp);
+
+						pFile->writeText("\t}\n");
+
+						pProxy->saveModel();
+					}
+
+					pFile->writeText("]\n");
+
+					mem_release(pFile);
+				}
 			}
 			break;
 
@@ -1259,7 +1312,120 @@ int main(int argc, char **argv)
 
 				if(!isLoaded)
 				{
-					LibReport(REPORT_MSG_LEVEL_ERROR, "Unable to load '%s'\n", szFile);
+					LibReport(REPORT_MSG_LEVEL_WARNING, "Unable to load '%s'\n", szFile);
+				}
+			}
+
+			sprintf(szFile, "levels/%s/editor/groups.json", pData->szLevelName);
+
+			pFile = Core_GetIXCore()->getFileSystem()->openFile(szFile, FILE_MODE_READ);
+			if(pFile)
+			{
+				size_t sizeFile = pFile->getSize();
+				char *szJSON = new char[sizeFile + 1];
+				pFile->readBin(szJSON, sizeFile);
+				szJSON[sizeFile] = 0;
+
+				bool isLoaded = false;
+
+				IXJSON *pJSON = (IXJSON*)Core_GetIXCore()->getPluginManager()->getInterface(IXJSON_GUID);
+				IXJSONItem *pRoot;
+				if(pJSON->parse(szJSON, &pRoot))
+				{
+					IXJSONArray *pArr = pRoot->asArray();
+					if(pArr)
+					{
+						Array<CGroupObject*> aGroups(pArr->size());
+						const char *szGUID = NULL;
+						const char *szName = NULL;
+						XGUID guid;
+
+						for(UINT j = 0, jl = pArr->size(); j < jl; ++j)
+						{
+							aGroups[j] = NULL;
+
+							IXJSONObject *pGroupObj = pArr->at(j)->asObject();
+							if(pGroupObj)
+							{
+								IXJSONItem *pGuidItem = pGroupObj->getItem("guid");
+								if(!pGuidItem || !(szGUID = pGuidItem->getString()) || !XGUIDFromString(&guid, szGUID))
+								{
+									LibReport(REPORT_MSG_LEVEL_ERROR, "Invalid group '%u' in '%s'. Invalid GUID\n", j, szFile);
+									continue;
+								}
+
+								IXJSONItem *pNameItem = pGroupObj->getItem("name");
+								if(!pNameItem || !(szName = pNameItem->getString()))
+								{
+									LibReport(REPORT_MSG_LEVEL_ERROR, "Invalid group '%u' in '%s'. Invalid name\n", j, szFile);
+									continue;
+								}
+
+								IXJSONItem *pOItem = pGroupObj->getItem("o");
+								IXJSONArray *pOArr = NULL;
+								if(!pOItem || !(pOArr = pOItem->asArray()))
+								{
+									LibReport(REPORT_MSG_LEVEL_ERROR, "Invalid group '%u' in '%s'. Missing 'o' key\n", j, szFile);
+									continue;
+								}
+
+								if(!pOArr->size())
+								{
+									LibReport(REPORT_MSG_LEVEL_ERROR, "Invalid group '%u' in '%s'. No child objects\n", j, szFile);
+									continue;
+								}
+
+								CGroupObject *pGroup = new CGroupObject(guid);
+								pGroup->setKV("name", szName);
+								
+								g_apGroups.push_back(pGroup);
+
+								add_ref(pGroup);
+								g_pLevelObjects.push_back(pGroup);
+
+								aGroups[j] = pGroup;
+							}
+						}
+
+						for(UINT j = 0, jl = pArr->size(); j < jl; ++j)
+						{
+							CGroupObject *pGroup = aGroups[j];
+							if(pGroup)
+							{								
+								IXJSONArray *pOArr = pArr->at(j)->asObject()->getItem("o")->asArray();
+
+								for(UINT k = 0, kl = pOArr->size(); k < kl; ++k)
+								{
+									szGUID = pOArr->at(k)->getString();
+									if(!szGUID || !XGUIDFromString(&guid, szGUID))
+									{
+										LibReport(REPORT_MSG_LEVEL_ERROR, "Invalid object '%u' guid in group '%u' in '%s'. '%s'\n", k, j, szFile, szGUID ? szGUID : "");
+										continue;
+									}
+
+									IXEditorObject *pObj = XFindObjectByGUID(guid);
+									if(!pObj)
+									{
+										LibReport(REPORT_MSG_LEVEL_ERROR, "Invalid object '%u' in group '%u' in '%s'. '%s'. No object with GUID found.\n", k, j, szFile, szGUID ? szGUID : "");
+										continue;
+									}
+									pGroup->addChildObject(pObj);
+
+									isLoaded = true;
+								}
+							}
+						}
+					}
+
+					mem_release(pRoot);
+				}
+
+				mem_delete_a(szJSON);
+				mem_release(pFile);
+
+				if(!isLoaded)
+				{
+					LibReport(REPORT_MSG_LEVEL_WARNING, "Unable to load '%s'\n", szFile);
 				}
 			}
 
@@ -1577,6 +1743,7 @@ void XRender3D()
 			{
 				pObj->render(true, true, g_pSelectionRenderer);
 			}
+			return(XEOR_CONTINUE);
 		});
 
 		g_pSelectionRenderer->render(false, false);
@@ -1590,6 +1757,7 @@ void XRender3D()
 			{
 				pObj->render(true, false, g_pUnselectedRenderer);
 			}
+			return(XEOR_CONTINUE);
 		});
 
 		g_pUnselectedRenderer->render(false, false);
@@ -1679,25 +1847,25 @@ void XRender3D()
 		{
 			UINT uHandlerCount = 0;
 			pvData = NULL;
-			for(UINT i = 0, l = g_pLevelObjects.size(); i < l; ++i)
-			{
-				float3_t vPos = g_pLevelObjects[i]->getPos();
-				//@TODO: Add visibility check
+
+			XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
+				float3_t vPos = pObj->getPos();
+				TODO("Add visibility check");
 				/*if(fViewportBorders.x > vPos.x || fViewportBorders.z < vPos.x || fViewportBorders.y < vPos.z) // not visible
 				{
-				continue;
-				}*/
-				//if(isSelected != g_pLevelObjects[i]->isSelected() || (!isSelected && (g_pLevelObjects[i]->hasVisualModel() || g_pLevelObjects[i]->getIcon())))
-				if(g_pLevelObjects[i]->hasVisualModel() || isSelected != g_pLevelObjects[i]->isSelected() || (!isSelected && g_pLevelObjects[i]->getIcon()))
-				{
 					continue;
+				}*/
+
+				if(pObj->hasVisualModel() || isSelected != pObj->isSelected() || (!isSelected && pObj->getIcon()))
+				{
+					return(XEOR_CONTINUE);
 				}
 				if(!pvData && !g_xRenderStates.pHandlerInstanceVB->lock((void**)&pvData, GXBL_WRITE))
 				{
-					break;
+					return(XEOR_STOP);
 				}
 				float3 vMin, vMax;
-				g_pLevelObjects[i]->getBound(&vMin, &vMax);
+				pObj->getBound(&vMin, &vMax);
 
 				pvData[uHandlerCount++] = {(float3)((vMax + vMin) * 0.5f), (float3)(vMax - vMin)};
 				if(uHandlerCount == X_MAX_HANDLERS_PER_DIP)
@@ -1707,7 +1875,10 @@ void XRender3D()
 					pvData = NULL;
 					uHandlerCount = 0;
 				}
-			}
+
+				return(XEOR_CONTINUE);
+			});
+
 			if(pvData)
 			{
 				g_xRenderStates.pHandlerInstanceVB->unlock();
@@ -1774,6 +1945,7 @@ void XRender3D()
 					icon.vPos = pObj->getPos();
 					aIcons.push_back(icon);
 				}
+				return(XEOR_CONTINUE);
 			});
 			aIcons.quickSort([](const Icon &a, const Icon &b){
 				return(a.pTexture < b.pTexture);
@@ -1882,6 +2054,7 @@ void XRender2D(IXCamera *pCamera, X_2D_VIEW view, float fScale, bool preScene, b
 						{
 							pObj->render(false, true, g_pSelectionRenderer);
 						}
+						return(XEOR_CONTINUE);
 					});
 
 					g_isRenderedSelection3D = false;
@@ -1900,6 +2073,7 @@ void XRender2D(IXCamera *pCamera, X_2D_VIEW view, float fScale, bool preScene, b
 				{
 					pObj->render(false, false, g_pUnselectedRenderer);
 				}
+				return(XEOR_CONTINUE);
 			});
 
 			g_isRenderedUnselected3D = false;
@@ -1950,16 +2124,16 @@ void XRender2D(IXCamera *pCamera, X_2D_VIEW view, float fScale, bool preScene, b
 					}*/
 					if(isSelected != pObj->isSelected())
 					{
-						return;
+						return(XEOR_CONTINUE);
 					}
 					if(isProxy)
 					{
-						return;
+						return(XEOR_CONTINUE);
 					}
 
 					if(!pvData && !g_xRenderStates.pHandlerInstanceVB->lock((void**)&pvData, GXBL_WRITE))
 					{
-						return;
+						return(XEOR_CONTINUE);
 					}
 
 					pvData[uHandlerCount++] = vPos;
@@ -1970,6 +2144,7 @@ void XRender2D(IXCamera *pCamera, X_2D_VIEW view, float fScale, bool preScene, b
 						pvData = NULL;
 						uHandlerCount = 0;
 					}
+					return(XEOR_CONTINUE);
 				});
 
 				if(pvData)
@@ -2018,25 +2193,24 @@ void XRender2D(IXCamera *pCamera, X_2D_VIEW view, float fScale, bool preScene, b
 			{
 				UINT uHandlerCount = 0;
 				pvData = NULL;
-				for(UINT i = 0, l = g_pLevelObjects.size(); i < l; ++i)
-				{
-					float3_t vPos = g_pLevelObjects[i]->getPos();
-					//@TODO: Add visibility check
+				XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
+					float3_t vPos = pObj->getPos();
+					TODO("Add visibility check");
 					/*if(fViewportBorders.x > vPos.x || fViewportBorders.z < vPos.x || fViewportBorders.y < vPos.z) // not visible
 					{
 					continue;
 					}*/
-					//if(isSelected != g_pLevelObjects[i]->isSelected() || (!isSelected && (g_pLevelObjects[i]->hasVisualModel() || g_pLevelObjects[i]->getIcon())))
-					if(g_pLevelObjects[i]->hasVisualModel() || isSelected != g_pLevelObjects[i]->isSelected())
+
+					if(pObj->hasVisualModel() || isSelected != pObj->isSelected())
 					{
-						continue;
+						return(XEOR_CONTINUE);
 					}
 					if(!pvData && !g_xRenderStates.pHandlerInstanceVB->lock((void**)&pvData, GXBL_WRITE))
 					{
-						break;
+						return(XEOR_STOP);
 					}
 					float3 vMin, vMax;
-					g_pLevelObjects[i]->getBound(&vMin, &vMax);
+					pObj->getBound(&vMin, &vMax);
 
 					pvData[uHandlerCount++] = {(float3)((vMax + vMin) * 0.5f), (float3)(vMax - vMin)};
 					if(uHandlerCount == X_MAX_HANDLERS_PER_DIP)
@@ -2046,7 +2220,10 @@ void XRender2D(IXCamera *pCamera, X_2D_VIEW view, float fScale, bool preScene, b
 						pvData = NULL;
 						uHandlerCount = 0;
 					}
-				}
+
+					return(XEOR_CONTINUE);
+				});
+				
 				if(pvData)
 				{
 					g_xRenderStates.pHandlerInstanceVB->unlock();
@@ -2436,7 +2613,7 @@ void XUpdateSelectionBound()
 	float3 vMin, vMax;
 
 	XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
-		if(pObj->isSelected() && !(g_xConfig.m_bIgnoreGroups && isProxy))
+		if(pObj->isSelected()/* && !(g_xConfig.m_bIgnoreGroups && isProxy)*/)
 		{
 			pObj->getBound(&vMin, &vMax);
 			if(!g_xState.bHasSelection)
@@ -2450,8 +2627,25 @@ void XUpdateSelectionBound()
 				g_xState.vSelectionBoundMax = (float3)SMVectorMax(g_xState.vSelectionBoundMax, vMax);
 				g_xState.vSelectionBoundMin = (float3)SMVectorMin(g_xState.vSelectionBoundMin, vMin);
 			}
+			return(XEOR_SKIP_CHILDREN);
 		}
+		return(XEOR_CONTINUE);
 	});
+	
+	bool hasGroupSelected = false;
+	if(g_xState.bHasSelection)
+	{
+		fora(i, g_apGroups)
+		{
+			if(g_apGroups[i]->isSelected())
+			{
+				hasGroupSelected = true;
+				break;
+			}
+		}
+	}
+	EnableToolbarButton(ID_TOOLS_GROUP, g_xState.bHasSelection);
+	EnableToolbarButton(ID_TOOLS_UNGROUP, hasGroupSelected);
 }
 
 bool XRayCast(X_WINDOW_POS wnd)
@@ -2487,6 +2681,7 @@ bool XRayCast(X_WINDOW_POS wnd)
 		{
 			res = true;
 		}
+		return(XEOR_CONTINUE);
 	});
 	return(false);
 }
@@ -2746,15 +2941,17 @@ ICompoundObject* XGetObjectParent(IXEditorObject *pObject)
 
 IXEditorObject* XFindObjectByGUID(const XGUID &guid)
 {
-	fora(i, g_pLevelObjects)
-	{
-		if(*g_pLevelObjects[i]->getGUID() == guid)
+	IXEditorObject *pFoundObj = NULL;
+	XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
+		if(*pObj->getGUID() == guid)
 		{
-			return(g_pLevelObjects[i]);
+			pFoundObj = pObj;
+			return(XEOR_STOP);
 		}
-	}
+		return(XEOR_CONTINUE);
+	});
 
-	return(NULL);
+	return(pFoundObj);
 }
 
 void BeginMaterialEdit(const char *szMaterialName)

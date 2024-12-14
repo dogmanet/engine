@@ -10,10 +10,12 @@ bool XMETHODCALLTYPE CCommandPaste::exec()
 		m_pCommandSelect = new CCommandSelect();
 		
 		XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
-			if(pObj->isSelected() && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent))
+			if(pObj->isSelected()/* && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent)*/)
 			{
 				m_pCommandSelect->addDeselected(pObj);
+				return(XEOR_SKIP_CHILDREN);
 			}
+			return(XEOR_CONTINUE);
 		});
 	}
 
@@ -45,6 +47,7 @@ bool XMETHODCALLTYPE CCommandPaste::exec()
 		_proxy_obj &po = m_aProxies[i];
 
 		po.pProxy->setDstObject(m_mapGuids[po.guid]);
+		m_mapGuids[po.guid] = *po.pProxy->getGUID();
 		fora(j, po.aObjects)
 		{
 			IXEditorObject *pObj = XFindObjectByGUID(m_mapGuids[po.aObjects[j]]);
@@ -56,9 +59,28 @@ bool XMETHODCALLTYPE CCommandPaste::exec()
 		
 		po.pProxy->build();
 		g_pEditor->addObject(po.pProxy);
+
 		po.pProxy->setSelected(true);
 		add_ref(po.pProxy);
 		g_apProxies.push_back(po.pProxy);
+	}
+
+	fora(i, m_aGroups)
+	{
+		_group_obj &go = m_aGroups[i];
+
+		go.pGroup = (CGroupObject*)XFindObjectByGUID(m_mapGuids[go.guid]);
+
+		fora(j, go.aObjects)
+		{
+			IXEditorObject *pObj = XFindObjectByGUID(m_mapGuids[go.aObjects[j]]);
+			if(pObj)
+			{
+				go.pGroup->addChildObject(pObj);
+			}
+		}
+
+		go.pGroup->setSelected(true);
 	}
 
 	XUpdatePropWindow();
@@ -66,9 +88,21 @@ bool XMETHODCALLTYPE CCommandPaste::exec()
 }
 bool XMETHODCALLTYPE CCommandPaste::undo()
 {
+	forar(i, m_aGroups)
+	{
+		CGroupObject *pGroup = m_aGroups[i].pGroup;
+		
+		while(pGroup->getObjectCount())
+		{
+			pGroup->removeChildObject(pGroup->getObject(0));
+		}
+	}
+
 	forar(i, m_aProxies)
 	{
 		CProxyObject *pProxy = m_aProxies[i].pProxy;
+
+		m_mapGuids[m_aProxies[i].guid] = *pProxy->getTargetObject()->getGUID();
 
 		int idx = g_apProxies.indexOf(pProxy);
 		assert(idx >= 0);
@@ -87,8 +121,7 @@ bool XMETHODCALLTYPE CCommandPaste::undo()
 
 		pProxy->reset();
 	}
-
-
+	
 	_paste_obj *pObj;
 	forar(i, m_aObjects)
 	{
@@ -120,20 +153,31 @@ CCommandPaste::~CCommandPaste()
 
 UINT CCommandPaste::addObject(const char *szTypeName, const char *szClassName, const float3 &vPos, const float3 &vScale, const SMQuaternion &qRotate, const XGUID &oldGUID)
 {
-	const AssotiativeArray<AAString, IXEditable*>::Node *pNode;
-	if(!g_mEditableSystems.KeyExists(AAString(szTypeName), &pNode))
+	_paste_obj obj;
+	if(!fstrcmp(szTypeName, "TerraX"))
 	{
-		LibReport(REPORT_MSG_LEVEL_ERROR, "Unknown object type %s, skipping!", szTypeName);
+		if(!fstrcmp(szClassName, "Group"))
+		{
+			obj.pObject = new CGroupObject();
+		}
+	}
+	else
+	{
+		const AssotiativeArray<AAString, IXEditable*>::Node *pNode;
+		if(!g_mEditableSystems.KeyExists(AAString(szTypeName), &pNode))
+		{
+			LibReport(REPORT_MSG_LEVEL_ERROR, "Unknown object type %s, skipping!\n", szTypeName);
+			return(UINT_MAX);
+		}
+		obj.pObject = (*(pNode->Val))->newObject(szClassName);
+	}
+
+	if(!obj.pObject)
+	{
+		LibReport(REPORT_MSG_LEVEL_ERROR, "Cannot create object type %s/%s, skipping!\n", szTypeName, szClassName);
 		return(UINT_MAX);
 	}
 
-	_paste_obj obj;
-	obj.pObject = (*(pNode->Val))->newObject(szClassName);
-	if(!obj.pObject)
-	{
-		LibReport(REPORT_MSG_LEVEL_ERROR, "Cannot create object type %s/%s, skipping!", szTypeName, szClassName);
-		return(UINT_MAX);
-	}
 	obj.vPos = vPos;
 	obj.vScale = vScale;
 	obj.qRotate = qRotate;
@@ -163,4 +207,17 @@ void CCommandPaste::addProxyObject(UINT uProxy, const XGUID &guid)
 	assert(uProxy < m_aProxies.size());
 	
 	m_aProxies[uProxy].aObjects.push_back(guid);
+}
+
+UINT CCommandPaste::addGroup(const XGUID &guid)
+{
+	m_aGroups.push_back({guid, NULL});
+
+	return(m_aGroups.size() - 1);
+}
+void CCommandPaste::addGroupObject(UINT uGroup, const XGUID &guid)
+{
+	assert(uGroup < m_aGroups.size());
+
+	m_aGroups[uGroup].aObjects.push_back(guid);
 }

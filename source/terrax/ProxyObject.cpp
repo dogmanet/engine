@@ -140,6 +140,7 @@ void XMETHODCALLTYPE CProxyObject::remove()
 	XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 		g_mObjectsLocation.erase(pObj);
 		mem_release(pObj);
+		return(XEOR_SKIP_CHILDREN);
 	}, this);
 
 	m_isRemoved = true;
@@ -171,6 +172,7 @@ void XMETHODCALLTYPE CProxyObject::create()
 	XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 		g_mObjectsLocation[pObj] = pParent;
 		add_ref(pObj);
+		return(XEOR_SKIP_CHILDREN);
 	}, this);
 
 
@@ -235,6 +237,10 @@ bool CProxyObject::setDstObject(const XGUID &guid)
 	if(pObj)
 	{
 		m_pTargetObject = pObj;
+
+		ICompoundObject *pParent = XGetObjectParent(pObj);
+		SAFE_CALL(pParent, removeChildObject, pObj);
+
 		int idx = g_pLevelObjects.indexOf(pObj);
 		assert(idx >= 0);
 		if(idx >= 0)
@@ -253,7 +259,7 @@ bool CProxyObject::setDstObject(const XGUID &guid)
 	char tmp[64], tmp2[64];
 	XGUIDToSting(guid, tmp, sizeof(tmp));
 	XGUIDToSting(m_guid, tmp2, sizeof(tmp2));
-	LibReport(REPORT_MSG_LEVEL_ERROR, "Cannot set the object %s as the proxy %s target object. The щиоусе is not found\n", tmp, tmp2);
+	LibReport(REPORT_MSG_LEVEL_ERROR, "Cannot set the object %s as the proxy %s target object. The object is not found\n", tmp, tmp2);
 	return(false);
 }
 void CProxyObject::addSrcModel(const XGUID &guid)
@@ -453,6 +459,8 @@ void CProxyObject::addChildObject(IXEditorObject *pObject)
 		m_aObjects.push_back({pObject, m_qOrient.Conjugate() * (pObject->getPos() - m_vPos), pObject->getOrient() * m_qOrient.Conjugate()});
 
 		m_aModels[idx].pModel->addObject(pObject);
+
+		g_pEditor->onObjectAdded(pObject);
 	}
 }
 void CProxyObject::removeChildObject(IXEditorObject *pObject)
@@ -477,6 +485,8 @@ void CProxyObject::removeChildObject(IXEditorObject *pObject)
 		{
 			m_aModels[idx].pModel->removeObject(pObject);
 		}
+
+		g_pEditor->onObjectRemoved(pObject);
 
 		mem_release(pObject);
 	}
