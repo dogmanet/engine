@@ -214,6 +214,7 @@
     <ClCompile Include="..\..\..\source\terrax\CommandDelete.cpp" />
     <ClCompile Include="..\..\..\source\terrax\CommandDestroyModel.cpp" />
     <ClCompile Include="..\..\..\source\terrax\CommandDuplicate.cpp" />
+    <ClCompile Include="..\..\..\source\terrax\CommandGroup.cpp" />
     <ClCompile Include="..\..\..\source\terrax\CommandModifyModel.cpp" />
     <ClCompile Include="..\..\..\source\terrax\CommandMove.cpp" />
     <ClCompile Include="..\..\..\source\terrax\CommandPaste.cpp" />
@@ -221,6 +222,7 @@
     <ClCompile Include="..\..\..\source\terrax\CommandRotate.cpp" />
     <ClCompile Include="..\..\..\source\terrax\CommandScale.cpp" />
     <ClCompile Include="..\..\..\source\terrax\CommandSelect.cpp" />
+    <ClCompile Include="..\..\..\source\terrax\CommandUngroup.cpp" />
     <ClCompile Include="..\..\..\source\terrax\CurveEditorDialog.cpp" />
     <ClCompile Include="..\..\..\source\terrax\CurveEditorGraphNode.cpp" />
     <ClCompile Include="..\..\..\source\terrax\CurveEditorGraphNodeData.cpp" />
@@ -234,6 +236,7 @@
     <ClCompile Include="..\..\..\source\terrax\GradientPreviewGraphNode.cpp" />
     <ClCompile Include="..\..\..\source\terrax\GradientPreviewGraphNodeData.cpp" />
     <ClCompile Include="..\..\..\source\terrax\Grid.cpp" />
+    <ClCompile Include="..\..\..\source\terrax\GroupObject.cpp" />
     <ClCompile Include="..\..\..\source\terrax\LevelOpenDialog.cpp" />
     <ClCompile Include="..\..\..\source\terrax\mainWindow.cpp" />
     <ClCompile Include="..\..\..\source\terrax\MaterialBrowser.cpp" />
@@ -271,6 +274,7 @@
     <ClInclude Include="..\..\..\source\terrax\CommandDelete.h" />
     <ClInclude Include="..\..\..\source\terrax\CommandDestroyModel.h" />
     <ClInclude Include="..\..\..\source\terrax\CommandDuplicate.h" />
+    <ClInclude Include="..\..\..\source\terrax\CommandGroup.h" />
     <ClInclude Include="..\..\..\source\terrax\CommandModifyModel.h" />
     <ClInclude Include="..\..\..\source\terrax\CommandMove.h" />
     <ClInclude Include="..\..\..\source\terrax\CommandPaste.h" />
@@ -278,6 +282,7 @@
     <ClInclude Include="..\..\..\source\terrax\CommandRotate.h" />
     <ClInclude Include="..\..\..\source\terrax\CommandScale.h" />
     <ClInclude Include="..\..\..\source\terrax\CommandSelect.h" />
+    <ClInclude Include="..\..\..\source\terrax\CommandUngroup.h" />
     <ClInclude Include="..\..\..\source\terrax\CurveEditorDialog.h" />
     <ClInclude Include="..\..\..\source\terrax\CurveEditorGraphNode.h" />
     <ClInclude Include="..\..\..\source\terrax\CurveEditorGraphNodeData.h" />
@@ -290,6 +295,7 @@
     <ClInclude Include="..\..\..\source\terrax\GizmoScale.h" />
     <ClInclude Include="..\..\..\source\terrax\GradientPreviewGraphNode.h" />
     <ClInclude Include="..\..\..\source\terrax\GradientPreviewGraphNodeData.h" />
+    <ClInclude Include="..\..\..\source\terrax\GroupObject.h" />
     <ClInclude Include="..\..\..\source\terrax\ICompoundObject.h" />
     <ClInclude Include="..\..\..\source\terrax\LevelOpenDialog.h" />
     <ClInclude Include="..\..\..\source\terrax\MaterialBrowser.h" />

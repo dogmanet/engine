@@ -39,7 +39,12 @@ bool XMETHODCALLTYPE CCommandBuildModel::exec()
 		{
 			if((*i.first)->isSelected())
 			{
-				m_aObjLocations.push_back({*i.first, *i.second});
+				void *pData = NULL;
+				(*i.first)->getInternalData(&X_IS_COMPOUND_GUID, &pData);
+				if(!pData)
+				{
+					m_aObjLocations.push_back({*i.first, *i.second});
+				}
 			}
 		}
 

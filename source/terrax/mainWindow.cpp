@@ -40,6 +40,8 @@
 #include "CommandBuildModel.h"
 #include "CommandDestroyModel.h"
 #include "CommandModifyModel.h"
+#include "CommandGroup.h"
+#include "CommandUngroup.h"
 
 #include "PropertyWindow.h"
 
@@ -197,10 +199,12 @@ public:
 		
 		m_pPropsCmd = new CCommandProperties();
 		XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
-			if(pObj->isSelected() && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent))
+			if(pObj->isSelected()/* && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent)*/)
 			{
 				m_pPropsCmd->addObject(pObj);
+				return(XEOR_SKIP_CHILDREN);
 			}
+			return(XEOR_CONTINUE);
 		});
 		
 		for(UINT i = 0, l = g_pPropWindow->getCustomTabCount(); i < l; ++i)
@@ -542,10 +546,12 @@ static void DeleteSelection()
 {
 	CCommandDelete *pDelCmd = new CCommandDelete();
 	XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
-		if(pObj->isSelected() && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent))
+		if(pObj->isSelected()/* && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent)*/)
 		{
 			pDelCmd->addObject(pObj);
+			return(XEOR_SKIP_CHILDREN);
 		}
+		return(XEOR_CONTINUE);
 	});
 	XExecCommand(pDelCmd);
 }
@@ -665,6 +671,37 @@ static void ToClipboard(bool isCut = false)
 
 	sprintf(szSection, "%u", uCount);
 	pConfig->set("meta", "proxy_count", szSection);
+
+
+	uCount = 0;
+	for(UINT i = 0, l = g_apGroups.size(); i < l; ++i)
+	{
+		CGroupObject *pObj = g_apGroups[i];
+		if(pObj->isSelected())
+		{
+			sprintf(szSection, "group_%u", uCount);
+
+			XGUIDToSting(*pObj->getGUID(), szTmp, sizeof(szTmp));
+			pConfig->set(szSection, "guid", szTmp);
+
+			UINT uObjCount = 0;
+			sprintf(szTmp, "%u", pObj->getObjectCount());
+			pConfig->set(szSection, "o_count", szTmp);
+
+			for(UINT i = 0, l = pObj->getObjectCount(); i < l; ++i)
+			{
+				XGUIDToSting(*pObj->getObject(i)->getGUID(), szTmp, sizeof(szTmp));
+				sprintf(szKey, "o_%u", uObjCount);
+				pConfig->set(szSection, szKey, szTmp);
+				++uObjCount;
+			}
+
+			++uCount;
+		}
+	}
+
+	sprintf(szSection, "%u", uCount);
+	pConfig->set("meta", "group_count", szSection);
 
 
 	sprintf(szSection, "%f %f %f", g_xState.vSelectionBoundMin.x, g_xState.vSelectionBoundMin.y, g_xState.vSelectionBoundMin.z);
@@ -892,6 +929,36 @@ o_1 = {4307AD0F-A496-4960-B1C8-0595380483E3}
 o_0 = {4F36E63D-DC90-4F5A-B6B4-DB3ECB48E3FF}
 guid = {9D7D2E62-24C7-42B7-8D83-8448FC4604F0}
 					*/
+
+				}
+			}
+
+			szVal = pConfig->getKey("meta", "group_count");
+			if(szVal)
+			{
+				sscanf(szVal, "%u", &uCount);
+				for(UINT i = 0; i < uCount; ++i)
+				{
+					sprintf(szSection, "group_%u", i);
+					const char *szTmp;
+					XGUID guid;
+					UINT uObjCount;
+					if(
+						(szTmp = pConfig->getKey(szSection, "guid")) && XGUIDFromString(&guid, szTmp)
+						&& (szTmp = pConfig->getKey(szSection, "o_count")) && sscanf(szTmp, "%u", &uObjCount)
+						)
+					{
+						char szKey[64];
+						UINT uGroup = pCmd->addGroup(guid);
+						for(UINT j = 0; j < uObjCount; ++j)
+						{
+							sprintf(szKey, "o_%u", j);
+							if((szTmp = pConfig->getKey(szSection, szKey)) && XGUIDFromString(&guid, szTmp))
+							{
+								pCmd->addGroupObject(uGroup, guid);
+							}
+						}
+					}
 
 				}
 			}
@@ -1332,6 +1399,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			EnableMenuItem(hMenu, ID_EDIT_COPY, hasSelection ? MF_ENABLED : MF_DISABLED);
 			EnableMenuItem(hMenu, ID_EDIT_DELETE, hasSelection ? MF_ENABLED : MF_DISABLED);
 			EnableMenuItem(hMenu, ID_EDIT_PASTE, GetFileAttributesA(g_szClipboardFile) != ~0 ? MF_ENABLED : MF_DISABLED);
+			EnableMenuItem(hMenu, ID_TOOLS_CONVERTTOENTITY, hasSelection && IsWindowEnabled(g_hButtonToEntityWnd) ? MF_ENABLED : MF_DISABLED);
+			EnableMenuItem(hMenu, ID_TOOLS_CONVERTTOSTATIC, hasSelection ? MF_ENABLED : MF_DISABLED);
+			EnableMenuItem(hMenu, ID_TOOLS_GROUP, hasSelection ? MF_ENABLED : MF_DISABLED);
+
+			bool hasGroupSelected = false;
+			fora(i, g_apGroups)
+			{
+				if(g_apGroups[i]->isSelected())
+				{
+					hasGroupSelected = true;
+					break;
+				}
+			}
+
+			EnableMenuItem(hMenu, ID_TOOLS_UNGROUP, hasGroupSelected ? MF_ENABLED : MF_DISABLED);
 		}
 		XUpdateUndoRedo();
 
@@ -1911,6 +1993,46 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			}
 			break;
 
+		case ID_TOOLS_GROUP:
+			XExecCommand(new CCommandGroup());
+			break;
+
+		case ID_TOOLS_UNGROUP:
+			//if(!g_xConfig.m_bIgnoreGroups)
+			{
+				CCommandContainer *pContainer = NULL;
+				fora(i, g_apGroups)
+				{
+					CGroupObject *pGroup = g_apGroups[i];
+					if(pGroup->isSelected())
+					{
+						ICompoundObject *pParent = pGroup;
+						bool bSkip = false;
+						while((pParent = XGetObjectParent(pParent)))
+						{
+							if(pParent->isSelected())
+							{
+								bSkip = true;
+								break;
+							}
+						}
+						if(!bSkip)
+						{
+							if(!pContainer)
+							{
+								pContainer = new CCommandContainer();
+							}
+							pContainer->addCommand(new CCommandUngroup(pGroup));
+						}
+					}
+				}
+				if(pContainer)
+				{
+					XExecCommand(pContainer);
+				}
+			}
+			break;
+
 		case ID_HELP_SKYXENGINEWIKI:
 			ShellExecute(0, 0, "https://wiki.skyxengine.com", 0, 0, SW_SHOW);
 			break;
@@ -1924,10 +2046,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			{
 				CCommandSelect *pCmdUnselect = new CCommandSelect();
 				XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
-					if(pObj->isSelected() && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent))
+					if(pObj->isSelected()/* && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent)*/)
 					{
 						pCmdUnselect->addDeselected(pObj);
+						return(XEOR_SKIP_CHILDREN);
 					}
+					return(XEOR_CONTINUE);
 				});
 				g_pUndoManager->execCommand(pCmdUnselect);
 			}
@@ -1937,10 +2061,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			{
 				CCommandSelect *pCmdSelect = new CCommandSelect();
 				XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
-					if(!pObj->isSelected() && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent))
+					if(!pObj->isSelected()/* && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent)*/)
 					{
 						pCmdSelect->addSelected(pObj);
+						return(XEOR_SKIP_CHILDREN);
 					}
+					return(XEOR_CONTINUE);
 				});
 				g_pUndoManager->execCommand(pCmdSelect);
 			}
@@ -2069,10 +2195,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			{
 				CCommandRotate *pCmd = new CCommandRotate(GetKeyState(VK_SHIFT) < 0);
 				XEnumerateObjects([pCmd](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
-					if(pObj->isSelected() && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent))
+					if(pObj->isSelected()/* && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent)*/)
 					{
 						pCmd->addObject(pObj);
+						return(XEOR_SKIP_CHILDREN);
 					}
+					return(XEOR_CONTINUE);
 				});
 
 				X_2D_VIEW xCurView = g_xConfig.m_x2DView[g_xState.activeWindow];
@@ -2128,6 +2256,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 									hasUnselectedChild = true;
 								}
 							}
+
+							return(XEOR_CONTINUE);
 						}, (ICompoundObject*)pObj);
 						if(hasUnselectedChild)
 						{
@@ -2152,6 +2282,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 										pCmdUnselect->addDeselected(pObj);
 									}
 								}
+								return(XEOR_CONTINUE);
 							}, (ICompoundObject*)pObj);
 							if(pObj->isSelected())
 							{
@@ -2177,6 +2308,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 											pCmdUnselect->addDeselected(pParent);
 										}
 									}
+									return(XEOR_CONTINUE);
 								}, (ICompoundObject*)pObj);
 							}
 						}
@@ -2190,12 +2322,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 									{
 										pCmdUnselect->addDeselected(pObj);
 									}
+									return(XEOR_CONTINUE);
 								}, (ICompoundObject*)pObj);
 								pCmdUnselect->addSelected(pObj);
 							}
 							
 						}
 					}
+					return(XEOR_CONTINUE);
 				});
 				
 				pCmdUnselect->setIGMode(CCommandSelect::IGM_ENABLE);
@@ -2896,6 +3030,7 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 							}
 						}
 					}
+					return(XEOR_CONTINUE);
 				});
 
 				if(bUse)
@@ -3052,7 +3187,8 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 
 				g_aRaytracedItems.clearFast();
 				XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
-					if(g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent)
+					//if(g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent)
+					if(!g_xConfig.m_bIgnoreGroups || !isProxy)
 					{
 						float fDist2 = -1.0f;
 						if(!pObj->hasVisualModel())
@@ -3087,6 +3223,8 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 							g_aRaytracedItems.push_back({fDist2, pObj});
 						}
 					}
+
+					return(XEOR_CONTINUE);
 				});
 				
 				g_aRaytracedItems.quickSort([](const SelectItem &a, const SelectItem &b){
@@ -3123,6 +3261,7 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 							}
 						}
 					}
+					return(XEOR_CONTINUE);
 				});
 				
 				s_aRaytracedItems.quickSort([](const SelectItem2 &a, const SelectItem2 &b){
@@ -3267,10 +3406,12 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 								s_pScaleCmd->setTransformDir(dirs[g_xConfig.m_x2DView[g_xState.activeWindow]][i]);
 								s_pScaleCmd->setStartPos(vStartPos);
 								XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
-									if(pObj->isSelected() && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent))
+									if(pObj->isSelected()/* && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent)*/)
 									{
 										s_pScaleCmd->addObject(pObj);
+										return(XEOR_SKIP_CHILDREN);
 									}
+									return(XEOR_CONTINUE);
 								});
 							}
 							else if(g_xState.xformType == X2DXF_ROTATE)
@@ -3280,10 +3421,12 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 								s_pRotateCmd->setStartOrigin((g_xState.vSelectionBoundMax + g_xState.vSelectionBoundMin) * 0.5f * vMask, float3(1.0f) - vMask);
 								s_pRotateCmd->setStartPos(vStartPos);
 								XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
-									if(pObj->isSelected() && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent))
+									if(pObj->isSelected()/* && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent)*/)
 									{
 										s_pRotateCmd->addObject(pObj);
+										return(XEOR_SKIP_CHILDREN);
 									}
+									return(XEOR_CONTINUE);
 								});
 							}
 							bHandled = true;
@@ -3308,7 +3451,7 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 					bool wasSel = false;
 
 					XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
-						if(!(g_xConfig.m_bIgnoreGroups && isProxy))
+						//if(!(g_xConfig.m_bIgnoreGroups && isProxy))
 						{
 							bool sel = XIsClicked(pObj->getPos());
 
@@ -3355,6 +3498,7 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 								}
 							}
 						}
+						return(XEOR_CONTINUE);
 					});
 
 					if(bUse)
@@ -3386,25 +3530,44 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 					s_pMoveCmd->setStartPos(XSnapToGrid(vStartPos));
 
 					bool bReferenceFound = false;
-
+					IXEditorObject *pReferenceObject = NULL;
 					float3 vBoundMin, vBoundMax;
 					XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 						if(pObj->isSelected())
 						{
-							if(g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent)
+							s_pMoveCmd->addObject(pObj);
+							return(XEOR_SKIP_CHILDREN);
+						}
+						return(XEOR_CONTINUE);
+					});
+
+					if(g_xConfig.m_bSnapGrid)
+					{
+						XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
+							if(pObj->isSelected())
 							{
-								s_pMoveCmd->addObject(pObj);
-							}
-							if(!bReferenceFound && g_xConfig.m_bSnapGrid)
-							{
-								pObj->getBound(&vBoundMin, &vBoundMax);
-								if(XIsMouseInBound(g_xState.activeWindow, vBoundMin, vBoundMax))
+								if((!bReferenceFound || (pReferenceObject == pParent)))
 								{
-									bReferenceFound = true;
+									pObj->getBound(&vBoundMin, &vBoundMax);
+									if(XIsMouseInBound(g_xState.activeWindow, vBoundMin, vBoundMax))
+									{
+										bReferenceFound = true;
+										pReferenceObject = pObj;
+
+										if(!isProxy)
+										{
+											return(XEOR_STOP);
+										}
+									}
+									else
+									{
+										return(XEOR_SKIP_CHILDREN);
+									}
 								}
 							}
-						}
-					});
+							return(XEOR_CONTINUE);
+						});
+					}
 
 					if(!bReferenceFound)
 					{
@@ -3917,11 +4080,13 @@ void XFrameRun(float fDeltaTime)
 			if(g_uSelectedIndex == ~0 && !g_isSelectionCtrl)
 			{
 				XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
-					if(pObj->isSelected() && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent))
+					//if(pObj->isSelected() && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent))
+					if(pObj->isSelected() && (g_xConfig.m_bIgnoreGroups || !pParent))
 					{
 						pObj->setSelected(false);
 						g_pSelectCmd->addDeselected(pObj);
 					}
+					return(XEOR_CONTINUE);
 				});
 			}
 
@@ -4430,7 +4595,7 @@ void XUpdatePropWindow()
 	UINT uSelectedCount = 0;
 
 	XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
-		if(pObj->isSelected() && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent))
+		if(pObj->isSelected()/* && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent)*/)
 		{
 			++uSelectedCount;
 			if(!szFirstType)
@@ -4490,7 +4655,9 @@ void XUpdatePropWindow()
 					mProps[AAString(pField->szKey)] = {*pField, true, pObj->getKV(pField->szKey)};
 				}
 			}
+			return(XEOR_SKIP_CHILDREN);
 		}
+		return(XEOR_CONTINUE);
 	});
 
 	XCleanupUnreferencedPropGizmos();
@@ -4590,10 +4757,12 @@ void XMETHODCALLTYPE CGizmoMoveCallback::onStart(IXEditorGizmoMove *pGizmo)
 	m_pCmd = new CCommandMove(GetKeyState(VK_SHIFT) < 0);
 	m_pCmd->setStartPos(pGizmo->getPos());
 	XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
-		if(pObj->isSelected() && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent))
+		if(pObj->isSelected()/* && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent)*/)
 		{
 			m_pCmd->addObject(pObj);
+			return(XEOR_SKIP_CHILDREN);
 		}
+		return(XEOR_CONTINUE);
 	});
 }
 void XMETHODCALLTYPE CGizmoMoveCallback::onEnd(IXEditorGizmoMove *pGizmo)
@@ -4626,10 +4795,12 @@ void XMETHODCALLTYPE CGizmoRotateCallback::onStart(const float3_t &vAxis, IXEdit
 	m_pCmd->setStartOrigin(pGizmo->getPos(), vAxis);
 	m_pCmd->setStartPos(pGizmo->getPos() + vStartOffset);
 	XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
-		if(pObj->isSelected() && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent))
+		if(pObj->isSelected()/* && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent)*/)
 		{
 			m_pCmd->addObject(pObj);
+			return(XEOR_SKIP_CHILDREN);
 		}
+		return(XEOR_CONTINUE);
 	});
 
 	pGizmo->setOrient(SMQuaternion());
@@ -4647,6 +4818,11 @@ HIMAGELIST g_hImageList = NULL;
 void CheckToolbarButton(int iCmd, BOOL isChecked)
 {
 	SendMessage(g_hToolbarWnd, TB_CHECKBUTTON, iCmd, MAKELPARAM(isChecked, 0));
+}
+
+void EnableToolbarButton(int iCmd, BOOL isChecked)
+{
+	SendMessage(g_hToolbarWnd, TB_ENABLEBUTTON, iCmd, MAKELPARAM(isChecked, 0));
 }
 
 void CheckXformButton(X_2DXFORM_TYPE type, bool isChecked)
@@ -4672,14 +4848,14 @@ HWND CreateToolbar(HWND hWndParent)
 {
 	// Declare and initialize local constants.
 	const int ImageListID = 0;
-	const int numButtons = 4;
+	const int numButtons = 8;
 	const int bitmapSize = 16;
 
 	const DWORD buttonStyles = BTNS_AUTOSIZE;
 
 	// Create the toolbar.
 	HWND hWndToolbar = CreateWindowEx(0, TOOLBARCLASSNAME, NULL,
-		WS_CHILD | TBSTYLE_WRAPABLE | TBSTYLE_LIST | TBSTYLE_FLAT | TBSTYLE_TOOLTIPS, 0, 0, 0, 0,
+		WS_CHILD | /*TBSTYLE_WRAPABLE | */TBSTYLE_LIST | TBSTYLE_FLAT | TBSTYLE_TOOLTIPS, 0, 0, 0, 0,
 		hWndParent, NULL, hInst, NULL);
 
 	//SetWindowLong(hWndToolbar, GWL_EXSTYLE, GetWindowLong(hWndToolbar, GWL_EXSTYLE) | TBSTYLE_EX_MIXEDBUTTONS);
@@ -4732,6 +4908,8 @@ HWND CreateToolbar(HWND hWndParent)
 		{MAKELONG(1, ImageListID), ID_XFORM_TRANSLATE, TBSTATE_ENABLED, buttonStyles, {0}, 0, (INT_PTR)"Move [W]"},
 		{MAKELONG(2, ImageListID), ID_XFORM_ROTATE, TBSTATE_ENABLED, buttonStyles, {0}, 0, (INT_PTR)"Rotate [R]"},
 		{0, 0, TBSTATE_ENABLED, BTNS_SEP, 0L, 0},
+		{MAKELONG(6, ImageListID), ID_TOOLS_GROUP, TBSTATE_ENABLED, buttonStyles, {0}, 0, (INT_PTR)"Group selected [Ctrl+G]"},
+		{MAKELONG(7, ImageListID), ID_TOOLS_UNGROUP, TBSTATE_ENABLED, buttonStyles, {0}, 0, (INT_PTR)"Ungroup selected [Ctrl+U]"},
 		{MAKELONG(5, ImageListID), ID_IGNORE_GROUPS, TBSTATE_ENABLED, buttonStyles, {0}, 0, (INT_PTR)"Toggle group ignore [Ctrl+W]"},
 		{0, 0, TBSTATE_ENABLED, BTNS_SEP, 0L, 0},
 		{MAKELONG(3, ImageListID), ID_LEVEL_RUN, TBSTATE_ENABLED, buttonStyles, {0}, 0, (INT_PTR)"Run [F5]"}
@@ -4746,7 +4924,7 @@ HWND CreateToolbar(HWND hWndParent)
 	SendMessage(hWndToolbar, TB_SETEXTENDEDSTYLE, 0, (LPARAM)TBSTYLE_EX_MIXEDBUTTONS);
 	ShowWindow(hWndToolbar, TRUE);
 
-	return hWndToolbar;
+	return(hWndToolbar);
 }
 
 void XSetXformType(X_2DXFORM_TYPE type)

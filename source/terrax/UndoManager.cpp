@@ -84,13 +84,12 @@ bool CUndoManager::execCommand(IXEditorCommand *pCommand, bool bSaveForUndo)
 	++m_isInCommandContext;
 	if(!pCommand->isEmpty() && pCommand->exec())
 	{
-
 		if(aAttachedCommands.size())
 		{
 			// create new command container
 			CCommandContainer *pContainer = new CCommandContainer();
 			pContainer->addCommand(pCommand);
-			fora(i, aAttachedCommands)
+			for(UINT i = 0; i < aAttachedCommands.size(); ++i) // size can change during iteration
 			{
 				aAttachedCommands[i]->exec();
 				pContainer->addCommand(aAttachedCommands[i]);

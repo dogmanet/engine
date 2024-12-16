@@ -27,15 +27,15 @@ bool XMETHODCALLTYPE CCommandDuplicate::undo()
 
 void CCommandDuplicate::initialize()
 {
-	for(UINT i = 0, l = g_pLevelObjects.size(); i < l; ++i)
-	{
-		IXEditorObject *pObj = g_pLevelObjects[i];
+	XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 		if(pObj->isSelected())
 		{
 			processObject(pObj);
+			return(XEOR_SKIP_CHILDREN);
 		}
-	}
-
+		return(XEOR_CONTINUE);
+	});
+	
 	for(UINT i = 0, l = g_apProxies.size(); i < l; ++i)
 	{
 		CProxyObject *pObj = g_apProxies[i];
@@ -45,6 +45,19 @@ void CCommandDuplicate::initialize()
 			for(UINT j = 0, jl = pObj->getObjectCount(); j < jl; ++j)
 			{
 				m_commandPaste.addProxyObject(uProxy, *pObj->getObject(j)->getGUID());
+			}
+		}
+	}
+
+	for(UINT i = 0, l = g_apGroups.size(); i < l; ++i)
+	{
+		CGroupObject *pObj = g_apGroups[i];
+		if(pObj->isSelected())
+		{
+			UINT uGroup = m_commandPaste.addGroup(*pObj->getGUID());
+			for(UINT j = 0, jl = pObj->getObjectCount(); j < jl; ++j)
+			{
+				m_commandPaste.addGroupObject(uGroup, *pObj->getObject(j)->getGUID());
 			}
 		}
 	}

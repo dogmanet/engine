@@ -44,6 +44,9 @@ CSceneTreeWindow::CSceneTreeWindow(CEditor *pEditor, IXCore *pCore):
 	m_pTreeMenu->addItem("Copy\tCtrl+C", "copy");
 	m_pTreeMenu->addItem("Delete\tDel", "delete");
 	m_pTreeMenu->addSeparator();
+	m_pTreeMenu->addItem("Group\tCtrl+G", "group");
+	m_pTreeMenu->addItem("Ungroup\tCtrl+U", "ungroup");
+	m_pTreeMenu->addSeparator();
 	m_pTreeMenu->addItem("To Object\tCtrl+T", "to_object");
 	m_pTreeMenu->addItem("To World\tCtrl+Shift+T", "to_world");
 	m_pTreeMenu->addSeparator();
@@ -75,6 +78,9 @@ CSceneTreeWindow::CSceneTreeWindow(CEditor *pEditor, IXCore *pCore):
 	pAccelTable->addItem({XAF_VIRTKEY, KEY_F2}, "rename");
 	pAccelTable->addItem({XAF_CTRL | XAF_VIRTKEY, KEY_E}, "center_on_selection");
 	pAccelTable->addItem({XAF_CTRL | XAF_SHIFT | XAF_VIRTKEY, KEY_E}, "go_to_selection");
+	pAccelTable->addItem({XAF_CTRL | XAF_VIRTKEY, KEY_G}, "group");
+	pAccelTable->addItem({XAF_CTRL | XAF_VIRTKEY, KEY_U}, "ungroup");
+	pAccelTable->addItem({XAF_CTRL | XAF_SHIFT | XAF_VIRTKEY, KEY_G}, "ungroup");
 	m_pWindow->setAcceleratorTable(pAccelTable);
 	mem_release(pAccelTable);
 
@@ -116,6 +122,12 @@ CSceneTreeWindow::CSceneTreeWindow(CEditor *pEditor, IXCore *pCore):
 	}, this);
 	m_pWindow->addCommand("rename", [](void *pCtx){
 		((CSceneTreeWindow*)pCtx)->m_pTree->editSelectedNode();
+	}, this);
+	m_pWindow->addCommand("group", [](void *pCtx){
+		((CSceneTreeWindow*)pCtx)->sendParentCommand(ID_TOOLS_GROUP);
+	}, this);
+	m_pWindow->addCommand("ungroup", [](void *pCtx){
+		((CSceneTreeWindow*)pCtx)->sendParentCommand(ID_TOOLS_UNGROUP);
 	}, this);
 
 	onResize();
@@ -369,6 +381,11 @@ static int CompareNodes(const CSceneTreeAdapter::TreeNode &a, const CSceneTreeAd
 	return(cmp);
 }
 
+CSceneTreeAdapter::CSceneTreeAdapter()
+{
+	m_rootNode.isExpanded = true;
+}
+
 void CSceneTreeAdapter::setTree(IUITree *pTree)
 {
 	m_pTree = pTree;
@@ -617,6 +634,10 @@ bool CSceneTreeAdapter::isNodeSelected(UITreeNodeHandle hNode)
 
 bool CSceneTreeAdapter::onNodeExpanded(UITreeNodeHandle hNode, bool isExpanded, bool isRecursive)
 {
+	if(!hNode)
+	{
+		return(true);
+	}
 	TreeNode *pNode = findTreeNode((IXEditorObject*)hNode);
 	assert(pNode);
 	if(pNode)
@@ -665,6 +686,7 @@ bool CSceneTreeAdapter::onNodeSelected(UITreeNodeHandle hNode, bool isSelected, 
 					pCmd->addDeselected(pObj);
 				}
 			}
+			return(XEOR_CONTINUE);
 		});
 	}
 
@@ -705,6 +727,7 @@ bool CSceneTreeAdapter::onMultiSelected(UITreeNodeHandle *aNodes, UINT uNodeCoun
 					pCmd->addDeselected(pObj);
 				}
 			}
+			return(XEOR_CONTINUE);
 		});
 	}
 
@@ -734,10 +757,12 @@ void CSceneTreeAdapter::onNodeEdited(UITreeNodeHandle hNode, const char *szNewTe
 {
 	CCommandProperties *pCmd = new CCommandProperties();
 	XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
-		if(pObj->isSelected() && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent))
+		if(pObj->isSelected()/* && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent)*/)
 		{
 			pCmd->addObject(pObj);
+			return(XEOR_SKIP_CHILDREN);
 		}
+		return(XEOR_CONTINUE);
 	});
 	//pCmd->addObject((IXEditorObject*)hNode);
 	pCmd->setKV("name", szNewText);
@@ -756,19 +781,49 @@ void CSceneTreeAdapter::ensureExpanded(UITreeNodeHandle hNode)
 	}
 }
 
+static void SaveExpansionState(CSceneTreeAdapter::TreeNode *pNode, Map<IXEditorObject*, bool> *pMap)
+{
+	if(pNode->isExpanded)
+	{
+		(*pMap)[pNode->pObject] = true;
+	}
+	fora(i, pNode->aChildren)
+	{
+		SaveExpansionState(&pNode->aChildren[i], pMap);
+	}
+}
+
+static void RestoreExpansionState(CSceneTreeAdapter::TreeNode *pNode, Map<IXEditorObject*, bool> *pMap, CSceneTreeAdapter *pAdapter)
+{
+	if(pMap->KeyExists(pNode->pObject))
+	{
+		pAdapter->onNodeExpanded((UITreeNodeHandle)pNode->pObject, true, false);
+
+		fora(i, pNode->aChildren)
+		{
+			RestoreExpansionState(&pNode->aChildren[i], pMap, pAdapter);
+		}
+	}
+}
+
 void CSceneTreeAdapter::onObjectsetChanged()
 {
-	m_rootNode.aChildren.clearFast();
-	m_rootNode.aChildren.reserve(g_pLevelObjects.size());
-
 	if(m_hasFilter)
 	{
+		m_rootNode.aChildren.clearFast();
+		m_rootNode.aChildren.reserve(g_pLevelObjects.size());
 		// load filtered recursive
 		bool hasItems = false;
 		loadFiltered(&m_rootNode, NULL, &hasItems);
 	}
 	else
 	{
+		Map<IXEditorObject*, bool> mapExpansionState;
+		SaveExpansionState(&m_rootNode, &mapExpansionState);
+
+		m_rootNode.aChildren.clearFast();
+		m_rootNode.aChildren.reserve(g_pLevelObjects.size());
+
 		TreeNode tmp;
 
 		fora(i, g_pLevelObjects)
@@ -779,17 +834,16 @@ void CSceneTreeAdapter::onObjectsetChanged()
 
 			tmp.pObject = pObj;
 			m_rootNode.aChildren.push_back(tmp);
-			/*
-			//Func(pObj, isProxy ? true : false, pWhere);
 
-
-			if(isProxy)
+			if(mapExpansionState.KeyExists(pObj))
 			{
-				((CProxyObject*)pObj)->getObjectCount();
-			}*/
+				onNodeExpanded((UITreeNodeHandle)pObj, true, false);
+			}
 		}
 
 		sortChildren(&m_rootNode);
+
+		RestoreExpansionState(&m_rootNode, &mapExpansionState, this);
 	}
 
 	m_pTree->notifyDatasetChanged();
@@ -847,10 +901,13 @@ bool CSceneTreeAdapter::hasSelection()
 {
 	bool hasSelection = false;
 	XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
-		if(!hasSelection && pObj->isSelected())
+		if(pObj->isSelected())
 		{
 			hasSelection = true;
+
+			return(XEOR_STOP);
 		}
+		return(XEOR_CONTINUE);
 	});
 
 	return(hasSelection);

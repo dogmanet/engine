@@ -10,6 +10,8 @@ class ICompoundObject;
 class CSceneTreeAdapter final: public IUITreeAdapter
 {
 public:
+	CSceneTreeAdapter();
+
 	void setTree(IUITree *pTree);
 
 	UINT getColumnCount() override;
