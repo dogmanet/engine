@@ -124,31 +124,20 @@ CBaseCharacter::~CBaseCharacter()
 
 	mem_release(m_pHandsModelResource);
 
+	mem_release(m_pMovementController);
+
 	if(m_idQuadCurr >= 0)
 	{
 		//SAIG_QuadSetState(m_idQuadCurr, AIQUAD_STATE_FREE);
 	}
 }
 
-void CBaseCharacter::mountToLadder(CFuncLadder *pLadder)
+void CBaseCharacter::setMovementController(IMovementController *pController)
 {
-	if(m_pLadder == pLadder)
-	{
-		return;
-	}
-	m_pLadder = pLadder;
-	float3 vStart = m_pLadder->getPos(), vEnd = m_pLadder->getUpPos();
-
-	float3 vPointOnLadder = SMProjectPointOnLine(getPos(), vEnd, vEnd - vStart);
-	setPos(vPointOnLadder);
-	m_uMoveDir |= PM_LADDER;
-	m_pCharacter->setGravity({0, 0, 0});
-	m_pCharacter->setVelocityForTimeInterval({0, 0, 0}, 0);
-}
-
-void CBaseCharacter::dismountFromLadder()
-{
-	m_pLadder = NULL;
+	mem_release(m_pMovementController);
+	m_pMovementController = pController;
+	add_ref(m_pMovementController);
+	SAFE_CALL(m_pMovementController, setCharacter, this);
 }
 
 void CBaseCharacter::attack(BOOL state)
@@ -471,8 +460,12 @@ void CBaseCharacter::onPhysicsStep()
 	{
 		return;
 	}
-	float3 vPos = m_pGhostObject->getPosition();
-	setPos(vPos - float3(0.0f, m_fCapsHeight * m_fCurrentHeight * 0.5f, 0.0f));
+
+	if(!m_pMovementController)
+	{
+		float3 vPos = m_pGhostObject->getPosition();
+		setPos(vPos - float3(0.0f, m_fCapsHeight * m_fCurrentHeight * 0.5f, 0.0f));
+	}
 
 	m_pHeadEnt->setOffsetPos(getHeadOffset());
 
@@ -558,6 +551,11 @@ void CBaseCharacter::use(bool start)
 
 	if(start)
 	{
+		if(m_pMovementController && m_pMovementController->handleUse())
+		{
+			return;
+		}
+
 		float3 start = getHead()->getPos();
 		float3 dir = getHead()->getOrient() * float3(0.0f, 0.0f, 1.0f);
 		float3 end = start + dir * 2.0f;

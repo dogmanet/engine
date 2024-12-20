@@ -150,6 +150,7 @@ void CPlayer::updateInput(float dt)
 	// m_vWpnShakeAngles = (float3)(m_vWpnShakeAngles * 0.4f);
 	m_vWpnShakeAngles = (float3)(m_vWpnShakeAngles / (1.05f + dt));
 
+	// Handle look
 	if(!*editor_mode || SSInput_GetKeyState(SIM_LBUTTON))
 	{
 		SSInput_GetMouseDelta(&x, &y);
@@ -236,61 +237,43 @@ void CPlayer::updateInput(float dt)
 			mov = true;
 		}
 
-		if(m_uMoveDir & PM_CROUCH || (m_fCurrentHeight < 0.99f && !m_pCharacter->canStandUp((m_fCapsHeight - m_fCapsRadius * 2.0f) * (1.0f - m_fCurrentHeight))))
-		{
-			m_fCurrentHeight -= dt * 10.0f;
-			float fMinHeight = (m_fCapsHeightCrouch - m_fCapsRadius * 2.0f) / (m_fCapsHeight - m_fCapsRadius * 2.0f);
-			if(m_fCurrentHeight < fMinHeight)
-			{
-				m_fCurrentHeight = fMinHeight;
-			}
-		}
-		else
-		{
-			m_fCurrentHeight += dt * 10.0f;
-			if(m_fCurrentHeight > 1.0f)
-			{
-				m_fCurrentHeight = 1.0f;
-			}
-		}
-		m_pCollideShape->setLocalScaling(float3(1.0f, m_fCurrentHeight, 1.0f));
-
 		if(m_uMoveDir & PM_OBSERVER)
 		{
 			setPos(getPos() + m_pHeadEnt->getOrient() * (SMVector3Normalize(dir) * dt * 10.0f));
 		}
-		else if(m_uMoveDir & PM_LADDER)
+		else if(m_pMovementController)
 		{
-			if(m_uMoveDir & PM_FORWARD)
-			{
-				float3 vSpeed(0.0f, 3.0f, 0.0f);
-				float3 fNewPos = getPos() + vSpeed * dt;
-				if(m_pLadder->getUpPos().y >= fNewPos.y)
-				{
-					setPos(fNewPos);
-				}
-				else
-				{
-					setPos(m_pLadder->getUpPos());
-				}
-			}
-			else if(m_uMoveDir & PM_BACKWARD)
-			{
-				float3 vSpeed(0.0f, -3.0f, 0.0f);
-				float3 fNewPos = getPos() + vSpeed * dt;
-				if(m_pLadder->getPos().y <= fNewPos.y)
-				{
-					setPos(fNewPos);
-				}
-				else
-				{
-					setPos(m_pLadder->getPos());
-				}
-			}
 			m_vCurrentSpeed = {0.0f, 0.0f, 0.0f};
+
+			if(m_uMoveDir & PM_JUMP)
+			{
+				m_pMovementController->handleJump();
+			}
+			m_pMovementController->handleMove(m_pHeadEnt->getOrient() * SMVector3Normalize(dir));
+			m_pMovementController->update(dt);
 		}
 		else
 		{
+			if(m_uMoveDir & PM_CROUCH || (m_fCurrentHeight < 0.99f && !m_pCharacter->canStandUp((m_fCapsHeight - m_fCapsRadius * 2.0f) * (1.0f - m_fCurrentHeight))))
+			{
+				m_fCurrentHeight -= dt * 10.0f;
+				float fMinHeight = (m_fCapsHeightCrouch - m_fCapsRadius * 2.0f) / (m_fCapsHeight - m_fCapsRadius * 2.0f);
+				if(m_fCurrentHeight < fMinHeight)
+				{
+					m_fCurrentHeight = fMinHeight;
+				}
+			}
+			else
+			{
+				m_fCurrentHeight += dt * 10.0f;
+				if(m_fCurrentHeight > 1.0f)
+				{
+					m_fCurrentHeight = 1.0f;
+				}
+			}
+			m_pCollideShape->setLocalScaling(float3(1.0f, m_fCurrentHeight, 1.0f));
+
+
 			dir = SMQuaternion(m_vPitchYawRoll.y, 'y') * (SMVector3Normalize(dir)/* * dt*/);
 			dir *= 3.5f;
 			if(m_uMoveDir & PM_CROUCH)
@@ -411,7 +394,7 @@ void CPlayer::updateInput(float dt)
 			//vel = getDiscreteLinearVelocity();
 			//printf("%f, %f, %f\n", vel.x, vel.y, vel.z);
 
-			m_vWpnShakeAngles.x += -vel.y * 0.05f;
+			m_vWpnShakeAngles.x += -vel.y * 0.01f;
 			const float fMaxAng = SM_PI * 0.1f;
 			m_vWpnShakeAngles.x = clampf(m_vWpnShakeAngles.x, -fMaxAng, fMaxAng);
 		}
@@ -491,6 +474,8 @@ void CPlayer::spawn()
 			setOrient(pEnt->getOrient());
 			m_uMoveDir &= ~PM_OBSERVER;
 			m_pCrosshair->enable();
+
+			setMovementController(NULL);
 
 			GameData::m_pHUDcontroller->setPlayerRot(m_vPitchYawRoll);
 			GameData::m_pHUDcontroller->setPlayerPos(getPos());

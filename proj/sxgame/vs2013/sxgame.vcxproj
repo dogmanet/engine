@@ -210,6 +210,7 @@
     <ClCompile Include="..\..\..\source\game\GUIInventoryController.cpp" />
     <ClCompile Include="..\..\..\source\game\HUDcontroller.cpp" />
     <ClCompile Include="..\..\..\source\game\InfoParticlePlayer.cpp" />
+    <ClCompile Include="..\..\..\source\game\LadderMovementController.cpp" />
     <ClCompile Include="..\..\..\source\game\LightDirectional.cpp" />
     <ClCompile Include="..\..\..\source\game\LightPoint.cpp" />
     <ClCompile Include="..\..\..\source\game\LightSun.cpp" />
@@ -291,7 +292,9 @@
     <ClInclude Include="..\..\..\source\game\GUIInventoryController.h" />
     <ClInclude Include="..\..\..\source\game\HUDcontroller.h" />
     <ClInclude Include="..\..\..\source\game\IGameState.h" />
+    <ClInclude Include="..\..\..\source\game\IMovementController.h" />
     <ClInclude Include="..\..\..\source\game\InfoParticlePlayer.h" />
+    <ClInclude Include="..\..\..\source\game\LadderMovementController.h" />
     <ClInclude Include="..\..\..\source\game\LightSun.h" />
     <ClInclude Include="..\..\..\source\game\LogicAuto.h" />
     <ClInclude Include="..\..\..\source\game\LogicConsole.h" />

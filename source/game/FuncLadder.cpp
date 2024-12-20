@@ -1,5 +1,6 @@
 #include "FuncLadder.h"
 #include "BaseCharacter.h"
+#include "LadderMovementController.h"
 
 
 BEGIN_PROPTABLE(CInfoLadderDismount)
@@ -131,19 +132,18 @@ void CFuncLadder::initPhysics()
 	mem_release(m_pCollideShape);
 
 	float3 vDelta = m_vUpPoint - getPos();
-	float3 vMin, vMax;
+	SMAABB aabb = getBound();
 	float3 vMinDelta, vMaxDelta;
-	getMinMax(&vMin, &vMax);
 
 	float3_t aPointsBot[] = { 
-		{ vMin.x, vMax.y, vMin.z }, 
-		{ vMax.x, vMax.y, vMin.z },
-		{ vMin.x, vMax.y, vMax.z },
-		{ vMax.x, vMax.y, vMax.z }
+		{aabb.vMin.x, aabb.vMax.y, aabb.vMin.z }, 
+		{aabb.vMax.x, aabb.vMax.y, aabb.vMin.z },
+		{aabb.vMin.x, aabb.vMax.y, aabb.vMax.z },
+		{aabb.vMax.x, aabb.vMax.y, aabb.vMax.z }
 	};
 
-	vMinDelta = vMin + vDelta;
-	vMaxDelta = vMax + vDelta;
+	vMinDelta = aabb.vMin + vDelta;
+	vMaxDelta = aabb.vMax + vDelta;
 
 	float3_t aPointsTop[] = {
 		{ vMinDelta.x, vMinDelta.y, vMinDelta.z },
@@ -177,10 +177,10 @@ void CFuncLadder::initPhysics()
 		aShapePoints[uIndex++] = aPointsTop[1];
 	}
 
-	aShapePoints[uIndex++] = vMin;
-	aShapePoints[uIndex++] = {vMin.x, vMin.y ,vMax.z};
-	aShapePoints[uIndex++] = {vMax.x, vMin.y, vMax.z};
-	aShapePoints[uIndex++] = {vMax.x, vMin.y, vMin.z};
+	aShapePoints[uIndex++] = aabb.vMin;
+	aShapePoints[uIndex++] = {aabb.vMin.x, aabb.vMin.y, aabb.vMax.z};
+	aShapePoints[uIndex++] = {aabb.vMax.x, aabb.vMin.y, aabb.vMax.z};
+	aShapePoints[uIndex++] = {aabb.vMax.x, aabb.vMin.y, aabb.vMin.z};
 
 	aShapePoints[uIndex++] = vMaxDelta;
 	aShapePoints[uIndex++] = {vMaxDelta.x, vMaxDelta.y, vMinDelta.z};
@@ -199,8 +199,7 @@ void CFuncLadder::renderEditor(bool is3D, bool bRenderSelection, IXGizmoRenderer
 		pRenderer->setColor(c_vLineColor);
 		pRenderer->setLineWidth(is3D ? 0.02f : 1.0f);
 
-		SMAABB aabb;
-		getMinMax(&aabb.vMin, &aabb.vMax);
+		SMAABB aabb = getBound();
 		pRenderer->drawAABB(aabb + getPos());
 		pRenderer->drawAABB(aabb + m_vUpPoint);
 		pRenderer->jumpTo(getPos());
@@ -210,24 +209,152 @@ void CFuncLadder::renderEditor(bool is3D, bool bRenderSelection, IXGizmoRenderer
 
 void CFuncLadder::getMinMax(float3 *min, float3 *max)
 {
+	SMAABB aabb = getBound();
+	aabb = SMAABBConvex(aabb, aabb + (getUpPos() - getPos()));
+
 	if(min)
 	{
-		min->x = -0.25f;
-		min->y = 0.0f;
-		min->z = -0.25f;
+		*min = aabb.vMin;
 	}
 
 	if(max)
 	{
-		max->x = 0.25f;
-		max->y = 1.8f;
-		max->z = 0.25f;
+		*max = aabb.vMax;
+	}
+}
+
+SMAABB CFuncLadder::getBound()
+{
+	return(SMAABB(float3(-0.25f, 0.0f, -0.25f), float3(0.25f, 1.8f, 0.25f)));
+}
+
+bool SMAABBIntersectLine(const SMAABB &aabb, const float3 &vStart, const float3 &vEnd, float3 *pvOut, float3 *pvNormal)
+{
+	float min_t = 0.0f;
+    float max_t = 1.0f;
+
+	float3 vDir = vEnd - vStart;
+
+	for(int i = 0; i < 3; ++i)
+	{
+		if(SMIsZero(vDir[i]))
+		{
+			if(vStart[i] < aabb.vMin[i] || vStart[i] > aabb.vMax[i])
+			{
+				return(false);
+			}
+		}
+
+		float t1 = (aabb.vMin[i] - vStart[i]) / vDir[i];
+		float t2 = (aabb.vMax[i] - vStart[i]) / vDir[i];
+
+		float tmin = min(t1, t2);
+		float tmax = max(t1, t2);
+
+		min_t = max(min_t, tmin);
+		max_t = min(max_t, tmax);
+
+		if(min_t > max_t)
+		{
+			return(false);
+		}
+	}
+
+	if(pvOut)
+	{
+		*pvOut = vStart + min_t * vDir;
+	}
+
+	if(pvNormal)
+	{
+		*pvNormal = 0.0f;
+
+		if(SMIsZero(aabb.vMin.x - pvOut->x))
+		{
+			pvNormal->x = -1.0f;
+		}
+		else if(SMIsZero(aabb.vMax.x - pvOut->x))
+		{
+			pvNormal->x = 1.0f;
+		}
+		else if(SMIsZero(aabb.vMin.y - pvOut->y))
+		{
+			pvNormal->y = -1.0f;
+		}
+		else if(SMIsZero(aabb.vMax.y - pvOut->y))
+		{
+			pvNormal->y = 1.0f;
+		}
+		else if(SMIsZero(aabb.vMin.z - pvOut->z))
+		{
+			pvNormal->z = -1.0f;
+		}
+		else
+		{
+			pvNormal->z = 1.0f;
+		}
 	}
 }
 
 bool CFuncLadder::rayTest(const float3 &vStart, const float3 &vEnd, float3 *pvOut, float3 *pvNormal, bool isRayInWorldSpace, bool bReturnNearestPoint)
 {
-	// TODO Implement me!
+	assert(isRayInWorldSpace);
+
+	SMAABB aabb = getBound();
+
+	if(bReturnNearestPoint)
+	{
+		bool b0, b1;
+		float3 vPos0, vPos1;
+		float3 vNormal0, vNormal1;
+		float3 *pvNormal0 = NULL, *pvNormal1 = NULL;
+		if(pvNormal)
+		{
+			pvNormal0 = &vNormal0;
+			pvNormal1 = &vNormal1;
+		}
+
+		b0 = SMAABBIntersectLine(aabb + getPos(), vStart, vEnd, &vPos0, pvNormal0);
+		b1 = SMAABBIntersectLine(aabb + getUpPos(), vStart, vEnd, &vPos1, pvNormal1);
+
+		if(b0 && b1)
+		{
+			if(SMVector3Length2(vPos0 - vStart) > SMVector3Length2(vPos1 - vStart))
+			{
+				b0 = false;
+			}
+			else
+			{
+				b1 = false;
+			}
+		}
+
+		if(b0)
+		{
+			*pvOut = vPos0;
+			if(pvNormal)
+			{
+				*pvNormal = vNormal0;
+			}
+		}
+		else if(b1)
+		{
+			*pvOut = vPos1;
+			if(pvNormal)
+			{
+				*pvNormal = vNormal1;
+			}
+		}
+
+		return(b0 || b1);
+	}
+	else
+	{
+		if(SMAABBIntersectLine(aabb + getPos(), vStart, vEnd, pvOut, pvNormal) || SMAABBIntersectLine(aabb + getUpPos(), vStart, vEnd, pvOut, pvNormal))
+		{
+			return(true);
+		}
+	}
 	
 	return(false);
 }
@@ -240,7 +367,7 @@ void CFuncLadder::onUse(CBaseEntity *pUser)
 
 float3 CFuncLadder::getUpPos()
 {
-	return m_vUpPoint;
+	return(m_vUpPoint);
 }
 
 void CFuncLadder::connectToLadder(CBaseEntity *pEntity)
@@ -250,7 +377,9 @@ void CFuncLadder::connectToLadder(CBaseEntity *pEntity)
 		return;
 	}
 	CBaseCharacter *pCharacter = (CBaseCharacter*)pEntity;
-	pCharacter->mountToLadder(this);
+	CLadderMovementController *pController = new CLadderMovementController(this);
+	pCharacter->setMovementController(pController);
+	mem_release(pController);
 }
 
 void CFuncLadder::onPhysicsStep()
@@ -259,6 +388,8 @@ void CFuncLadder::onPhysicsStep()
 	{
 		return;
 	}
+
+	Array<CBaseEntity*> aCurrentTouchingEntities(m_aTouchedEntities.size());
 
 	for(UINT i = 0, l = m_pGhostObject->getOverlappingPairCount(); i < l; ++i)
 	{
@@ -279,14 +410,20 @@ void CFuncLadder::onPhysicsStep()
 					CBaseEntity *pEnt = (CBaseEntity*)pObject->getUserPointer();
 					if(pEnt)
 					{
-						connectToLadder(pEnt);
-						//printf("touched %s\n", pEnt->getClassName());
+						aCurrentTouchingEntities.push_back(pEnt);
+						if(m_aTouchedEntities.indexOf(pEnt) < 0)
+						{
+							connectToLadder(pEnt);
+							//printf("touched %s\n", pEnt->getClassName());
+						}
 					}
 				}
 				break;
 			}
 		}
 	}
+
+	m_aTouchedEntities = aCurrentTouchingEntities;
 }
 
 

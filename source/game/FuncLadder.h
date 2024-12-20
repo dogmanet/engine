@@ -64,6 +64,8 @@ private:
 	void disable();
 	void onPhysicsStep();
 
+	SMAABB getBound();
+
 private:
 	float3_t m_vUpPoint;
 	bool m_isUpSet = false;
@@ -77,6 +79,7 @@ private:
 	static IEventChannel<XEventPhysicsStep> *m_pTickEventChannel;
 	CPhysicsLadderTickEventListener m_physicsTicker;
 
+	Array<CBaseEntity*> m_aTouchedEntities;
 };
 
 #endif

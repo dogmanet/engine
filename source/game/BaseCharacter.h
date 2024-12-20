@@ -20,6 +20,7 @@ See the license in LICENSE
 #include "LightDirectional.h"
 #include "CharacterInventory.h"
 #include "PointEntity.h"
+#include "IMovementController.h"
 
 class CBaseTool;
 
@@ -36,12 +37,10 @@ enum PLAYER_MOVE
 	PM_RUN = 0x40,       //!< бежать
 	PM_CRAWL = 0x80,     //!< лежать
 	PM_OBSERVER = 0x100, //!< наблюдатель
-	PM_LADDER = 0x200,   //!< лестница
 
 	PM_STOP = 0xFFFF
 };
 
-class CFuncLadder;
 class CHUDcontroller;
 
 class CBaseCharacter;
@@ -138,17 +137,14 @@ public:
 
 	void onPostLoad() override;
 
-	void mountToLadder(CFuncLadder *pLadder);
-
-	void dismountFromLadder();
+	void setMovementController(IMovementController *pController);
 
 	void renderEditor(bool is3D, bool bRenderSelection, IXGizmoRenderer *pRenderer) override;
 
-	void mountToLadder(CFuncLadder *pLadder);
-
-	void dismountFromLadder();
-
-	void renderEditor(bool is3D, bool bRenderSelection, IXGizmoRenderer *pRenderer) override;
+	IXCharacterController* getCharacterController()
+	{
+		return(m_pCharacter);
+	}
 
 protected:
 	//! Фонарик
@@ -200,7 +196,8 @@ protected:
 
 	virtual float3 getHeadOffset();
 
-	CFuncLadder *m_pLadder = NULL;
+	IMovementController *m_pMovementController = NULL;
+
 private:
 	static IEventChannel<XEventPhysicsStep> *m_pTickEventChannel;
 	CCharacterPhysicsTickEventListener m_physicsTicker;
