@@ -52,7 +52,6 @@ CFuncLadder::~CFuncLadder()
 
 void CFuncLadder::setUpPoint(const float3 &vUp)
 {
-	m_isUpSet = true;
 	m_vUpPoint = vUp;
 
 	initPhysics();
@@ -82,11 +81,7 @@ void CFuncLadder::createPhysBody()
 void CFuncLadder::setPos(const float3 &pos)
 {
 	BaseClass::setPos(pos);
-	if(!m_isUpSet)
-	{
-		m_vUpPoint = (float3)(pos + float3(0.0f, 2.0f, 0.0f));
-		initPhysics();
-	}
+	initPhysics();
 	SAFE_CALL(m_pGhostObject, setPosition, pos);
 }
 
@@ -131,7 +126,7 @@ void CFuncLadder::initPhysics()
 	//TODO: сделать обработку ситуации когда m_vUpPoint ниже getPos
 	mem_release(m_pCollideShape);
 
-	float3 vDelta = m_vUpPoint - getPos();
+	float3 vDelta = getOrient() * m_vUpPoint;
 	SMAABB aabb = getBound();
 	float3 vMinDelta, vMaxDelta;
 
@@ -201,16 +196,16 @@ void CFuncLadder::renderEditor(bool is3D, bool bRenderSelection, IXGizmoRenderer
 
 		SMAABB aabb = getBound();
 		pRenderer->drawAABB(aabb + getPos());
-		pRenderer->drawAABB(aabb + m_vUpPoint);
+		pRenderer->drawAABB(aabb + getUpPos());
 		pRenderer->jumpTo(getPos());
-		pRenderer->lineTo(m_vUpPoint);
+		pRenderer->lineTo(getUpPos());
 	}
 }
 
 void CFuncLadder::getMinMax(float3 *min, float3 *max)
 {
 	SMAABB aabb = getBound();
-	aabb = SMAABBConvex(aabb, aabb + (getUpPos() - getPos()));
+	aabb = SMAABBConvex(aabb, aabb + getUpPos() - getPos());
 
 	if(min)
 	{
@@ -367,7 +362,7 @@ void CFuncLadder::onUse(CBaseEntity *pUser)
 
 float3 CFuncLadder::getUpPos()
 {
-	return(m_vUpPoint);
+	return(getOrient() * m_vUpPoint + getPos());
 }
 
 void CFuncLadder::connectToLadder(CBaseEntity *pEntity)

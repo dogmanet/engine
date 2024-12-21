@@ -67,8 +67,7 @@ private:
 	SMAABB getBound();
 
 private:
-	float3_t m_vUpPoint;
-	bool m_isUpSet = false;
+	float3_t m_vUpPoint = float3_t(0.0f, 2.0f, 0.0f);
 	bool m_isEnabled = false;
 
 	output_t m_onPlayerGetOn;

@@ -68,7 +68,7 @@ name =
 model = 
 is_static = 1
 glow_color_ref = 
-glow_color = 0.000000 0.000000 0.000000
+glow_color = 0.000000 0.273974 0.827866
 flags = 0
 classname = prop_static
 auto_physbox = 1
@@ -130,10 +130,10 @@ OnTurnOn =
 OnTurnOff = 
 
 [{F7FAD41B-4168-41D2-9E82-51DA455F22B6}]
-up_point = 12.860000 5.000000 10.004517
+up_point = 0.000000 4.000000 0.000001
 rotation = 0.000000 0.000000 0.000000 1.000000
 parent = 
-origin = 12.858377 1.000000 10.004519
+origin = 12.849999 1.000000 9.999999
 name = 
 flags = 0
 classname = func_ladder
