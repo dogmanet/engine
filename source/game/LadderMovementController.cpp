@@ -45,9 +45,10 @@ void CLadderMovementController::setCharacter(CBaseCharacter *pCharacter)
 	pCharacterController->setGravity(float3(0.0f, 0.0f, 0.0f));
 	pCharacterController->setVelocityForTimeInterval(float3(0.0f, 0.0f, 0.0f), 0.0f);
 
-	TODO("Make move smoother");
-	float3 vPointOnLadder = SMProjectPointOnLine(m_pCharacter->getPos(), m_vLadderPoint[0], m_vLadderPoint[1]);
-	m_pCharacter->setPos(vPointOnLadder);
+	m_mounting.is = true;
+	m_mounting.fFrac = 0.0f;
+	m_mounting.vStartPos = m_pCharacter->getPos();
+	m_mounting.vTargetPos = SMProjectPointOnLine(m_pCharacter->getPos(), m_vLadderPoint[0], m_vLadderPoint[1]);
 }
 
 void CLadderMovementController::handleMove(const float3 &vDir)
@@ -68,7 +69,17 @@ bool CLadderMovementController::handleUse()
 
 void CLadderMovementController::update(float fDt)
 {
-	if(m_bWillDismount)
+	if(m_mounting.is)
+	{
+		m_mounting.fFrac += 7.0f * fDt;
+		if(m_mounting.fFrac > 1.0f)
+		{
+			m_mounting.fFrac = 1.0f;
+			m_mounting.is = false;
+		}
+		m_pCharacter->setPos(vlerp(m_mounting.vStartPos, m_mounting.vTargetPos, m_mounting.fFrac));
+	}
+	else if(m_bWillDismount)
 	{
 		((CPlayer*)m_pCharacter)->m_vCurrentSpeed = m_vMoveDir;
 		m_pCharacter->setMovementController(NULL);

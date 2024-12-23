@@ -26,6 +26,15 @@ private:
 
 	float3_t m_vMoveDir;
 
+	struct
+	{
+		bool is = false;
+		float fFrac = 0.0f;
+		float3_t vStartPos;
+		float3_t vTargetPos;
+	}
+	m_mounting;
+
 	bool m_bWillDismount = false;
 };
 
