@@ -225,77 +225,83 @@ SMAABB CFuncLadder::getBound()
 
 bool SMAABBIntersectLine(const SMAABB &aabb, const float3 &vStart, const float3 &vEnd, float3 *pvOut, float3 *pvNormal)
 {
-	float min_t = 0.0f;
-    float max_t = 1.0f;
+	float3 vPoint;
+	SMPLANE plane;
 
-	float3 vDir = vEnd - vStart;
-
-	for(int i = 0; i < 3; ++i)
+	plane = SMPLANE(float3(1.0f, 0.0f, 0.0f), -aabb.vMax.x);
+	if(plane.intersectLine(&vPoint, vStart, vEnd) && SMIsAABBInsideAABB(SMAABB(vPoint, vPoint), aabb))
 	{
-		if(SMIsZero(vDir[i]))
+		*pvOut = vPoint;
+		if(pvNormal)
 		{
-			if(vStart[i] < aabb.vMin[i] || vStart[i] > aabb.vMax[i])
-			{
-				return(false);
-			}
+			*pvNormal = float3(1.0f, 0.0f, 0.0f);
 		}
-
-		float t1 = (aabb.vMin[i] - vStart[i]) / vDir[i];
-		float t2 = (aabb.vMax[i] - vStart[i]) / vDir[i];
-
-		float tmin = min(t1, t2);
-		float tmax = max(t1, t2);
-
-		min_t = max(min_t, tmin);
-		max_t = min(max_t, tmax);
-
-		if(min_t > max_t)
+		return(true);
+	}
+	
+	plane = SMPLANE(float3(-1.0f, 0.0f, 0.0f), aabb.vMin.x);
+	if(plane.intersectLine(&vPoint, vStart, vEnd) && SMIsAABBInsideAABB(SMAABB(vPoint, vPoint), aabb))
+	{
+		*pvOut = vPoint;
+		if(pvNormal)
 		{
-			return(false);
+			*pvNormal = float3(-1.0f, 0.0f, 0.0f);
 		}
+		return(true);
 	}
 
-	if(pvOut)
+	plane = SMPLANE(float3(0.0f, 1.0f, 0.0f), -aabb.vMax.y);
+	if(plane.intersectLine(&vPoint, vStart, vEnd) && SMIsAABBInsideAABB(SMAABB(vPoint, vPoint), aabb))
 	{
-		*pvOut = vStart + min_t * vDir;
+		*pvOut = vPoint;
+		if(pvNormal)
+		{
+			*pvNormal = float3(0.0f, 1.0f, 0.0f);
+		}
+		return(true);
 	}
 
-	if(pvNormal)
+	plane = SMPLANE(float3(0.0f, -1.0f, 0.0f), aabb.vMin.y);
+	if(plane.intersectLine(&vPoint, vStart, vEnd) && SMIsAABBInsideAABB(SMAABB(vPoint, vPoint), aabb))
 	{
-		*pvNormal = 0.0f;
-
-		if(SMIsZero(aabb.vMin.x - pvOut->x))
+		*pvOut = vPoint;
+		if(pvNormal)
 		{
-			pvNormal->x = -1.0f;
+			*pvNormal = float3(0.0f, -1.0f, 0.0f);
 		}
-		else if(SMIsZero(aabb.vMax.x - pvOut->x))
-		{
-			pvNormal->x = 1.0f;
-		}
-		else if(SMIsZero(aabb.vMin.y - pvOut->y))
-		{
-			pvNormal->y = -1.0f;
-		}
-		else if(SMIsZero(aabb.vMax.y - pvOut->y))
-		{
-			pvNormal->y = 1.0f;
-		}
-		else if(SMIsZero(aabb.vMin.z - pvOut->z))
-		{
-			pvNormal->z = -1.0f;
-		}
-		else
-		{
-			pvNormal->z = 1.0f;
-		}
+		return(true);
 	}
+
+	plane = SMPLANE(float3(0.0f, 0.0f, 1.0f), -aabb.vMax.z);
+	if(plane.intersectLine(&vPoint, vStart, vEnd) && SMIsAABBInsideAABB(SMAABB(vPoint, vPoint), aabb))
+	{
+		*pvOut = vPoint;
+		if(pvNormal)
+		{
+			*pvNormal = float3(0.0f, 0.0f, 1.0f);
+		}
+		return(true);
+	}
+
+	plane = SMPLANE(float3(0.0f, 0.0f, -1.0f), aabb.vMin.z);
+	if(plane.intersectLine(&vPoint, vStart, vEnd) && SMIsAABBInsideAABB(SMAABB(vPoint, vPoint), aabb))
+	{
+		*pvOut = vPoint;
+		if(pvNormal)
+		{
+			*pvNormal = float3(0.0f, 0.0f, -1.0f);
+		}
+		return(true);
+	}
+
+	return(false);
 }
 
 bool CFuncLadder::rayTest(const float3 &vStart, const float3 &vEnd, float3 *pvOut, float3 *pvNormal, bool isRayInWorldSpace, bool bReturnNearestPoint)
 {
 	assert(isRayInWorldSpace);
 
-	SMAABB aabb = getBound();
+ 	SMAABB aabb = getBound();
 
 	if(bReturnNearestPoint)
 	{
