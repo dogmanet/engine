@@ -121,6 +121,12 @@
     <Filter Include="Source Files\character_movement">
       <UniqueIdentifier>{7f56c9eb-5a04-4d29-ab96-b7e3d8d368f1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\ents\func\mover">
+      <UniqueIdentifier>{c06faca7-33f4-4cd1-999d-b47c933d2b66}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\ents\func\mover">
+      <UniqueIdentifier>{457c7c3e-8b6b-4173-ba02-c16e1d376e54}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\source\game\sxgame_dll.cpp">
@@ -324,9 +330,6 @@
     <ClCompile Include="..\..\..\source\game\EntityList.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\source\game\FuncLadder.cpp">
-      <Filter>Source Files\ents\func</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\source\game\PointCamera.cpp">
       <Filter>Source Files\ents\point</Filter>
     </ClCompile>
@@ -368,6 +371,12 @@
     </ClCompile>
     <ClCompile Include="..\..\..\source\game\LadderMovementController.cpp">
       <Filter>Source Files\character_movement</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\game\BaseMover.cpp">
+      <Filter>Source Files\ents\func\mover</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\game\FuncLadder.cpp">
+      <Filter>Source Files\ents\func\mover</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -596,9 +605,6 @@
     <ClInclude Include="..\..\..\source\game\physics_util.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\source\game\FuncLadder.h">
-      <Filter>Header Files\ents\func</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\source\game\PlayerSpawn.h">
       <Filter>Header Files\ents\info</Filter>
     </ClInclude>
@@ -643,6 +649,12 @@
     </ClInclude>
     <ClInclude Include="..\..\..\source\game\LadderMovementController.h">
       <Filter>Header Files\character_movement</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\game\BaseMover.h">
+      <Filter>Header Files\ents\func\mover</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\game\FuncLadder.h">
+      <Filter>Header Files\ents\func\mover</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
