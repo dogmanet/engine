@@ -8,6 +8,7 @@ See the license in LICENSE
 #include "GameData.h"
 #include "BaseTool.h"
 #include "BaseWeapon.h"
+#include "FuncLadder.h"
 
 #include <aigrid/sxaigrid.h>
 
@@ -123,12 +124,21 @@ CBaseCharacter::~CBaseCharacter()
 
 	mem_release(m_pHandsModelResource);
 
+	mem_release(m_pMovementController);
+
 	if(m_idQuadCurr >= 0)
 	{
 		//SAIG_QuadSetState(m_idQuadCurr, AIQUAD_STATE_FREE);
 	}
 }
 
+void CBaseCharacter::setMovementController(IMovementController *pController)
+{
+	mem_release(m_pMovementController);
+	m_pMovementController = pController;
+	add_ref(m_pMovementController);
+	SAFE_CALL(m_pMovementController, setCharacter, this);
+}
 
 void CBaseCharacter::attack(BOOL state)
 {
@@ -450,8 +460,12 @@ void CBaseCharacter::onPhysicsStep()
 	{
 		return;
 	}
-	float3 vPos = m_pGhostObject->getPosition();
-	setPos(vPos - float3(0.0f, m_fCapsHeight * m_fCurrentHeight * 0.5f, 0.0f));
+
+	if(!m_pMovementController)
+	{
+		float3 vPos = m_pGhostObject->getPosition();
+		setPos(vPos - float3(0.0f, m_fCapsHeight * m_fCurrentHeight * 0.5f, 0.0f));
+	}
 
 	m_pHeadEnt->setOffsetPos(getHeadOffset());
 
@@ -537,12 +551,17 @@ void CBaseCharacter::use(bool start)
 
 	if(start)
 	{
+		if(m_pMovementController && m_pMovementController->handleUse())
+		{
+			return;
+		}
+
 		float3 start = getHead()->getPos();
 		float3 dir = getHead()->getOrient() * float3(0.0f, 0.0f, 1.0f);
 		float3 end = start + dir * 2.0f;
 
 		CClosestNotMeRayResultCallback cb(m_pGhostObject);
-		GetPhysWorld()->rayTest(start, end, &cb);
+		GetPhysWorld()->rayTest(start, end, &cb, CG_CHARACTER, CG_ALL ^ (CG_HITBOX | CG_STATIC | CG_TRIGGER | CG_WATER));
 
 		if(cb.hasHit() && cb.m_result.pCollisionObject->getUserPointer() && cb.m_result.pCollisionObject->getUserTypeId() == 1)
 		{

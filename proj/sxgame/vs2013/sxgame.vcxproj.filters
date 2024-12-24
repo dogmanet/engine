@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Source Files">
@@ -114,6 +114,12 @@
     </Filter>
     <Filter Include="Header Files\ents\info">
       <UniqueIdentifier>{93ee5d69-dabd-4584-8e15-0acd713e614f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\character_movement">
+      <UniqueIdentifier>{3852670f-3617-4451-bfc1-c0aba9c194fa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\character_movement">
+      <UniqueIdentifier>{7f56c9eb-5a04-4d29-ab96-b7e3d8d368f1}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -359,6 +365,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\source\game\CraftSystem.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\game\LadderMovementController.cpp">
+      <Filter>Source Files\character_movement</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -628,6 +637,12 @@
     </ClInclude>
     <ClInclude Include="..\..\..\source\game\CraftSystem.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\game\IMovementController.h">
+      <Filter>Header Files\character_movement</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\game\LadderMovementController.h">
+      <Filter>Header Files\character_movement</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

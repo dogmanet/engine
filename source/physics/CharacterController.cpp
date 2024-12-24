@@ -65,23 +65,23 @@ void XMETHODCALLTYPE CCharacterController::unregisterInWorld()
 	}
 }
 
-void XMETHODCALLTYPE CCharacterController::setMaxJumpHeight(float fHeight) const
+void XMETHODCALLTYPE CCharacterController::setMaxJumpHeight(float fHeight)
 {
 	m_pController->setMaxJumpHeight(fHeight);
 }
-void XMETHODCALLTYPE CCharacterController::setJumpSpeed(float fSpeed) const
+void XMETHODCALLTYPE CCharacterController::setJumpSpeed(float fSpeed)
 {
 	m_pController->setJumpSpeed(fSpeed);
 }
-void XMETHODCALLTYPE CCharacterController::setGravity(const float3_t &vSpeed) const
+void XMETHODCALLTYPE CCharacterController::setGravity(const float3_t &vSpeed)
 {
 	m_pController->setGravity(F3_BTVEC(vSpeed));
 }
-void XMETHODCALLTYPE CCharacterController::setFallSpeed(float fSpeed) const
+void XMETHODCALLTYPE CCharacterController::setFallSpeed(float fSpeed)
 {
 	m_pController->setFallSpeed(fSpeed);
 }
-void XMETHODCALLTYPE CCharacterController::setMaxPenetrationDepth(float fMaxDepth) const
+void XMETHODCALLTYPE CCharacterController::setMaxPenetrationDepth(float fMaxDepth)
 {
 	m_pController->setMaxPenetrationDepth(fMaxDepth);
 }

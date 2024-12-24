@@ -20,6 +20,7 @@ See the license in LICENSE
 #include "LightDirectional.h"
 #include "CharacterInventory.h"
 #include "PointEntity.h"
+#include "IMovementController.h"
 
 class CBaseTool;
 
@@ -136,7 +137,14 @@ public:
 
 	void onPostLoad() override;
 
+	void setMovementController(IMovementController *pController);
+
 	void renderEditor(bool is3D, bool bRenderSelection, IXGizmoRenderer *pRenderer) override;
+
+	IXCharacterController* getCharacterController()
+	{
+		return(m_pCharacter);
+	}
 
 protected:
 	//! Фонарик
@@ -187,6 +195,8 @@ protected:
 	IXResourceModelAnimated *m_pHandsModelResource = NULL;
 
 	virtual float3 getHeadOffset();
+
+	IMovementController *m_pMovementController = NULL;
 
 private:
 	static IEventChannel<XEventPhysicsStep> *m_pTickEventChannel;

@@ -20,11 +20,11 @@ public:
 	virtual void XMETHODCALLTYPE registerInWorld(IXPhysicsWorld *pWorld) = 0;
 	virtual void XMETHODCALLTYPE unregisterInWorld() = 0;
 	
-	virtual void XMETHODCALLTYPE setMaxJumpHeight(float fHeight) const = 0;
-	virtual void XMETHODCALLTYPE setJumpSpeed(float fSpeed) const = 0;
-	virtual void XMETHODCALLTYPE setGravity(const float3_t &vSpeed) const = 0;
-	virtual void XMETHODCALLTYPE setFallSpeed(float fSpeed) const = 0;
-	virtual void XMETHODCALLTYPE setMaxPenetrationDepth(float fMaxDepth) const = 0;
+	virtual void XMETHODCALLTYPE setMaxJumpHeight(float fHeight) = 0;
+	virtual void XMETHODCALLTYPE setJumpSpeed(float fSpeed) = 0;
+	virtual void XMETHODCALLTYPE setGravity(const float3_t &vSpeed) = 0;
+	virtual void XMETHODCALLTYPE setFallSpeed(float fSpeed) = 0;
+	virtual void XMETHODCALLTYPE setMaxPenetrationDepth(float fMaxDepth) = 0;
 
 
 	/*

@@ -4532,15 +4532,16 @@ XDECLARE_PROP_GIZMO(Radius, void XMETHODCALLTYPE onChange(float fNewRadius, IXEd
 XDECLARE_PROP_GIZMO(Handle, void XMETHODCALLTYPE moveTo(const float3 &vNewPos, IXEditorGizmoHandle *pGizmo) override
 {
 	pGizmo->setPos(vNewPos);
+	float3_t vTmp = m_pObj->getOrient().Conjugate() * (vNewPos - m_pObj->getPos());
 	char tmp[64];
-	sprintf(tmp, "%f %f %f", vNewPos.x, vNewPos.y, vNewPos.z);
+	sprintf(tmp, "%f %f %f", vTmp.x, vTmp.y, vTmp.z);
 	m_pCommand->setKV(m_field.szKey, tmp);
 }, void init()
 {
 	float3_t vec;
 	if(sscanf(m_pObj->getKV(m_field.szKey), "%f %f %f", &vec.x, &vec.y, &vec.z))
 	{
-		m_pGizmo->setPos(vec);
+		m_pGizmo->setPos(m_pObj->getOrient() * vec + m_pObj->getPos());
 	}
 });
 

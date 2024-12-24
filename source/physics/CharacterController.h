@@ -24,11 +24,11 @@ public:
 	void XMETHODCALLTYPE registerInWorld(IXPhysicsWorld *pWorld) override;
 	void XMETHODCALLTYPE unregisterInWorld() override;
 
-	void XMETHODCALLTYPE setMaxJumpHeight(float fHeight) const override;
-	void XMETHODCALLTYPE setJumpSpeed(float fSpeed) const override;
-	void XMETHODCALLTYPE setGravity(const float3_t &vSpeed) const override;
-	void XMETHODCALLTYPE setFallSpeed(float fSpeed) const override;
-	void XMETHODCALLTYPE setMaxPenetrationDepth(float fMaxDepth) const override;
+	void XMETHODCALLTYPE setMaxJumpHeight(float fHeight) override;
+	void XMETHODCALLTYPE setJumpSpeed(float fSpeed) override;
+	void XMETHODCALLTYPE setGravity(const float3_t &vSpeed) override;
+	void XMETHODCALLTYPE setFallSpeed(float fSpeed) override;
+	void XMETHODCALLTYPE setMaxPenetrationDepth(float fMaxDepth) override;
 
 private:
 	btKinematicCharacterController *m_pController;
