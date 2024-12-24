@@ -140,6 +140,17 @@ void CPlayer::updateInput(float dt)
 	static const bool *editor_mode = GET_PCVAR_BOOL("cl_mode_editor");
 	static const bool *grab_cursor = GET_PCVAR_BOOL("cl_grab_cursor");
 	static const bool *invert_y = GET_PCVAR_BOOL("cl_invert_y");
+	
+	static const bool* cl_bob = GET_PCVAR_BOOL("cl_bob");
+	static const float* cl_bob_y = GET_PCVAR_FLOAT("cl_bob_y");
+	static const float* cl_bob_x = GET_PCVAR_FLOAT("cl_bob_x");
+	static const float* cl_bob_period = GET_PCVAR_FLOAT("cl_bob_period");
+
+	static const float* cl_acceleration = GET_PCVAR_FLOAT("cl_acceleration");
+	static const float* cl_speed_walk = GET_PCVAR_FLOAT("cl_speed_walk");
+	static const float* cl_speed_run = GET_PCVAR_FLOAT("cl_speed_run");
+	static const float* cl_speed_crouch = GET_PCVAR_FLOAT("cl_speed_crouch");
+	static const float* cl_speed_crawl = GET_PCVAR_FLOAT("cl_speed_crawl");
 
 	if(*editor_mode && !SSInput_GetKeyState(SIK_LCONTROL))
 	{
@@ -206,11 +217,6 @@ void CPlayer::updateInput(float dt)
 	}
 
 	{
-		if(m_uMoveDir & PM_RUN)
-		{
-			//dt *= 5.0f;
-		}
-		//dt *= 10.0f;
 		float3 dir;
 		bool mov = false;
 		if(m_uMoveDir & PM_FORWARD)
@@ -265,7 +271,7 @@ void CPlayer::updateInput(float dt)
 			}
 			else
 			{
-				m_fCurrentHeight += dt * 10.0f;
+				m_fCurrentHeight += dt * 6.0f;
 				if(m_fCurrentHeight > 1.0f)
 				{
 					m_fCurrentHeight = 1.0f;
@@ -274,20 +280,24 @@ void CPlayer::updateInput(float dt)
 			m_pCollideShape->setLocalScaling(float3(1.0f, m_fCurrentHeight, 1.0f));
 
 
-			dir = SMQuaternion(m_vPitchYawRoll.y, 'y') * (SMVector3Normalize(dir)/* * dt*/);
-			dir *= 3.5f;
+			dir = SMQuaternion(m_vPitchYawRoll.y, 'y') * SMVector3Normalize(dir);
 			if(m_uMoveDir & PM_CROUCH)
 			{
-				dir *= 0.3f;
+				dir *= *cl_speed_crouch;
 			}
 			else if(m_uMoveDir & PM_CRAWL)
 			{
-				dir *= 0.05f;
+				dir *= *cl_speed_crawl;
 			}
 			else if(m_uMoveDir & PM_RUN)
 			{
-				dir *= 2.0f;
+				dir *= *cl_speed_run;
 			}
+			else
+			{
+				dir *= *cl_speed_walk;
+			}
+
 			if((m_uMoveDir & PM_JUMP))
 			{
 				if(m_pCharacter->canJump())
@@ -308,19 +318,12 @@ void CPlayer::updateInput(float dt)
 			{
 				m_canJump = true;
 			}
-			// m_pCharacter->setWalkDirection(F3_BTVEC(dir));
+
 			m_vTargetSpeed = dir;
-
-
-			static const bool* cl_bob = GET_PCVAR_BOOL("cl_bob");
-			static const float* cl_bob_y = GET_PCVAR_FLOAT("cl_bob_y");
-			static const float* cl_bob_x = GET_PCVAR_FLOAT("cl_bob_x");
-			static const float* cl_bob_period = GET_PCVAR_FLOAT("cl_bob_period");
-			static const float* cl_acceleration = GET_PCVAR_FLOAT("cl_acceleration");
 
 			if(onGround())
 			{
-				float fAccel = *cl_acceleration * dt * 10.0f;
+				float fAccel = *cl_acceleration * dt;
 				float3 fAccelDir = m_vTargetSpeed - m_vCurrentSpeed;
 				float fMaxAccel = SMVector3Length(fAccelDir);
 
@@ -334,7 +337,7 @@ void CPlayer::updateInput(float dt)
 
 			if(*cl_bob)
 			{
-				float fBobCoeff = SMVector3Length(m_vCurrentSpeed) / 3.5f;
+				float fBobCoeff = SMVector3Length(m_vCurrentSpeed) / *cl_speed_walk;
 				if(mov && m_pCharacter->onGround())
 				{
 					const float fFS1 = SM_PIDIV2;
@@ -344,7 +347,7 @@ void CPlayer::updateInput(float dt)
 
 					
 
-					m_fViewbobStep += dt * 10.0f * *cl_bob_period * fBobCoeff;
+					m_fViewbobStep += dt * *cl_bob_period * fBobCoeff;
 					
 
 					/*if(m_uMoveDir & PM_RUN)

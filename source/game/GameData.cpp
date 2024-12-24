@@ -663,8 +663,12 @@ GameData::GameData(HWND hWnd, bool isGame):
 	Core_0RegisterCVarBool("cl_bob", true, "View bobbing");
 	Core_0RegisterCVarFloat("cl_bob_y", 0.1f, "View bobbing base y amplitude");
 	Core_0RegisterCVarFloat("cl_bob_x", 0.1f, "View bobbing base strafe amplitude");
-	Core_0RegisterCVarFloat("cl_bob_period", 0.5f, "View bobbing base period");
-	Core_0RegisterCVarFloat("cl_acceleration", 1.7f, "Player acceleration");
+	Core_0RegisterCVarFloat("cl_bob_period", 5.0f, "View bobbing base period");
+	Core_0RegisterCVarFloat("cl_acceleration", 17.0f, "Player acceleration");
+	Core_0RegisterCVarFloat("cl_speed_walk", 3.5f, "Player walk speed");
+	Core_0RegisterCVarFloat("cl_speed_run", 7.0f, "Player run speed");
+	Core_0RegisterCVarFloat("cl_speed_crouch", 1.05f, "Player crouch speed");
+	Core_0RegisterCVarFloat("cl_speed_crawl", 0.175f, "Player crawl speed");
 
 	Core_0RegisterCVarFloat("lvl_debris_remove_time_min", 120.0f, "Debris collector time min");
 	Core_0RegisterCVarFloat("lvl_debris_remove_time_max", 200.0f, "Debris collector time max");
