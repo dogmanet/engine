@@ -1278,28 +1278,33 @@ int main(int argc, char **argv)
 								}
 
 								CProxyObject *pProxy = new CProxyObject(guid);
-								pProxy->setDstObject(guidTarget);
-
-								for(UINT k = 0, kl = pSArr->size(); k < kl; ++k)
+								if(pProxy->setDstObject(guidTarget))
 								{
-									szGUID = pSArr->at(k)->getString();
-									if(!szGUID || !XGUIDFromString(&guid, szGUID))
+									for(UINT k = 0, kl = pSArr->size(); k < kl; ++k)
 									{
-										LibReport(REPORT_MSG_LEVEL_ERROR, "Invalid model '%u' guid in proxy '%u' in '%s'. '%s'\n", k, j, szFile, szGUID ? szGUID : "");
-										continue;
+										szGUID = pSArr->at(k)->getString();
+										if(!szGUID || !XGUIDFromString(&guid, szGUID))
+										{
+											LibReport(REPORT_MSG_LEVEL_ERROR, "Invalid model '%u' guid in proxy '%u' in '%s'. '%s'\n", k, j, szFile, szGUID ? szGUID : "");
+											continue;
+										}
+
+										pProxy->addSrcModel(guid);
 									}
 
-									pProxy->addSrcModel(guid);
+									g_apProxies.push_back(pProxy);
+
+									//pProxy->build();
+
+									add_ref(pProxy);
+									g_pLevelObjects.push_back(pProxy);
+
+									isLoaded = true;
 								}
-
-								g_apProxies.push_back(pProxy);
-
-								//pProxy->build();
-
-								add_ref(pProxy);
-								g_pLevelObjects.push_back(pProxy);
-
-								isLoaded = true;
+								else
+								{
+									mem_release(pProxy);
+								}
 							}
 						}
 					}
@@ -1849,7 +1854,7 @@ void XRender3D()
 			pvData = NULL;
 
 			XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
-				float3_t vPos = pObj->getPos();
+				//float3_t vPos = pObj->getPos();
 				TODO("Add visibility check");
 				/*if(fViewportBorders.x > vPos.x || fViewportBorders.z < vPos.x || fViewportBorders.y < vPos.z) // not visible
 				{
