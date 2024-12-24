@@ -5,7 +5,7 @@ TODO("Trigger OnPlayerGetOn/OnPlayerGetOff events");
 TODO("Handle MOVER_NO_AUTOMOUNT flag");
 
 BEGIN_PROPTABLE(CBaseMover)
-	DEFINE_FIELD_VECTORFN(m_vUpPoint, PDFF_USE_GIZMO, "up_point", "Up point", setUpPoint, EDITOR_POINTCOORD)
+	DEFINE_FIELD_VECTORFN(m_vUpPoint, PDFF_USE_GIZMO, "up_point", "End point", setUpPoint, EDITOR_POINTCOORD)
 
 	//! Игрок присоединился
 	DEFINE_OUTPUT(m_onPlayerGetOn, "OnPlayerGetOn", "On player get on")
