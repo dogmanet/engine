@@ -1,0 +1,21 @@
+
+[{D8CE1F61-7941-498F-BD0A-D768A8257ADB}]
+up_point = 3.700012 0.000000 0.000000
+speed = 0.500000
+rotation = 0.000000 -0.707107 0.000000 -0.707107
+parent = 
+origin = 0.000008 0.100000 -1.849973
+name = 
+flags = 0
+classname = func_narrow_passage
+OnPlayerGetOn = 
+OnPlayerGetOff = 
+
+[{DC740742-575B-4B03-873A-1717475B2375}]
+team = -842150451
+rotation = 0.000000 0.000000 0.000000 1.000000
+parent = 
+origin = 0.096405 0.000000 -3.485951
+name = 
+flags = 0
+classname = info_player_spawn

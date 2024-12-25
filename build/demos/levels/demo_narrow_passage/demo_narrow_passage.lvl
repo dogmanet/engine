@@ -1,0 +1,24 @@
+[level]
+type = indoor
+local_name = demo_narrow_passage
+
+[terrax]
+vp_layout = 0
+grid_step = 4
+grid_show = 1
+cam3_view = 1
+cam3_scale = 0.009128
+cam3_rot = 0.000000 0.000000 0.000000 1.000000
+cam3_pos = -0.616946 0.147523 -1000.000000
+cam2_view = 2
+cam2_scale = 0.008899
+cam2_rot = 0.000000 0.707107 0.000000 0.707107
+cam2_pos = 1000.000000 1.106782 -17.269983
+cam1_view = 0
+cam1_scale = 0.034539
+cam1_rot = -0.707107 0.000000 0.000000 0.707107
+cam1_pos = -5.000654 1000.000000 0.807223
+cam0_view = -1
+cam0_scale = 1.000000
+cam0_rot = 0.219844 0.603690 -0.178066 -0.745332
+cam0_pos = -8.303119 6.760478 -3.441035

@@ -17,7 +17,6 @@ class CFuncLadder: public CBaseMover
 {
 	DECLARE_CLASS(CFuncLadder, CBaseMover);
 	DECLARE_PROPTABLE();
-	friend class CPhysicsLadderTickEventListener;
 public:
 	DECLARE_TRIVIAL_CONSTRUCTOR();
 	

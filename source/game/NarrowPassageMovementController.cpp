@@ -1,18 +1,18 @@
-#include "LadderMovementController.h"
+#include "NarrowPassageMovementController.h"
 #include "BaseCharacter.h"
-#include "FuncLadder.h"
+#include "FuncNarrowPassage.h"
 #include "Player.h"
 
-CLadderMovementController::CLadderMovementController(CFuncLadder *pLadder)
+CNarrowPassageMovementController::CNarrowPassageMovementController(CFuncNarrowPassage *pPassage)
 {
-	m_vLadderPoint[0] = pLadder->getPos();
-	m_vLadderPoint[1] = pLadder->getUpPos();
+	m_vLadderPoint[0] = pPassage->getPos();
+	m_vLadderPoint[1] = pPassage->getUpPos();
 
 	m_vLadderDir = SMVector3Normalize(m_vLadderPoint[1] - m_vLadderPoint[0]);
 
-	m_fSpeed = pLadder->getSpeed();
+	m_fSpeed = pPassage->getSpeed();
 }
-CLadderMovementController::~CLadderMovementController()
+CNarrowPassageMovementController::~CNarrowPassageMovementController()
 {
 	if(m_pCharacter)
 	{
@@ -38,7 +38,7 @@ static float3 SMProjectPointOnLine(const float3 &vPos, const float3 &vStart, con
 	return(vStart + vN * fDot0);
 }
 
-void CLadderMovementController::setCharacter(CBaseCharacter *pCharacter)
+void CNarrowPassageMovementController::setCharacter(CBaseCharacter *pCharacter)
 {
 	m_pCharacter = pCharacter;
 
@@ -53,23 +53,23 @@ void CLadderMovementController::setCharacter(CBaseCharacter *pCharacter)
 	m_mounting.vTargetPos = SMProjectPointOnLine(m_pCharacter->getPos(), m_vLadderPoint[0], m_vLadderPoint[1]);
 }
 
-void CLadderMovementController::handleMove(const float3 &vDir)
+void CNarrowPassageMovementController::handleMove(const float3 &vDir)
 {
 	m_vMoveDir = vDir;
 }
 
-void CLadderMovementController::handleJump()
+void CNarrowPassageMovementController::handleJump()
 {
 	m_bWillDismount = true;
 }
 
-bool CLadderMovementController::handleUse()
+bool CNarrowPassageMovementController::handleUse()
 {
 	m_bWillDismount = true;
 	return(true);
 }
 
-void CLadderMovementController::update(float fDt)
+void CNarrowPassageMovementController::update(float fDt)
 {
 	if(m_mounting.is)
 	{

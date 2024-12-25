@@ -1,14 +1,14 @@
-#ifndef __LADDERMOVEMENTCONTROLLER_H
-#define __LADDERMOVEMENTCONTROLLER_H
+#ifndef __NARROWPASSAGEMOVEMENTCONTROLLER_H
+#define __NARROWPASSAGEMOVEMENTCONTROLLER_H
 
 #include "IMovementController.h"
 
-class CFuncLadder;
-class CLadderMovementController: public IXUnknownImplementation<IMovementController>
+class CFuncNarrowPassage;
+class CNarrowPassageMovementController: public IXUnknownImplementation<IMovementController>
 {
 public:
-	CLadderMovementController(CFuncLadder *pLadder);
-	~CLadderMovementController();
+	CNarrowPassageMovementController(CFuncNarrowPassage *pPassage);
+	~CNarrowPassageMovementController();
 
 	void setCharacter(CBaseCharacter *pCharacter) override;
 

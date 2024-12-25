@@ -7,10 +7,10 @@
 #define MOVER_NO_AUTOMOUNT ENT_FLAG_1
 
 class CBaseMover;
-class CPhysicsLadderTickEventListener final: public IEventListener<XEventPhysicsStep>
+class CPhysicsMoverTickEventListener final: public IEventListener<XEventPhysicsStep>
 {
 public:
-	CPhysicsLadderTickEventListener(CBaseMover *pMover):
+	CPhysicsMoverTickEventListener(CBaseMover *pMover):
 		m_pMover(pMover)
 	{
 	}
@@ -25,7 +25,7 @@ class CBaseMover: public CPointEntity
 {
 	DECLARE_CLASS(CBaseMover, CPointEntity);
 	DECLARE_PROPTABLE();
-	friend class CPhysicsLadderTickEventListener;
+	friend class CPhysicsMoverTickEventListener;
 public:
 	DECLARE_CONSTRUCTOR();
 	~CBaseMover();
@@ -41,6 +41,8 @@ public:
 	void onUse(CBaseEntity *pUser) override;
 
 	float3 getUpPos();
+
+	float getSpeed();
 
 private:
 	void handleCharacterMount(CBaseEntity *pEntity);
@@ -70,9 +72,11 @@ private:
 	IXGhostObject *m_pGhostObject = NULL;
 	IXConvexHullShape *m_pCollideShape = NULL;
 	static IEventChannel<XEventPhysicsStep> *m_pTickEventChannel;
-	CPhysicsLadderTickEventListener m_physicsTicker;
+	CPhysicsMoverTickEventListener m_physicsTicker;
 
 	Array<CBaseEntity*> m_aTouchedEntities;
+
+	float m_fSpeed = 3.0f;
 };
 
 #endif

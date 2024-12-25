@@ -39,3 +39,7 @@ inv_stackable = 0
 
 [base_weapon]
 inv_equip_type = 1
+
+[func_narrow_passage]
+speed = 0.5
+up_point = 2 0 0

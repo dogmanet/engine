@@ -5,7 +5,11 @@ TODO("Trigger OnPlayerGetOn/OnPlayerGetOff events");
 TODO("Handle MOVER_NO_AUTOMOUNT flag");
 
 BEGIN_PROPTABLE(CBaseMover)
+	//! Конечная точка
 	DEFINE_FIELD_VECTORFN(m_vUpPoint, PDFF_USE_GIZMO, "up_point", "End point", setUpPoint, EDITOR_POINTCOORD)
+
+	//! Скорость движения
+	DEFINE_FIELD_FLOAT(m_fSpeed, PDFF_NONE, "speed", "Speed", EDITOR_TEXTFIELD)
 
 	//! Игрок присоединился
 	DEFINE_OUTPUT(m_onPlayerGetOn, "OnPlayerGetOn", "On player get on")
@@ -19,8 +23,11 @@ BEGIN_PROPTABLE(CBaseMover)
 	//! Переключает состояние
 	DEFINE_INPUT(toggle, "toggle", "Toggle", PDF_NONE)
 
+	
+
 	//! Изначально выключена
 	DEFINE_FLAG(MOVER_INITIALLY_DISABLED, "Start disabled")
+	//! Отключить автомонтирование (требуется нажать кнопку взаимодействия)
 	DEFINE_FLAG(MOVER_NO_AUTOMOUNT, "Disable automount")
 END_PROPTABLE()
 
@@ -365,6 +372,11 @@ float3 CBaseMover::getUpPos()
 	return(getOrient() * m_vUpPoint + getPos());
 }
 
+float CBaseMover::getSpeed()
+{
+	return(m_fSpeed);
+}
+
 void CBaseMover::handleCharacterMount(CBaseEntity *pEntity)
 {
 	if(fstrcmp(pEntity->getClassName(), "player"))
@@ -461,7 +473,7 @@ void CBaseMover::newMovementController(IMovementController **ppOut)
 
 //##########################################################################
 
-void CPhysicsLadderTickEventListener::onEvent(const XEventPhysicsStep *pData)
+void CPhysicsMoverTickEventListener::onEvent(const XEventPhysicsStep *pData)
 {
 	m_pMover->onPhysicsStep();
 }

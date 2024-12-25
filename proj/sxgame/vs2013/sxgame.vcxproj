@@ -202,6 +202,7 @@
     <ClCompile Include="..\..\..\source\game\EntityManager.cpp" />
     <ClCompile Include="..\..\..\source\game\EnvSkybox.cpp" />
     <ClCompile Include="..\..\..\source\game\FuncLadder.cpp" />
+    <ClCompile Include="..\..\..\source\game\FuncNarrowPassage.cpp" />
     <ClCompile Include="..\..\..\source\game\FuncRotating.cpp" />
     <ClCompile Include="..\..\..\source\game\FuncTrain.cpp" />
     <ClCompile Include="..\..\..\source\game\GameData.cpp" />
@@ -220,6 +221,7 @@
     <ClCompile Include="..\..\..\source\game\LogicEntityExists.cpp" />
     <ClCompile Include="..\..\..\source\game\LogicRelay.cpp" />
     <ClCompile Include="..\..\..\source\game\LogicStringbuilder.cpp" />
+    <ClCompile Include="..\..\..\source\game\NarrowPassageMovementController.cpp" />
     <ClCompile Include="..\..\..\source\game\NPCBase.cpp" />
     <ClCompile Include="..\..\..\source\game\NPCZombie.cpp" />
     <ClCompile Include="..\..\..\source\game\PathCorner.cpp" />
@@ -286,6 +288,7 @@
     <ClInclude Include="..\..\..\source\game\EntityPointer.h" />
     <ClInclude Include="..\..\..\source\game\EnvSkybox.h" />
     <ClInclude Include="..\..\..\source\game\FuncLadder.h" />
+    <ClInclude Include="..\..\..\source\game\FuncNarrowPassage.h" />
     <ClInclude Include="..\..\..\source\game\FuncRotating.h" />
     <ClInclude Include="..\..\..\source\game\GameStateManager.h" />
     <ClInclude Include="..\..\..\source\game\CharacterInventory.h" />
@@ -303,6 +306,7 @@
     <ClInclude Include="..\..\..\source\game\LogicEntityExists.h" />
     <ClInclude Include="..\..\..\source\game\LogicRelay.h" />
     <ClInclude Include="..\..\..\source\game\LogicStringbuilder.h" />
+    <ClInclude Include="..\..\..\source\game\NarrowPassageMovementController.h" />
     <ClInclude Include="..\..\..\source\game\physics_util.h" />
     <ClInclude Include="..\..\..\source\game\PointChangelevel.h" />
     <ClInclude Include="..\..\..\source\game\PropBreakable.h" />

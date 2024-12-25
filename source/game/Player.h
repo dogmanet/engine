@@ -25,7 +25,9 @@ See the license in LICENSE
 //! Класс игрока  \ingroup cbaseanimating
 class CPlayer: public CBaseCharacter
 {
+	TODO("Fix that");
 	friend class CLadderMovementController;
+	friend class CNarrowPassageMovementController;
 	DECLARE_CLASS(CPlayer, CBaseCharacter);
 	DECLARE_PROPTABLE();
 public:
