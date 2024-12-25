@@ -26,7 +26,7 @@ IEventChannel<XEventPhysicsStep> *CBaseCharacter::m_pTickEventChannel = NULL;
 
 void CCharacterPhysicsTickEventListener::onEvent(const XEventPhysicsStep *pData)
 {
-	m_pCharacter->onPhysicsStep();
+	m_pCharacter->onPhysicsStep(pData->fTimeStep);
 }
 
 CBaseCharacter::CBaseCharacter():
@@ -452,7 +452,7 @@ float3 CBaseCharacter::getHeadOffset()
 	return(vHeadOffset);
 }
 
-void CBaseCharacter::onPhysicsStep()
+void CBaseCharacter::onPhysicsStep(float fDT)
 {
 	updateHitboxes();
 
@@ -468,6 +468,21 @@ void CBaseCharacter::onPhysicsStep()
 	}
 
 	m_pHeadEnt->setOffsetPos(getHeadOffset());
+
+	float fVerticalSpeed = m_pCharacter->getLinearVelocity().y;
+	float fVerticalMomentalAccel = (fVerticalSpeed - m_fPrevVerticalSpeed) / fDT;
+
+	static const float* cl_overload_max = GET_PCVAR_FLOAT("cl_overload_max");
+	static const float* cl_overload_dead = GET_PCVAR_FLOAT("cl_overload_dead");
+
+	fVerticalMomentalAccel = fabsf(fVerticalMomentalAccel);
+	if(fVerticalMomentalAccel > *cl_overload_max)
+	{
+		CTakeDamageInfo info(this, ((fVerticalMomentalAccel - *cl_overload_max) / (*cl_overload_dead / *cl_overload_max)) * 100.0f);
+		dispatchDamage(info);
+	}
+
+	m_fPrevVerticalSpeed = fVerticalSpeed;
 
 #if 0
 	//находим текущий квад аи сетки на котором находится игрок

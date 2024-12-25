@@ -738,7 +738,7 @@ int CBaseEntity::countEntByName(const char *szName)
 
 void CBaseEntity::dispatchDamage(CTakeDamageInfo &takeDamageInfo)
 {
-	float fHealth = takeDamageInfo.m_fDamage * 0.1f;
+	float fHealth = takeDamageInfo.m_fDamage;
 	if(takeDamageInfo.m_pInflictor)
 	{
 		LibReport(REPORT_MSG_LEVEL_NOTICE, "%s damaged (" COLOR_LRED "%.2f" COLOR_RESET ") by " COLOR_YELLOW "%s\n", getClassName(), fHealth, takeDamageInfo.m_pInflictor->getClassName());

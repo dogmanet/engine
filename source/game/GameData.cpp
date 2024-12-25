@@ -670,6 +670,9 @@ GameData::GameData(HWND hWnd, bool isGame):
 	Core_0RegisterCVarFloat("cl_speed_crouch", 1.05f, "Player crouch speed");
 	Core_0RegisterCVarFloat("cl_speed_crawl", 0.175f, "Player crawl speed");
 
+	Core_0RegisterCVarFloat("cl_overload_max", 400.0f, "The maximum G-force a player can withstand without being damaged");
+	Core_0RegisterCVarFloat("cl_overload_dead", 500.0f, "Overload that will result in guaranteed death of the player");
+
 	Core_0RegisterCVarFloat("lvl_debris_remove_time_min", 120.0f, "Debris collector time min");
 	Core_0RegisterCVarFloat("lvl_debris_remove_time_max", 200.0f, "Debris collector time max");
 

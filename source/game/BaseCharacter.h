@@ -198,10 +198,12 @@ protected:
 
 	IMovementController *m_pMovementController = NULL;
 
+	float m_fPrevVerticalSpeed = 0.0f;
+
 private:
 	static IEventChannel<XEventPhysicsStep> *m_pTickEventChannel;
 	CCharacterPhysicsTickEventListener m_physicsTicker;
-	void onPhysicsStep();
+	void onPhysicsStep(float fDT);
 };
 
 #endif
