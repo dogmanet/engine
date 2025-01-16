@@ -299,6 +299,7 @@ bool XIsMouseInBound(X_WINDOW_POS wnd, const float3_t &vBoundMin, const float3_t
 
 void XUpdatePropWindow();
 void XUpdateGizmos();
+void XUpdateStatusGrid();
 
 void XInitTypesCombo();
 

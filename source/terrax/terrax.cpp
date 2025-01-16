@@ -932,6 +932,19 @@ int main(int argc, char **argv)
 						}
 					}
 
+					XUpdateStatusGrid();
+					
+					szVal = pCfg->getKey("terrax", "ignore_groups");
+					if(szVal)
+					{
+						int iVal = 0;
+						if(sscanf(szVal, "%d", &iVal))
+						{
+							g_xConfig.m_bIgnoreGroups = iVal != 0;
+							CheckToolbarButton(ID_IGNORE_GROUPS, g_xConfig.m_bIgnoreGroups);
+						}
+					}
+
 					for(UINT i = 0; i < 4; ++i)
 					{
 						float3 vec;
@@ -1079,6 +1092,9 @@ int main(int argc, char **argv)
 				sprintf_s(szVal, "%d", g_xConfig.m_bShowGrid ? 1 : 0);
 				pCfg->set("terrax", "grid_show", szVal);
 
+				sprintf_s(szVal, "%d", g_xConfig.m_bIgnoreGroups ? 1 : 0);
+				pCfg->set("terrax", "ignore_groups", szVal);
+				
 				pCfg->save();
 				mem_release(pCfg);
 
