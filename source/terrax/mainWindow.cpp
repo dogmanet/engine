@@ -2085,6 +2085,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			XSetXformType(X2DXF_ROTATE);
 			break;
 
+		case ID_XFORM_MODE_CENTER:
+			g_xConfig.m_bUsePivot = false;
+			CheckToolbarButton(ID_XFORM_MODE_PIVOT, g_xConfig.m_bUsePivot);
+			CheckToolbarButton(ID_XFORM_MODE_CENTER, !g_xConfig.m_bUsePivot);
+
+			break;
+		case ID_XFORM_MODE_PIVOT:
+			g_xConfig.m_bUsePivot = true;
+			CheckToolbarButton(ID_XFORM_MODE_PIVOT, g_xConfig.m_bUsePivot);
+			CheckToolbarButton(ID_XFORM_MODE_CENTER, !g_xConfig.m_bUsePivot);
+			break;
+
 		case IDC_TIE_TO_OBJECT:
 			if(IsWindowEnabled(g_hButtonToEntityWnd))
 			{
@@ -3418,7 +3430,7 @@ LRESULT CALLBACK RenderWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 							{
 								// create rotate command
 								s_pRotateCmd = new CCommandRotate(GetKeyState(VK_SHIFT) < 0);
-								s_pRotateCmd->setStartOrigin((g_xState.vSelectionBoundMax + g_xState.vSelectionBoundMin) * 0.5f * vMask, float3(1.0f) - vMask);
+								s_pRotateCmd->setStartOrigin((g_xConfig.m_bUsePivot ? g_xState.vSelectionPivot : (g_xState.vSelectionBoundMax + g_xState.vSelectionBoundMin) * 0.5f) * vMask, float3(1.0f) - vMask);
 								s_pRotateCmd->setStartPos(vStartPos);
 								XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 									if(pObj->isSelected()/* && (g_xConfig.m_bIgnoreGroups ? !isProxy : !pParent)*/)
@@ -4729,7 +4741,7 @@ void XUpdateGizmos()
 {
 	if(Button_GetCheck(g_hABArrowButton) && g_xState.bHasSelection)
 	{
-		float3 vPos = (g_xState.vSelectionBoundMin + g_xState.vSelectionBoundMax) * 0.5f;
+		float3 vPos = g_xConfig.m_bUsePivot ? g_xState.vSelectionPivot : (g_xState.vSelectionBoundMin + g_xState.vSelectionBoundMax) * 0.5f;
 		g_pGizmoMove->setPos(vPos);
 		if(!g_gizmoRotateCallback.isActive())
 		{
@@ -4849,7 +4861,7 @@ HWND CreateToolbar(HWND hWndParent)
 {
 	// Declare and initialize local constants.
 	const int ImageListID = 0;
-	const int numButtons = 8;
+	const int numButtons = 10;
 	const int bitmapSize = 16;
 
 	const DWORD buttonStyles = BTNS_AUTOSIZE;
@@ -4908,6 +4920,9 @@ HWND CreateToolbar(HWND hWndParent)
 		{MAKELONG(0, ImageListID), ID_XFORM_NONE, TBSTATE_ENABLED, buttonStyles, {0}, 0, (INT_PTR)"Handle [Q]"},
 		{MAKELONG(1, ImageListID), ID_XFORM_TRANSLATE, TBSTATE_ENABLED, buttonStyles, {0}, 0, (INT_PTR)"Move [W]"},
 		{MAKELONG(2, ImageListID), ID_XFORM_ROTATE, TBSTATE_ENABLED, buttonStyles, {0}, 0, (INT_PTR)"Rotate [R]"},
+		{0, 0, TBSTATE_ENABLED, BTNS_SEP, 0L, 0},
+		{MAKELONG(8, ImageListID), ID_XFORM_MODE_CENTER, TBSTATE_ENABLED, buttonStyles, {0}, 0, (INT_PTR)"Use center"},
+		{MAKELONG(9, ImageListID), ID_XFORM_MODE_PIVOT, TBSTATE_ENABLED, buttonStyles, {0}, 0, (INT_PTR)"Use pivot"},
 		{0, 0, TBSTATE_ENABLED, BTNS_SEP, 0L, 0},
 		{MAKELONG(6, ImageListID), ID_TOOLS_GROUP, TBSTATE_ENABLED, buttonStyles, {0}, 0, (INT_PTR)"Group selected [Ctrl+G]"},
 		{MAKELONG(7, ImageListID), ID_TOOLS_UNGROUP, TBSTATE_ENABLED, buttonStyles, {0}, 0, (INT_PTR)"Ungroup selected [Ctrl+U]"},

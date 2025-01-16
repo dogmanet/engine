@@ -736,6 +736,8 @@ int main(int argc, char **argv)
 	g_pXformEventChannel = pEngine->getCore()->getEventChannel<XEventEditorXformType>(EVENT_EDITOR_XFORM_TYPE_GUID);
 
 	XSetXformType(X2DXF_SCALE);
+	CheckToolbarButton(ID_XFORM_MODE_PIVOT, g_xConfig.m_bUsePivot);
+	CheckToolbarButton(ID_XFORM_MODE_CENTER, !g_xConfig.m_bUsePivot);
 
 	RECT rcTopLeft;
 	GetClientRect(g_hTopLeftWnd, &rcTopLeft);
@@ -945,6 +947,20 @@ int main(int argc, char **argv)
 						}
 					}
 
+					szVal = pCfg->getKey("terrax", "xform_use_pivot");
+					if(szVal)
+					{
+						int iVal = 0;
+						if(sscanf(szVal, "%d", &iVal))
+						{
+							g_xConfig.m_bUsePivot = iVal != 0;
+							CheckToolbarButton(ID_XFORM_MODE_PIVOT, g_xConfig.m_bUsePivot);
+							CheckToolbarButton(ID_XFORM_MODE_CENTER, !g_xConfig.m_bUsePivot);
+						}
+					}
+
+					
+
 					for(UINT i = 0; i < 4; ++i)
 					{
 						float3 vec;
@@ -1094,6 +1110,9 @@ int main(int argc, char **argv)
 
 				sprintf_s(szVal, "%d", g_xConfig.m_bIgnoreGroups ? 1 : 0);
 				pCfg->set("terrax", "ignore_groups", szVal);
+
+				sprintf_s(szVal, "%d", g_xConfig.m_bUsePivot ? 1 : 0);
+				pCfg->set("terrax", "xform_use_pivot", szVal);
 				
 				pCfg->save();
 				mem_release(pCfg);
@@ -2633,21 +2652,53 @@ void XUpdateSelectionBound()
 	g_xState.bHasSelection = false;
 	float3 vMin, vMax;
 
+	extern HWND g_hABArrowButton;
+	bool bTrackPivotObject = g_xConfig.m_bUsePivot && g_xState.activeWindow == XWP_TOP_LEFT && Button_GetCheck(g_hABArrowButton);
+	float fBestDist = FLT_MAX;
+
 	XEnumerateObjects([&](IXEditorObject *pObj, bool isProxy, ICompoundObject *pParent){
 		if(pObj->isSelected()/* && !(g_xConfig.m_bIgnoreGroups && isProxy)*/)
 		{
 			pObj->getBound(&vMin, &vMax);
+
+			if(bTrackPivotObject)
+			{
+				// raytest
+				g_xState.vWorldRayStart;
+				g_xState.vWorldRayDir;
+				if(pObj->hasVisualModel())
+				{
+					float3 vPos;
+					if(pObj->rayTest(g_xState.vWorldRayStart, g_xState.vWorldRayStart + g_xState.vWorldRayDir * 1000.0f, &vPos))
+					{
+						float fDist2 = SMVector3Length2(g_xState.vWorldRayStart - vPos);
+						if(fDist2 < fBestDist)
+						{
+							fBestDist = fDist2;
+							g_xState.pPivotSource = pObj;
+						}
+					}
+				}
+			}
+
 			if(!g_xState.bHasSelection)
 			{
 				g_xState.bHasSelection = true;
 				g_xState.vSelectionBoundMax = vMax;
 				g_xState.vSelectionBoundMin = vMin;
+				g_xState.vSelectionPivot = pObj->getPos();
 			}
 			else
 			{
 				g_xState.vSelectionBoundMax = (float3)SMVectorMax(g_xState.vSelectionBoundMax, vMax);
 				g_xState.vSelectionBoundMin = (float3)SMVectorMin(g_xState.vSelectionBoundMin, vMin);
 			}
+
+			if(g_xState.pPivotSource == pObj)
+			{
+				g_xState.vSelectionPivot = pObj->getPos();
+			}
+
 			return(XEOR_SKIP_CHILDREN);
 		}
 		return(XEOR_CONTINUE);

@@ -92,6 +92,7 @@ struct CTerraXConfig
 	bool m_bDottedGrid = false;
 	float m_fGridOpacity = 0.5f;
 	bool m_bIgnoreGroups = false;
+	bool m_bUsePivot = false;
 
 	X_VIEWPORT_LAYOUT m_xViewportLayout = XVIEW_2X2;
 };
@@ -108,6 +109,8 @@ struct CTerraXState: public TerraXState
 	bool bHasSelection = false;
 	float3_t vSelectionBoundMin;
 	float3_t vSelectionBoundMax;
+	float3_t vSelectionPivot;
+	IXEditorObject *pPivotSource = NULL;
 
 	X_2DXFORM_TYPE xformType = X2DXF_SCALE;
 
