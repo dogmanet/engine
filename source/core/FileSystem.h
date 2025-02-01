@@ -43,7 +43,7 @@ See the license in LICENSE
 
 #define MEMCCPY_ERROR(buff) memcpy(buff, "\0", 1);
 
-#define SIZE_PATH 4096
+#define SIZE_PATH 2048
 
 #define INVALID_OR_NULL(handle) ((handle) == NULL || (handle) == INVALID_HANDLE_VALUE)
 
@@ -128,7 +128,7 @@ private:
 
 	bool isAbsolutePath(const char* szPath);
 
-	String *copyFile(const char* szPath);
+	void copyFile(const char* szPath, char *szOut);
 
 	//!корневые пути и приоритет
 	Array<String> m_filePaths;
