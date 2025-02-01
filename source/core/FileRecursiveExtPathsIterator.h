@@ -13,12 +13,12 @@ class CFileRecursiveExtPathsIterator final : public CBaseFileIterator
 private:
 	Array<String> m_folderList;
 	Array<String> m_sPaths;
-	Array<String> m_exts;
+	Array<AAString> m_exts;
 	AssotiativeArray<String, int> m_mapExistPath;
 
-	String m_sBasePath;
-	String m_currentFullPath;
-    String m_pathStr;
+	char m_szBasePath[SIZE_PATH];
+	char m_szCurrentFullPath[SIZE_PATH];
+	char m_szPathStr[SIZE_PATH];
 	
     const char *m_szExt;
 	UINT pathIndex = 0;
@@ -26,7 +26,7 @@ private:
     HANDLE m_handle = nullptr;
 
 public:
-	CFileRecursiveExtPathsIterator(Array<String> &paths, String &sBasePath, const char **szExts, int iExtSize);
+	CFileRecursiveExtPathsIterator(Array<String> &paths, const char *szBasePath, const char **szExts, int iExtSize);
 
     const char* XMETHODCALLTYPE next() override;
 

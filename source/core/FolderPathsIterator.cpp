@@ -1,12 +1,12 @@
 #include "FolderPathsIterator.h"
 
-CFolderPathsIterator::CFolderPathsIterator(Array<String> &paths, String &sBasePath)
+CFolderPathsIterator::CFolderPathsIterator(Array<String> &paths, const char *szBasePath)
 {
-	this->canonizePaths(paths);
-	this->canonizePath(sBasePath);
+	m_paths = std::move(paths);
+	strcpy(m_szBasePath, szBasePath);
 
-	this->m_paths = paths;
-	this->m_sBasePath = sBasePath;
+	canonizePaths(m_paths);
+	canonizePath(m_szBasePath);
 }
 
 const char *CFolderPathsIterator::next()
@@ -27,9 +27,9 @@ const char *CFolderPathsIterator::next()
             do {
                 m_handle = hf;
 
-				m_pathStr = (m_paths)[index] + CWC2MB(FindFileData.cFileName);
+				sprintf(m_szPathStr, "%s%s", (m_paths)[index].c_str(), (const char*)CWC2MB(FindFileData.cFileName));
 
-				DWORD flag = GetFileAttributesW(CMB2WC(m_pathStr.c_str()));
+				DWORD flag = GetFileAttributesW(CMB2WC(m_szPathStr));
 
 				if (emptyOrRepeatPath(CWC2MB(FindFileData.cFileName)))
                 {
@@ -39,16 +39,17 @@ const char *CFolderPathsIterator::next()
                 //Берет только имена директорий
                 if (flag != INVALID_FILE_ATTRIBUTES && flag & FILE_ATTRIBUTE_DIRECTORY)
                 {
-					m_pathStr = (m_sBasePath + CWC2MB(FindFileData.cFileName));
-					if (m_mapExistPath.KeyExists(m_pathStr))
+					sprintf(m_szPathStr, "%s%s", m_szBasePath, (const char*)CWC2MB(FindFileData.cFileName));
+
+					if(m_mapExistPath.KeyExists(m_szPathStr))
 					{
 						continue;
 					}
 					else
 					{
 						//Возвращаем относительный путь к директории
-						m_mapExistPath[m_pathStr] = index;
-						return m_pathStr.c_str();
+						m_mapExistPath[m_szPathStr] = index;
+						return m_szPathStr;
 					}
                 }
 			} while (FindNextFileW(hf, &FindFileData) != 0);

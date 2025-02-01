@@ -10,18 +10,20 @@ template <typename T>
 IFileIterator *CFileSystem::getListIterator(const char *szPath, const char **szExts, int extsCount)
 {
 	Array<String> paths;
-	String basePath(szPath);
+	char szBasePath[SIZE_PATH];
+
+	strcpy(szBasePath, szPath);
 
 	if(!isAbsolutePath(szPath))
 	{
-		getAllvariantsCanonizePath(szPath, paths);
+		getAllvariantsCanonizePath(szPath, &paths);
 	}
 	else
 	{
 		paths.push_back(szPath);
 	}
 
-	return paths.size() ? new T(paths, basePath, szExts, extsCount) : nullptr;
+	return paths.size() ? new T(paths, szBasePath, szExts, extsCount) : nullptr;
 }
 
 void CFileSystem::addPathInPriorityArray(int id, int iPriority)
@@ -55,7 +57,7 @@ bool CFileSystem::isFileOrDirectory(const char *szPath, bool isFile)
 	return (flag != INVALID_FILE_ATTRIBUTES) && (isFile ? !(flag & FILE_ATTRIBUTE_DIRECTORY) : (flag & FILE_ATTRIBUTE_DIRECTORY));
 }
 
-void CFileSystem::getAllvariantsCanonizePath(const char *szPath, Array<String> &container)
+void CFileSystem::getAllvariantsCanonizePath(const char *szPath, Array<String> *container)
 {
 	char szBuff[SIZE_PATH];
 
@@ -65,7 +67,7 @@ void CFileSystem::getAllvariantsCanonizePath(const char *szPath, Array<String> &
 
 		if(isDirectory(szBuff))
 		{
-			container.push_back(szBuff);
+			container->push_back(szBuff);
 		}
 	}
 }
@@ -349,18 +351,20 @@ time_t CFileSystem::getFileModifyTime(const char *szPath)
 IFileIterator *CFileSystem::getFolderList(const char *szPath)
 {
 	Array<String> paths;
-	String basePath(szPath);
+	char szBasePath[SIZE_PATH];
+
+	strcpy(szBasePath, szPath);
 
 	if(!isAbsolutePath(szPath))
 	{
-		getAllvariantsCanonizePath(szPath, paths);
+		getAllvariantsCanonizePath(szPath, &paths);
 	}
 	else
 	{
 		paths.push_back(szPath);
 	}
 
-	return paths.size() ? new CFolderPathsIterator(paths, basePath) : nullptr;
+	return paths.size() ? new CFolderPathsIterator(paths, szBasePath) : nullptr;
 }
 
 IFileIterator *CFileSystem::getFileList(const char *szPath, const char *szExt)
