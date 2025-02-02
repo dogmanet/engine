@@ -106,7 +106,7 @@ private:
 	//! Метод делает проверку, ведет ли путь к файлу или папке
 	bool isFileOrDirectory(const char *szPath, bool isFile);
 
-	void getAllvariantsCanonizePath(const char *szPath, Array<String> &container);
+	void getAllvariantsCanonizePath(const char *szPath, Array<String> *container);
 
 	//!Превращает канонизированный путь в неканонизированный
 	void getNormalPath(const char *szPath, char *outBuff, int iOutMax);

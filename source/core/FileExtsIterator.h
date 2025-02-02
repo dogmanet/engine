@@ -12,9 +12,9 @@ class CFileExtsIterator final : public CBaseFileIterator
 {
 private:
 	Array<String> m_paths;
-	String m_pathStr;
-	String m_sBasePath;
-	Array<String> m_exts;
+	char m_szPathStr[SIZE_PATH];
+	char m_szBasePath[SIZE_PATH];
+	Array<AAString> m_exts;
 	AssotiativeArray<String, int> m_mapExistPath;
 
 	int index = 0;
@@ -24,7 +24,7 @@ private:
 	int m_currentExt = 0;
 
 public:
-	CFileExtsIterator::CFileExtsIterator(Array<String> &paths, String &sBasePath, const char **szExt, int iExtSize);
+	CFileExtsIterator::CFileExtsIterator(Array<String> &paths, const char *szBasePath, const char **szExt, int iExtSize);
 
 	const char* XMETHODCALLTYPE next() override;
 

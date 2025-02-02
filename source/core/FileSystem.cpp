@@ -10,18 +10,20 @@ template <typename T>
 IFileIterator *CFileSystem::getListIterator(const char *szPath, const char **szExts, int extsCount)
 {
 	Array<String> paths;
-	String basePath(szPath);
+	char szBasePath[SIZE_PATH];
+
+	strcpy(szBasePath, szPath);
 
 	if(!isAbsolutePath(szPath))
 	{
-		getAllvariantsCanonizePath(szPath, paths);
+		getAllvariantsCanonizePath(szPath, &paths);
 	}
 	else
 	{
 		paths.push_back(szPath);
 	}
 
-	return paths.size() ? new T(paths, basePath, szExts, extsCount) : nullptr;
+	return paths.size() ? new T(paths, szBasePath, szExts, extsCount) : nullptr;
 }
 
 void CFileSystem::addPathInPriorityArray(int id, int iPriority)
@@ -55,7 +57,7 @@ bool CFileSystem::isFileOrDirectory(const char *szPath, bool isFile)
 	return (flag != INVALID_FILE_ATTRIBUTES) && (isFile ? !(flag & FILE_ATTRIBUTE_DIRECTORY) : (flag & FILE_ATTRIBUTE_DIRECTORY));
 }
 
-void CFileSystem::getAllvariantsCanonizePath(const char *szPath, Array<String> &container)
+void CFileSystem::getAllvariantsCanonizePath(const char *szPath, Array<String> *container)
 {
 	char szBuff[SIZE_PATH];
 
@@ -65,7 +67,7 @@ void CFileSystem::getAllvariantsCanonizePath(const char *szPath, Array<String> &
 
 		if(isDirectory(szBuff))
 		{
-			container.push_back(szBuff);
+			container->push_back(szBuff);
 		}
 	}
 }
@@ -260,7 +262,7 @@ bool CFileSystem::resolvePath(const char *szPath, char *szOut, size_t iOutMax)
 		CHECK_SIZE(len, iOutMax);
 
 		memcpy(szOut, szPath, len);
-		return true;
+		return(true);
 	}
 
 	char szBuff[SIZE_PATH];
@@ -275,11 +277,11 @@ bool CFileSystem::resolvePath(const char *szPath, char *szOut, size_t iOutMax)
 			CHECK_SIZE(len, iOutMax);
 
 			strcpy(szOut, szBuff);
-			return true;
+			return(true);
 		}
 	}
 
-	return false;
+	return(false);
 }
 
 bool CFileSystem::fileExists(const char *szPath)
@@ -293,7 +295,7 @@ bool CFileSystem::fileExists(const char *szPath)
 		return false;
 	}
 
-	return fileGetSize(path) != FILE_NOT_FOUND;
+	return(fileGetSize(path) != FILE_NOT_FOUND);
 }
 
 size_t CFileSystem::fileGetSize(const char *szPath)
@@ -316,17 +318,17 @@ size_t CFileSystem::fileGetSize(const char *szPath)
 		lpFileInformation.nFileSizeLow;
 
 	//Если result != 0 то все хорошо, если 0 то файл не найден
-	return result != 0 ? FileSize : FILE_NOT_FOUND;
+	return(result != 0 ? FileSize : FILE_NOT_FOUND);
 }
 
 bool CFileSystem::isFile(const char *szPath)
 {
-	return isFileOrDirectory(szPath, true);
+	return(isFileOrDirectory(szPath, true));
 }
 
 bool CFileSystem::isDirectory(const char *szPath)
 {
-	return isFileOrDirectory(szPath, false);
+	return(isFileOrDirectory(szPath, false));
 }
 
 time_t CFileSystem::getFileModifyTime(const char *szPath)
@@ -336,53 +338,55 @@ time_t CFileSystem::getFileModifyTime(const char *szPath)
 
 	if(CHECK_CORRECT_PATH(path))
 	{
-		return 0;
+		return(0);
 	}
 
 	WIN32_FILE_ATTRIBUTE_DATA lpFileInformation;
 
 	GetFileAttributesExW(CMB2WC(path), GetFileExInfoStandard, &lpFileInformation);
 
-	return filetimeToTime_t(lpFileInformation.ftLastWriteTime);
+	return(filetimeToTime_t(lpFileInformation.ftLastWriteTime));
 }
 
 IFileIterator *CFileSystem::getFolderList(const char *szPath)
 {
 	Array<String> paths;
-	String basePath(szPath);
+	char szBasePath[SIZE_PATH];
+
+	strcpy(szBasePath, szPath);
 
 	if(!isAbsolutePath(szPath))
 	{
-		getAllvariantsCanonizePath(szPath, paths);
+		getAllvariantsCanonizePath(szPath, &paths);
 	}
 	else
 	{
 		paths.push_back(szPath);
 	}
 
-	return paths.size() ? new CFolderPathsIterator(paths, basePath) : nullptr;
+	return(paths.size() ? new CFolderPathsIterator(paths, szBasePath) : NULL);
 }
 
 IFileIterator *CFileSystem::getFileList(const char *szPath, const char *szExt)
 {
 	const char *exts[] = {szExt};
-	return getFileList(szPath, exts, 1);
+	return(getFileList(szPath, exts, 1));
 }
 
 IFileIterator *CFileSystem::getFileList(const char *szPath, const char **szExts, int extsCount)
 {
-	return getListIterator<CFileExtsIterator>(szPath, szExts, extsCount);
+	return(getListIterator<CFileExtsIterator>(szPath, szExts, extsCount));
 }
 
 IFileIterator *CFileSystem::getFileListRecursive(const char *szPath, const char *szExt)
 {
 	const char *exts[] = {szExt};
-	return getFileListRecursive(szPath, exts, 1);
+	return(getFileListRecursive(szPath, exts, 1));
 }
 
 IFileIterator *CFileSystem::getFileListRecursive(const char *szPath, const char **szExts, int extsCount)
 {
-	return getListIterator<CFileRecursiveExtPathsIterator>(szPath, szExts, extsCount);
+	return(getListIterator<CFileRecursiveExtPathsIterator>(szPath, szExts, extsCount));
 }
 
 bool CFileSystem::createDirectory(const char *szPath)
@@ -440,7 +444,7 @@ IFile *CFileSystem::openFile(const char *szPath, FILE_OPEN_MODE mode = FILE_MODE
 	//Выходим если режим открытия - не для чтения и нет пути для записи
 	if(m_writableRoot == -1 && mode != FILE_MODE_READ)
 	{
-		return nullptr;
+		return(NULL);
 	}
 
 	char fullPath[SIZE_PATH];
@@ -449,7 +453,7 @@ IFile *CFileSystem::openFile(const char *szPath, FILE_OPEN_MODE mode = FILE_MODE
 	//Если по каким либо причинам нельзя вернуть полный путь - на выход
 	if(CHECK_CORRECT_PATH(fullPath) && mode == FILE_MODE_READ)
 	{
-		return nullptr;
+		return(NULL);
 	}
 
 	IFile *file = new CFile;
@@ -461,7 +465,7 @@ IFile *CFileSystem::openFile(const char *szPath, FILE_OPEN_MODE mode = FILE_MODE
 		{
 			mem_delete(file);
 		}
-		return file;
+		return(file);
 	}
 
 	char szNewFileName[SIZE_PATH];
@@ -488,7 +492,7 @@ IFile *CFileSystem::openFile(const char *szPath, FILE_OPEN_MODE mode = FILE_MODE
 	else if(!fileExists(fullPath))
 	{
 		mem_delete(file);
-		return nullptr;
+		return(NULL);
 	}
 	//Если путь вне корня - тогда копируем в корень
 	else if(!inRoot)
@@ -516,5 +520,5 @@ IFile *CFileSystem::openFile(const char *szPath, FILE_OPEN_MODE mode = FILE_MODE
 		mem_delete(file);
 	}
 
-	return file;
+	return(file);
 }
