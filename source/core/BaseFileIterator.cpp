@@ -6,7 +6,7 @@ void CBaseFileIterator::canonizePath(char *szPath)
 
 	/*Дело в том что абсолютный путь к файлу может не иметь символ "/"
 	или "\\" на конце строки, и, если его не будет путь будет некорректен*/
-	if (symbol != '\\' && symbol != '/')
+	if(symbol != '\\' && symbol != '/')
 	{
 		strcat(szPath, "/");
 	}
@@ -26,7 +26,7 @@ void CBaseFileIterator::canonizePath(String *pPath)
 
 void CBaseFileIterator::canonizePaths(Array<String> &paths)
 {
-	for (int i = 0, I = paths.size(); i < I; ++i)
+	for(int i = 0, I = paths.size(); i < I; ++i)
 	{
 		canonizePath(&paths[i]);
 	}
@@ -34,28 +34,28 @@ void CBaseFileIterator::canonizePaths(Array<String> &paths)
 
 void CBaseFileIterator::fillExtensionsArray(Array<AAString> &extsArray, const char **exts, int iExtsSize)
 {
-	for (int i = 0; i < iExtsSize; ++i)
+	for(int i = 0; i < iExtsSize; ++i)
 	{
-		if (exts[i])
+		if(exts[i])
 		{
-			extsArray.push_back(exts[i]);
+			extsArray[i].setName(exts[i]);
 		}
 	}
 }
 
 bool CBaseFileIterator::findExtensionsInPath(const char *szPath, const Array<AAString> &exts)
 {
-	for (int i = 0, I = exts.size(); i < I; ++i)
+	for(int i = 0, I = exts.size(); i < I; ++i)
 	{
-		if (strstr(szPath, exts[i].getName()) != NULL)
+		if(strstr(szPath, exts[i].getName()) != NULL)
 		{
 			return true;
 		}
 	}
-	return !exts.size();
+	return(!exts.size());
 }
 
 bool CBaseFileIterator::emptyOrRepeatPath(const char * szPath)
 {
-	return !strcmp(szPath, "..") || !strcmp(szPath, ".") || !strcmp(szPath, "");
+	return(!strcmp(szPath, "..") || !strcmp(szPath, ".") || !strcmp(szPath, ""));
 }

@@ -22,14 +22,14 @@ const char *CFileExtsIterator::next()
 
 	char szFileName[SIZE_PATH];
 
-	while (index < size)
+	while(index < size)
 	{
 		sprintf(szFileName, "%s*.*", m_paths[index].c_str());
 
 		//Проверяем указатель, если m_handle пустой, то ищем первый файл с расширением szExts
 		hf = INVALID_OR_NULL(m_handle) ? FindFirstFileW(CMB2WC(szFileName), &FindFileData) : m_handle;
 
-		if (hf != INVALID_HANDLE_VALUE)
+		if(hf != INVALID_HANDLE_VALUE)
 		{
 			do {
 				//Сохраняем HANDLE файла, что бы можно было продожлить с того места
@@ -39,9 +39,9 @@ const char *CFileExtsIterator::next()
 
 				DWORD flag = GetFileAttributesW(CMB2WC(m_szPathStr));
 
-				if (flag != INVALID_FILE_ATTRIBUTES && !(flag & FILE_ATTRIBUTE_DIRECTORY))
+				if(flag != INVALID_FILE_ATTRIBUTES && !(flag & FILE_ATTRIBUTE_DIRECTORY))
 				{
-					if (!findExtensionsInPath(CWC2MB(FindFileData.cFileName), m_exts))
+					if(!findExtensionsInPath(CWC2MB(FindFileData.cFileName), m_exts))
 					{
 						continue;
 					}
@@ -56,18 +56,19 @@ const char *CFileExtsIterator::next()
 					{
 						//Возвращаем относительный путь, вместе с именем файла и расширением
 						m_mapExistPath[m_szPathStr] = index;
-						return m_szPathStr;
+						return(m_szPathStr);
 					}
 				}
 				//Если указатель на файл валидный, то проверяем все отфильтрованные файлы по порядку
-			} while (FindNextFileW(hf, &FindFileData) != 0);
+			}
+			while(FindNextFileW(hf, &FindFileData) != 0);
 		}
 		++index;
 		FIND_CLOSE(m_handle);
 	}
 
 	//Если вообще не нашли файлов возвращаем nullptr
-	return nullptr;
+	return(NULL);
 }
 
 void CFileExtsIterator::reset()

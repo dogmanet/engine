@@ -78,7 +78,7 @@ const char *CFileRecursiveExtPathsIterator::next()
 						else
 						{
 							m_mapExistPath[m_szPathStr] = pathIndex;
-							return m_szPathStr;
+							return(m_szPathStr);
 						}
 					}
 					//Если указатель на файл валидный, то проверяем все отфильтрованные файлы по порядку
@@ -103,7 +103,7 @@ const char *CFileRecursiveExtPathsIterator::next()
 	}
 
 	//Если вообще не нашли файлов возвращаем nullptr
-	return nullptr;
+	return(NULL);
 }
 
 void CFileRecursiveExtPathsIterator::reset()
