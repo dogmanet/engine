@@ -45,11 +45,16 @@ void CBaseFileIterator::fillExtensionsArray(Array<AAString> &extsArray, const ch
 
 bool CBaseFileIterator::findExtensionsInPath(const char *szPath, const Array<AAString> &exts)
 {
+	size_t len = strlen(szPath), extLen = 0;
+	char szExt[32];
+
 	for(int i = 0, I = exts.size(); i < I; ++i)
 	{
-		if(strstr(szPath, exts[i].getName()) != NULL)
+		extLen = strlen(exts[i].getName()) + 1;
+		sprintf(szExt, ".%s", exts[i].getName());
+		if(!strcmp(szPath + len - extLen, szExt))
 		{
-			return true;
+			return(true);
 		}
 	}
 	return(!exts.size());

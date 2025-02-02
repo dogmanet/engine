@@ -3,9 +3,9 @@
 CFileRecursiveExtPathsIterator::CFileRecursiveExtPathsIterator(Array<String> &paths, const char *szBasePath, const char **szExts, int iExtSize)
 {
 	strcpy(m_szBasePath, szBasePath);
-	m_sPaths = std::move(paths);
+	m_aPaths.swap(paths);
 
-	canonizePaths(m_sPaths);
+	canonizePaths(m_aPaths);
 	canonizePath(m_szBasePath);
 
 	fillExtensionsArray(m_exts, szExts, iExtSize);
@@ -18,7 +18,7 @@ const char *CFileRecursiveExtPathsIterator::next()
 
 	WIN32_FIND_DATAW FindFileData;
 	HANDLE hf;
-	UINT maxPathIndex = m_sPaths.size();
+	UINT maxPathIndex = m_aPaths.size();
 
 	FindFileData.cFileName[0] = '\0';
 
@@ -26,11 +26,11 @@ const char *CFileRecursiveExtPathsIterator::next()
 	{
 		if(strlen(m_szCurrentFullPath) > 0)
 		{
-			strcpy(m_szCurrentFullPath, m_sPaths[pathIndex].c_str());
+			strcpy(m_szCurrentFullPath, m_aPaths[pathIndex].c_str());
 		}
 
 		do {
-			sprintf(szFileName, "%s*.*", m_sPaths[pathIndex].c_str());
+			sprintf(szFileName, "%s*.*", m_aPaths[pathIndex].c_str());
 
 			//Проверяем указатель, если m_handle пустой, то ищем первый файл с расширением szExts
 			hf = INVALID_OR_NULL(m_handle) ? FindFirstFileW(CMB2WC(szFileName), &FindFileData) : m_handle;
@@ -46,14 +46,14 @@ const char *CFileRecursiveExtPathsIterator::next()
 						continue;
 					}
 
-					sprintf(szFullName, "%s%s", m_sPaths[pathIndex].c_str(), (const char*)CWC2MB(FindFileData.cFileName));
+					sprintf(szFullName, "%s%s", m_aPaths[pathIndex].c_str(), (const char*)CWC2MB(FindFileData.cFileName));
 
 					DWORD flag = GetFileAttributesW(CMB2WC(szFullName));
 
 					if (flag != INVALID_FILE_ATTRIBUTES && (flag & FILE_ATTRIBUTE_DIRECTORY))
 					{
 						strcat(szFullName, "/");
-						m_folderList.push_back(szFullName);
+						m_aFolders.push_back(szFullName);
 						continue;
 					}
 
@@ -84,19 +84,20 @@ const char *CFileRecursiveExtPathsIterator::next()
 					//Если указатель на файл валидный, то проверяем все отфильтрованные файлы по порядку
 				} while (FindNextFileW(hf, &FindFileData) != 0);
 
-				if (m_folderList.size() != 0)
+				if (m_aFolders.size() != 0)
 				{
 					UINT index = 0;
-					m_sPaths[pathIndex] = m_folderList[index];
-					m_folderList.erase(index);	
+					m_aPaths[pathIndex] = m_aFolders[index];
+					m_aFolders.erase(index);	
 					m_handle = NULL;
 				}
 				else
 				{
-					m_sPaths[pathIndex] = m_szCurrentFullPath;
+					m_aPaths[pathIndex] = m_szCurrentFullPath;
 				}
 			}
-		} while (m_sPaths[pathIndex] != m_szCurrentFullPath);
+		}
+		while(m_aPaths[pathIndex] != m_szCurrentFullPath);
 		++pathIndex;
 		m_szCurrentFullPath[0] = 0;
 		m_handle = NULL;
@@ -108,8 +109,8 @@ const char *CFileRecursiveExtPathsIterator::next()
 
 void CFileRecursiveExtPathsIterator::reset()
 {
-	if (m_sPaths.size() < pathIndex) 
-		m_sPaths[pathIndex] = m_szCurrentFullPath;
+	if(m_aPaths.size() < pathIndex)
+		m_aPaths[pathIndex] = m_szCurrentFullPath;
 
 	m_szCurrentFullPath[0] = 0;
 	m_mapExistPath.clear();

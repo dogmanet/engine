@@ -11,8 +11,8 @@ See the license in LICENSE
 class CFileRecursiveExtPathsIterator final : public CBaseFileIterator
 {
 private:
-	Array<String> m_folderList;
-	Array<String> m_sPaths;
+	Array<String> m_aFolders;
+	Array<String> m_aPaths;
 	Array<AAString> m_exts;
 	AssotiativeArray<String, int> m_mapExistPath;
 

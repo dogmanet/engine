@@ -2,7 +2,7 @@
 
 CFileExtsIterator::CFileExtsIterator(Array<String> &paths, const char *szBasePath, const char **szExt, int iExtSize)
 {
-	m_paths = std::move(paths);
+	m_paths.swap(paths);
 	strcpy(m_szBasePath, szBasePath);
 
 	canonizePaths(m_paths);

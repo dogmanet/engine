@@ -2,7 +2,7 @@
 
 CFolderPathsIterator::CFolderPathsIterator(Array<String> &paths, const char *szBasePath)
 {
-	m_paths = std::move(paths);
+	m_paths.swap(paths);
 	strcpy(m_szBasePath, szBasePath);
 
 	canonizePaths(m_paths);
