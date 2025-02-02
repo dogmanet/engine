@@ -13,8 +13,8 @@ class CFolderPathsIterator final : public CBaseFileIterator
 private:
 
     Array<String> m_paths;
-	String m_sBasePath;
-    String m_pathStr;
+	char m_szBasePath[SIZE_PATH];
+	char m_szPathStr[SIZE_PATH];
 	AssotiativeArray<String, int> m_mapExistPath;
 
     int index = 0;
@@ -22,7 +22,7 @@ private:
     HANDLE m_handle = nullptr;
 
 public:
-	CFolderPathsIterator(Array<String> &paths, String &sBasePath);
+	CFolderPathsIterator(Array<String> &paths, const char *szBasePath);
 
     const char* XMETHODCALLTYPE next() override;
 
