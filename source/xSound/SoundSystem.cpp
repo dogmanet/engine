@@ -243,9 +243,9 @@ IXAudioCodecTarget* CSoundSystem::getCodecTarget(const char *szName)
 
 	for(MapCodec::Iterator i = m_mapCodecs.begin(); i; ++i)
 	{
-		if(m_mapCodecs[i.first]->open(szPath, "", &pTarget, false))
+		if(m_mapCodecs[*i.first]->open(szPath, "", &pTarget, false))
 		{
-			pCodec = m_mapCodecs[i.first];
+			pCodec = m_mapCodecs[*i.first];
 			break;
 		}
 	}
@@ -411,8 +411,8 @@ IXAudioCodec* CSoundSystem::getCodecSave()
 {
 	for(MapCodec::Iterator i = m_mapCodecs.begin(); i; ++i)
 	{
-		if(m_mapCodecs[i.first]->canSave())
-			return m_mapCodecs[i.first];
+		if(m_mapCodecs[*i.first]->canSave())
+			return m_mapCodecs[*i.first];
 	}
 
 	return NULL;

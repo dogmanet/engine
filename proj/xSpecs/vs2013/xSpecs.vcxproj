@@ -19,7 +19,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\source\common\string.cpp" />
     <ClCompile Include="..\..\..\source\xSpecs\dllmain.cpp" />
     <ClCompile Include="..\..\..\source\xSpecs\MaterialLoader.cpp" />
     <ClCompile Include="..\..\..\source\xSpecs\MaterialProxy.cpp" />

@@ -174,7 +174,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\source\common\string.cpp" />
     <ClCompile Include="..\..\..\source\oggplugin\AudioCodecOgg.cpp" />
     <ClCompile Include="..\..\..\source\oggplugin\dllmain.cpp" />
     <ClCompile Include="..\..\..\source\oggplugin\plugin_main.cpp" />

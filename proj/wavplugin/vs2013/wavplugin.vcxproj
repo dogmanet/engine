@@ -159,7 +159,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\source\common\string.cpp" />
     <ClCompile Include="..\..\..\source\wavplugin\AudioCodecWave.cpp" />
     <ClCompile Include="..\..\..\source\wavplugin\dllmain.cpp" />
     <ClCompile Include="..\..\..\source\wavplugin\plugin_main.cpp" />

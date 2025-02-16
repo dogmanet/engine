@@ -274,7 +274,7 @@ protected:
 	gui::dom::IDOMnode *m_pNode = NULL;
 	gui::dom::IDOMnode *m_pInputNode = NULL;
 	gui::dom::IDOMnode *m_pContainerNode = NULL;
-	const ULONG m_id;
+	const UINT m_id;
 	const String m_sName;
 
 	friend class CUIWindow;

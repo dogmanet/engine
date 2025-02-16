@@ -37,9 +37,6 @@
     <ClCompile Include="..\..\..\source\xcsg\Editable.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\source\common\string.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\source\xcsg\Outline.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

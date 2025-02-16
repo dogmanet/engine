@@ -42,9 +42,6 @@
     <ClCompile Include="..\..\..\source\editors_utils\axes_helper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\source\common\string.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\source\common\file_utils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

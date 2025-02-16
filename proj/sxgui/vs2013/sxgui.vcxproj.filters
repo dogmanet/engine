@@ -308,9 +308,6 @@
     <ClCompile Include="..\..\..\source\gui\VideoRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\source\common\string.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\source\gui\ICSSstyle.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

@@ -852,7 +852,7 @@ void CLightSystem::renderGI(CGIGraphNodeData *pNodeData, IXRenderTarget *pFinalT
 
 		pCtx->addTimestamp("lpv_inject -");
 
-		const bool *dev_lpv_points = m_pCore->getConsole()->getPCVarBool("dev_lpv_points");
+		static const bool *dev_lpv_points = m_pCore->getConsole()->getPCVarBool("dev_lpv_points");
 		if(*dev_lpv_points)
 		{
 			auto pTarget = pNodeData->m_pGBufferColor->asRenderTarget();
