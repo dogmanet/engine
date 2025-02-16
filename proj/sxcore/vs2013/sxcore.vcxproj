@@ -21,7 +21,6 @@
   <ItemGroup>
     <ClCompile Include="..\..\..\source\common\file_utils.cpp" />
     <ClCompile Include="..\..\..\source\common\guid.cpp" />
-    <ClCompile Include="..\..\..\source\common\string.cpp" />
     <ClCompile Include="..\..\..\source\common\string_utils.cpp" />
     <ClCompile Include="..\..\..\source\core\AsyncFileReader.cpp" />
     <ClCompile Include="..\..\..\source\core\AsyncTaskRunner.cpp" />

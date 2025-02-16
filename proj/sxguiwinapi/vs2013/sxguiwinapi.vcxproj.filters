@@ -84,9 +84,6 @@
     <ClCompile Include="..\..\..\source\SXGUIWinApi\dialog_select_dir.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\source\common\string.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\source\SXGUIWinApi\dialog_select_file.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

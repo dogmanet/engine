@@ -94,7 +94,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\source\common\file_utils.cpp" />
-    <ClCompile Include="..\..\..\source\common\string.cpp" />
     <ClCompile Include="..\..\..\source\common\string_utils.cpp" />
     <ClCompile Include="..\..\..\source\skyxengine.cpp" />
     <ClCompile Include="..\..\..\source\sxmaterialeditor\buttons_callback.cpp">

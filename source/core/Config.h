@@ -18,57 +18,22 @@ See the license in LICENSE
 class CConfigString: public String
 {
 public:
-	CConfigString() : String(){}
-	CConfigString(const char * str) : String(str){}
-	CConfigString(const String & str) : String(str){}
-	CConfigString(const CConfigString & str) : String(str){}
-	CConfigString(const CConfigString * str) : String(str){}
-	CConfigString(const char sym) : String(sym){}
-	~CConfigString() {}
-	
-	const char & operator[](const unsigned long & num) const
-	{
-		return(m_szString[num]);
-	}
+	CConfigString(): String(){}
+	CConfigString(const char *str): String(str){}
+	CConfigString(const String &str): String(str){}
+	CConfigString(const CConfigString &str): String(str){}
+	CConfigString(char sym): String(sym){}
 
-	char & operator[](const unsigned long & num)
+	CConfigString& operator=(const CConfigString &str)
 	{
-		return(m_szString[num]);
-	}
+		String::operator=(str);
 
-	CConfigString & operator=(const CConfigString & str)
-	{
-		release();
-		m_szString = new char[str.length() + 1];
-		memcpy(m_szString, str.c_str(), str.length() + 1);
-		return(*this);
-	}
-
-	CConfigString & operator=(const CConfigString * str)
-	{
-		release();
-		m_szString = new char[str->length() + 1];
-		memcpy(m_szString, str->c_str(), str->length() + 1);
 		return(*this);
 	}
 
 	bool operator==(const CConfigString &str) const
 	{
-		return (strcasecmp(str.m_szString, m_szString) == 0);
-	}
-
-	bool operator==(const CConfigString * str) const
-	{
-		return (strcasecmp(str->m_szString, m_szString) == 0);
-	}
-
-	CConfigString & operator+=(const char &	sym)
-	{
-		char * newstring = new char[length() + 2];
-		sprintf(newstring, "%s%c", m_szString, sym);
-		mem_delete_a(m_szString);
-		m_szString = newstring;
-		return(*this);
+		return(strcasecmp(str.c_str(), c_str()) == 0);
 	}
 };
 

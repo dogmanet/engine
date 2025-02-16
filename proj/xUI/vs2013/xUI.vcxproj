@@ -69,7 +69,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\source\common\guid.cpp" />
-    <ClCompile Include="..\..\..\source\common\string.cpp" />
     <ClCompile Include="..\..\..\source\xUI\CurvePreviewGraphNode.cpp" />
     <ClCompile Include="..\..\..\source\xUI\CurvePreviewGraphNodeData.cpp" />
     <ClCompile Include="..\..\..\source\xUI\GradientPreviewGraphNodeData.cpp" />

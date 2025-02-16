@@ -171,7 +171,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\source\common\string.cpp" />
     <ClCompile Include="..\..\..\source\mtrl\LogicExpression.cpp" />
     <ClCompile Include="..\..\..\source\mtrl\MaterialSystem.cpp" />
     <ClCompile Include="..\..\..\source\mtrl\plugin_main.cpp" />

@@ -189,7 +189,6 @@
     <ClCompile Include="..\..\..\source\anim\Renderable.cpp" />
     <ClCompile Include="..\..\..\source\anim\RenderableVisibility.cpp" />
     <ClCompile Include="..\..\..\source\anim\Updatable.cpp" />
-    <ClCompile Include="..\..\..\source\common\string.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\source\anim\AnimatedModel.h" />

@@ -12,7 +12,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\source\common\file_utils.cpp" />
-    <ClCompile Include="..\..\..\source\common\string.cpp" />
     <ClCompile Include="..\..\..\source\common\string_utils.cpp" />
     <ClCompile Include="..\..\..\source\SXGUIWinApi\base.cpp" />
     <ClCompile Include="..\..\..\source\SXGUIWinApi\base_wnd.cpp" />

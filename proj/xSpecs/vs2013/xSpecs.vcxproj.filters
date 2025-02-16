@@ -28,9 +28,6 @@
     <ClCompile Include="..\..\..\source\xSpecs\MaterialLoader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\source\common\string.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\source\xSpecs\TextureProxy.h">

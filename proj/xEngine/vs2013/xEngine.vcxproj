@@ -179,7 +179,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\source\common\string.cpp" />
     <ClCompile Include="..\..\..\source\xEngine\CommandLineToArgvA.cpp" />
     <ClCompile Include="..\..\..\source\xEngine\dllmain.cpp" />
     <ClCompile Include="..\..\..\source\xEngine\Engine.cpp" />

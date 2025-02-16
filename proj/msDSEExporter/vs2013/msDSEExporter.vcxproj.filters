@@ -27,9 +27,6 @@
     <ClCompile Include="..\..\..\source\msDSEExporter\Plugin.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\source\common\string.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\source\msDSEExporter\Provider.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

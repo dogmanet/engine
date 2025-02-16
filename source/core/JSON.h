@@ -62,7 +62,7 @@ public:
 			return(true);
 		case XJI_STRING:
 			//! FIXME add some checks!
-			*pOut = m_sVal.toDouble();
+			*pOut = m_sVal.toFloat();
 			return(true);
 		
 		case XJI_NULL:
@@ -83,7 +83,7 @@ public:
 		case XJI_STRING:
 			//! FIXME add some checks!
 			//! FIXME fix type!
-			*pOut = m_sVal.toLongInt();
+			*pOut = m_sVal.toInt64();
 			return(true);
 
 		case XJI_NULL:

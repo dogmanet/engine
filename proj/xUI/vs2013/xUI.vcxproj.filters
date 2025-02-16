@@ -173,9 +173,6 @@
     <ClCompile Include="..\..\..\source\xUI\UIButton.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\source\common\string.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\source\xUI\UITextBox.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

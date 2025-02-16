@@ -154,7 +154,7 @@ int main(int argc, char **argv)
 	pEngine->getCore()->getConsole()->execCommand("exec ../config_game.cfg");
 	pEngine->getCore()->getConsole()->execCommand("exec ../config_game_user.cfg");
 
-#if 1
+#if 0
 
 	IFileSystem *pFS = pEngine->getCore()->getFileSystem();
 	IFile *pFile1 = pFS->openFile("dir/test.txt", FILE_MODE_READ);

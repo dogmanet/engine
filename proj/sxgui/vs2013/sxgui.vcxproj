@@ -241,7 +241,6 @@
     <ClInclude Include="..\..\..\source\gui\ITD.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\source\common\string.cpp" />
     <ClCompile Include="..\..\..\source\gui\CSSstyle.cpp" />
     <ClCompile Include="..\..\..\source\gui\IBODY.cpp" />
     <ClCompile Include="..\..\..\source\gui\IBR.cpp" />

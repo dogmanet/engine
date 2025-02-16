@@ -224,7 +224,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\source\common\guid.cpp" />
-    <ClCompile Include="..\..\..\source\common\string.cpp" />
     <ClCompile Include="..\..\..\source\common\string_utils.cpp" />
     <ClCompile Include="..\..\..\source\render\BaseTarget.cpp" />
     <ClCompile Include="..\..\..\source\render\Camera.cpp" />
