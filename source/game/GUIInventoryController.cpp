@@ -38,7 +38,7 @@ CGUIInventoryController::CGUIInventoryController(CCharacterInventory *pInventory
 		{
 			m_aEquipAreas[i].type = (EQUIP_ITEM_TYPE)enumerator.getValue();
 			m_aEquipAreas[i].uIndex = pTypeCounts[enumerator.getValue()]++;
-			m_aEquipAreas[i].pNode->setAttribute(L"equip_index", (unsigned long)m_aEquipAreas[i].uIndex);
+			m_aEquipAreas[i].pNode->setAttribute(L"equip_index", m_aEquipAreas[i].uIndex);
 
 			if(m_aEquipAreas[i].pNode->getAttribute(L"split_container").toBool())
 			{
@@ -52,13 +52,13 @@ CGUIInventoryController::CGUIInventoryController(CCharacterInventory *pInventory
 						if(j == 0 && k == 0)
 						{
 							m_aEquipAreas[i].pCellNode = aCells[k];
-							m_aEquipAreas[i].pCellNode->setAttribute(L"equip_index", (unsigned long)m_aEquipAreas[i].uIndex);
+							m_aEquipAreas[i].pCellNode->setAttribute(L"equip_index", m_aEquipAreas[i].uIndex);
 						}
 						else
 						{
 							newArea.uIndex = pTypeCounts[enumerator.getValue()]++;
 							newArea.pCellNode = aCells[k];
-							newArea.pCellNode->setAttribute(L"equip_index", (unsigned long)newArea.uIndex);
+							newArea.pCellNode->setAttribute(L"equip_index", newArea.uIndex);
 
 							m_aEquipAreas.push_back(newArea);
 						}

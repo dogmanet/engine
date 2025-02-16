@@ -133,11 +133,11 @@ namespace gui
 
 			if(cls.length())
 			{
-				UINT pos = 0;
+				size_t pos = 0;
 				while(true)
 				{
 					pos = cls.find(L" ");
-					if(pos != (UINT)(-1))
+					if(pos != StringW::EOS)
 					{
 						StringW c = cls.substr(0, pos);
 						UINT icls = doc->getIndexForClassString(cls);
@@ -1813,14 +1813,14 @@ namespace gui
 			else if(name == L"class")
 			{
 				StringW cls = value+L" ";
-				UINT pos = 0;
+				size_t pos = 0;
 				Array<UINT> vNewCls;
 				Array<UINT> vAddCls;
 				Array<UINT> vRemoveCls;
 				while(true)
 				{
 					pos = cls.find(L" ");
-					if(pos != ~0)
+					if(pos != StringW::EOS)
 					{
 						if(pos != 0)
 						{
@@ -2045,8 +2045,8 @@ namespace gui
 		BOOL CDOMnode::classExists(const StringW &cls)
 		{
 			const StringW &wsClass = getAttribute(L"class");
-			int pos = wsClass.find(cls);
-			if(pos >= 0)
+			size_t pos = wsClass.find(cls);
+			if(pos != StringW::EOS)
 			{
 				wchar_t wc = wsClass[pos + cls.length()];
 				if(wc == 0 || iswspace(wc))

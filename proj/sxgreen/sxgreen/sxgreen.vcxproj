@@ -178,7 +178,6 @@
     <ClInclude Include="..\..\..\source\green\sxgreen.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\source\common\string.cpp" />
     <ClCompile Include="..\..\..\source\green\green.cpp" />
     <ClCompile Include="..\..\..\source\green\sxgreen.cpp" />
     <ClCompile Include="..\..\..\source\green\sxgreen_dll.cpp" />

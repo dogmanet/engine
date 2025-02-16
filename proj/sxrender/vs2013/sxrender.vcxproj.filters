@@ -116,9 +116,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\source\common\string.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\source\render\RenderableVisibility.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

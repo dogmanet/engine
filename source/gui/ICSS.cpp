@@ -235,8 +235,8 @@ namespace gui
 				}
 				if(pseudoclass & (PSEUDOCLASS_NTH_CHILD | PSEUDOCLASS_NTH_LAST_CHILD | PSEUDOCLASS_NTH_OF_TYPE | PSEUDOCLASS_NTH_LAST_OF_TYPE))
 				{
-					UINT pos = str.find(L"(");
-					if(pos != (UINT)(-1))
+					size_t pos = str.find(L"(");
+					if(pos != StringW::EOS)
 					{
 						UINT d = 0, o = 0;
 						WCHAR cn;

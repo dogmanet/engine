@@ -57,9 +57,6 @@
     <ClCompile Include="..\..\..\source\sxae\TabHitboxes.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\source\common\string.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\source\skyxengine.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

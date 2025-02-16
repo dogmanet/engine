@@ -19,7 +19,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\source\common\string.cpp" />
     <ClCompile Include="..\..\..\source\xParticles\dllmain.cpp" />
     <ClCompile Include="..\..\..\source\xParticles\Editable.cpp" />
     <ClCompile Include="..\..\..\source\xParticles\EditorExtension.cpp" />

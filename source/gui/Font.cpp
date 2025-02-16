@@ -679,7 +679,7 @@ namespace gui
 
 	void CFont::addChar(WCHAR c, bool full)
 	{
-		if(m_szFontChars.find(c) == (UINT)-1)
+		if(m_szFontChars.find(c) == StringW::EOS)
 		{
 			m_szFontChars += c;
 			if(full)

@@ -19,7 +19,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\source\common\string.cpp" />
     <ClCompile Include="..\..\..\source\wadplugin\dllmain.cpp" />
     <ClCompile Include="..\..\..\source\wadplugin\plugin_main.cpp" />
     <ClCompile Include="..\..\..\source\wadplugin\TextureLoader.cpp" />

@@ -19,7 +19,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\source\common\string.cpp" />
     <ClCompile Include="..\..\..\source\gui2\CSSLexer.cpp" />
     <ClCompile Include="..\..\..\source\gui2\CSSProperty.cpp" />
     <ClCompile Include="..\..\..\source\gui2\Desktop.cpp" />

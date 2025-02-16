@@ -25,9 +25,6 @@
     <ClCompile Include="..\..\..\source\core\Config.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\source\common\string.cpp">
-      <Filter>Sources</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\source\common\file_utils.cpp">
       <Filter>Sources</Filter>
     </ClCompile>

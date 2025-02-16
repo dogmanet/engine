@@ -152,7 +152,7 @@ int CConfig::parse(const char* file)
 					{
 						for(AssotiativeArray<CConfigString, CValue>::Iterator i = m_mSections[s3].mValues.begin(); i; ++i)
 						{
-							m_mSections[s2].mValues[i.first].val = i.second->val;
+							m_mSections[s2].mValues[*i.first].val = i.second->val;
 						}
 					}
 				}
@@ -187,7 +187,7 @@ int CConfig::parse(const char* file)
 					{
 						for(AssotiativeArray<CConfigString, CValue>::Iterator i = m_mSections[s3].mValues.begin(); i; ++i)
 						{
-							m_mSections[s2].mValues[i.first].val = i.second->val;
+							m_mSections[s2].mValues[*i.first].val = i.second->val;
 						}
 					}
 				}
@@ -332,20 +332,20 @@ void CConfig::modify(AssotiativeArray<CConfigString, CSection> & sections, Assot
 {
 	for(AssotiativeArray<CConfigString, CValue>::Iterator i = m_mFinalValues.begin(); i; ++i)
 	{
-		values[i.first].val = i.second->val;
+		values[*i.first].val = i.second->val;
 	}
 
 	for(AssotiativeArray<CConfigString, CSection>::Iterator i = m_mSections.begin(); i; ++i)
 	{
-		if(!sections.KeyExists(i.first))
+		if(!sections.KeyExists(*i.first))
 		{
-			sections[i.first].parent = i.second->parent;
-			sections[i.first].native = false;
-			sections[i.first].Include = IncName;
+			sections[*i.first].parent = i.second->parent;
+			sections[*i.first].native = false;
+			sections[*i.first].Include = IncName;
 		}
-		for(AssotiativeArray<CConfigString, CValue>::Iterator j = m_mSections[i.first].mValues.begin(); j; ++j)
+		for(AssotiativeArray<CConfigString, CValue>::Iterator j = m_mSections[*i.first].mValues.begin(); j; ++j)
 		{
-			sections[i.first].mValues[j.first].val = j.second->val;
+			sections[*i.first].mValues[*j.first].val = j.second->val;
 		}
 	}
 }

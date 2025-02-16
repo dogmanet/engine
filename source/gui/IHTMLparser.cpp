@@ -473,7 +473,7 @@ namespace gui
 											}
 											for(AssotiativeArray<StringW, StringW>::Iterator j = attrs.begin(); j; ++j)
 											{
-												pCur->setAttribute(j.first, j.second);
+												pCur->setAttribute(*j.first, *j.second);
 											}
 											attrs.clear();
 											//								wprintf(L"open tag %s\n", tagname);

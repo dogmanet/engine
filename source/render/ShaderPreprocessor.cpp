@@ -545,7 +545,7 @@ String CShaderPreprocessor::process(const char *src, const char *file)
 	String sOut;
 	if(out.size())
 	{
-		sOut.reserve(out.size());
+		sOut.resize(out.size());
 		memcpy((void*)(sOut.c_str()), &(out[0]), out.size() * sizeof(char));
 		((char*)(sOut.c_str()))[out.size()] = 0;
 	}
@@ -1097,7 +1097,7 @@ String CShaderPreprocessor::getInclude(const String &name, const char *szLocalPa
 		{
 			int iSize = (int)pFile->getSize();
 			String s;
-			s.reserve(iSize + 2);
+			s.resize(iSize + 1);
 			pFile->readBin((void*)(s.c_str()), iSize);
 			s[iSize] = '\n';
 			s[iSize + 1] = 0;
@@ -1119,7 +1119,7 @@ String CShaderPreprocessor::getInclude(const String &name, const char *szLocalPa
 			{
 				int iSize = (int)pFile->getSize();
 				String s;
-				s.reserve(iSize + 2);
+				s.resize(iSize + 1);
 				pFile->readBin((void*)(s.c_str()), iSize);
 				s[iSize] = '\n';
 				s[iSize + 1] = 0;
