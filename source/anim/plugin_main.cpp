@@ -4,6 +4,7 @@
 #include "Updatable.h"
 #include "AnimatedModelProvider.h"
 #include "DynamicModelProvider.h"
+#include "DecalProvider.h"
 
 class CLevelSizeEventListener final: public IEventListener<XEventLevelSize>
 {
@@ -57,8 +58,9 @@ public:
 	{
 		m_pAnimatedModelProvider = new CAnimatedModelProvider(m_pCore);
 		m_pDynamicModelProvider = new CDynamicModelProvider(m_pCore);
-		m_pRenderable = new CRenderable(getID(), m_pAnimatedModelProvider, m_pDynamicModelProvider);
-		m_pUpdatable = new CUpdatable(m_pAnimatedModelProvider, m_pDynamicModelProvider);
+		m_pDecalProvider = new CDecalProvider(m_pCore, m_pDynamicModelProvider);
+		m_pRenderable = new CRenderable(getID(), m_pAnimatedModelProvider, m_pDynamicModelProvider, m_pDecalProvider);
+		m_pUpdatable = new CUpdatable(m_pAnimatedModelProvider, m_pDynamicModelProvider, m_pDecalProvider);
 		m_pLevelSizeEventListener = new CLevelSizeEventListener(m_pAnimatedModelProvider, m_pDynamicModelProvider);
 		m_pLevelLoadEventListener = new CLoadLevelEventListener(m_pRenderable);
 
@@ -82,11 +84,12 @@ public:
 		mem_delete(m_pUpdatable);
 		mem_delete(m_pAnimatedModelProvider);
 		mem_delete(m_pDynamicModelProvider);
+//		mem_delete(m_pDecalProvider);
 	}
 
 	UINT XMETHODCALLTYPE getInterfaceCount() override
 	{
-		return(4);
+		return(5);
 	}
 	const XGUID* XMETHODCALLTYPE getInterfaceGUID(UINT id) override
 	{
@@ -104,6 +107,9 @@ public:
 			break;
 		case 3:
 			s_guid = IXDYNAMICMODELPROVIDER_GUID;
+			break;
+		case 4:
+			s_guid = IXDECALPROVIDER_GUID;
 			break;
 		default:
 			return(NULL);
@@ -149,6 +155,15 @@ public:
 			add_ref(m_pDynamicModelProvider);
 			*ppOut = m_pDynamicModelProvider;
 			break;
+
+		case 4:
+			if(!m_pDecalProvider)
+			{
+				init();
+			}
+			add_ref(m_pDecalProvider);
+			*ppOut = m_pDecalProvider;
+			break;
 		
 		default:
 			*ppOut = NULL;
@@ -161,6 +176,7 @@ protected:
 	IXCore *m_pCore = NULL;
 	CAnimatedModelProvider *m_pAnimatedModelProvider = NULL;
 	CDynamicModelProvider *m_pDynamicModelProvider = NULL;
+	CDecalProvider *m_pDecalProvider = NULL;
 	CLevelSizeEventListener *m_pLevelSizeEventListener = NULL;
 	CLoadLevelEventListener *m_pLevelLoadEventListener = NULL;
 };

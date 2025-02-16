@@ -56,7 +56,7 @@ struct XRayResultCallback: public btCollisionWorld::RayResultCallback
 		m_hitPointWorld.setInterpolate3(m_rayFromWorld, m_rayToWorld, rayResult.m_hitFraction);
 
 		m_result.vHitPoint = BTVEC_F3(m_hitPointWorld);
-		m_result.vHitNormal = BTVEC_F3(m_hitPointWorld);
+		m_result.vHitNormal = BTVEC_F3(m_hitNormalWorld);
 		m_result.pCollisionObject = m_collisionObject->getUserIndex() == 2 ? (IXCollisionObject*)m_collisionObject->getUserPointer() : NULL;
 		m_result.fHitFraction = rayResult.m_hitFraction;
 

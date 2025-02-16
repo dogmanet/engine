@@ -9,7 +9,7 @@
 class CRenderable: public IXUnknownImplementation<IXRenderable>
 {
 public:
-	CRenderable(ID idPlugin, CAnimatedModelProvider *pProviderAnimated, CDynamicModelProvider *pProviderDynamic);
+	CRenderable(ID idPlugin, CAnimatedModelProvider *pProviderAnimated, CDynamicModelProvider *pProviderDynamic, CDecalProvider *pProviderDecal);
 
 	XIMPLEMENT_VERSION(IXRENDERABLE_VERSION);
 
@@ -56,6 +56,7 @@ protected:
 
 	CAnimatedModelProvider *m_pAnimatedModelProvider = NULL;
 	CDynamicModelProvider *m_pDynamicModelProvider = NULL;
+	CDecalProvider *m_pDecalProvider = NULL;
 };
 
 #endif

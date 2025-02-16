@@ -1,11 +1,13 @@
 #include "RenderableVisibility.h"
 #include "AnimatedModelProvider.h"
 #include "DynamicModelProvider.h"
+#include "DecalProvider.h"
 
-CRenderableVisibility::CRenderableVisibility(ID idPlugin, CAnimatedModelProvider *pProviderAnimated, CDynamicModelProvider *pProviderDynamic):
+CRenderableVisibility::CRenderableVisibility(ID idPlugin, CAnimatedModelProvider *pProviderAnimated, CDynamicModelProvider *pProviderDynamic, CDecalProvider *pProviderDecal):
 	m_idPlugin(idPlugin),
 	m_pProviderAnimated(pProviderAnimated),
-	m_pProviderDynamic(pProviderDynamic)
+	m_pProviderDynamic(pProviderDynamic),
+	m_pProviderDecal(pProviderDecal)
 {
 }
 
@@ -38,6 +40,7 @@ void CRenderableVisibility::updateForCamera(IXCamera *pCamera, const IXRenderabl
 	IXFrustum *pFrustum = pCamera->getFrustum();
 	m_pProviderAnimated->computeVisibility(pFrustum, this, pCamera->getLayerMask(), pRef);
 	m_pProviderDynamic->computeVisibility(pFrustum, pCamera->getLook(), this, pCamera->getLayerMask(), pRef, pCamera);
+	m_pProviderDecal->computeVisibility(pCamera->getLook(), this);
 	mem_release(pFrustum);
 }
 
@@ -52,6 +55,7 @@ void CRenderableVisibility::updateForFrustum(const IXFrustum *pFrustum, UINT bmL
 
 	m_pProviderAnimated->computeVisibility(pFrustum, this, bmLayers, pRef);
 	m_pProviderDynamic->computeVisibility(pFrustum, float3(), this, bmLayers, pRef);
+	m_pProviderDecal->computeVisibility(float3(), this);
 }
 
 static void SortRenderList(Array<CDynamicModel*> &aList)
@@ -139,7 +143,8 @@ void CRenderableVisibility::append(const IXRenderableVisibility *pOther_)
 	MergeArrays(m_aSelfillumList, pOther->m_aSelfillumList);
 	SortRenderList(m_aSelfillumList);
 
-	//! @todo implement for transparency too!
+	TODO("Implement for transparency too!");
+	TODO("Implement for decals too!");
 }
 
 void CRenderableVisibility::substract(const IXRenderableVisibility *pOther_)
@@ -159,7 +164,8 @@ void CRenderableVisibility::substract(const IXRenderableVisibility *pOther_)
 		}
 	}
 
-	//! @todo implement for transparency too!
+	TODO("Implement for transparency too!");
+	TODO("Implement for decals too!");
 }
 
 void CRenderableVisibility::setItemCount(UINT uCount)
@@ -256,4 +262,9 @@ Array<CDynamicModel*>& CRenderableVisibility::getSelfillumList()
 Array<CDynamicModel*>& CRenderableVisibility::getTransparentList()
 {
 	return(m_aTransparentList);
+}
+
+CRenderableVisibility::OverlayData& CRenderableVisibility::getOverlayData()
+{
+	return(m_overlayData);
 }

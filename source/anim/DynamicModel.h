@@ -4,6 +4,7 @@
 #include <xcommon/resource/IXModel.h>
 #include <xcommon/IXScene.h>
 #include "DynamicModelShared.h"
+#include "ModelOverlay.h"
 
 class CDynamicModel final: public IXUnknownImplementation<IXDynamicModel>
 {
@@ -58,7 +59,13 @@ public:
 
 	void XMETHODCALLTYPE setLayer(UINT uLayer) override;
 	UINT XMETHODCALLTYPE getLayer() override;
-protected:
+
+	CModelOverlay* getOverlay();
+	void setOverlay(CModelOverlay *pOverlay);
+
+	bool isStatic();
+
+private:
 	CDynamicModelProvider *m_pProvider;
 	CDynamicModelShared *m_pShared;
 	IGXDevice *m_pDevice;
@@ -81,11 +88,14 @@ protected:
 	mutable float3_t m_vLocalMin;
 	mutable float3_t m_vLocalMax;
 
+	UINT m_uLayer = 0;
+
+	CModelOverlay *m_pOverlay = NULL;
+
+private:
 	void _updateAABB() const;
 
 	void XMETHODCALLTYPE FinalRelease() override;
-
-	UINT m_uLayer = 0;
 };
 
 #endif

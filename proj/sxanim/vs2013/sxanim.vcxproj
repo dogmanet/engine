@@ -181,10 +181,13 @@
     <ClCompile Include="..\..\..\source\anim\AnimatedModel.cpp" />
     <ClCompile Include="..\..\..\source\anim\AnimatedModelProvider.cpp" />
     <ClCompile Include="..\..\..\source\anim\AnimatedModelShared.cpp" />
+    <ClCompile Include="..\..\..\source\anim\Decal.cpp" />
+    <ClCompile Include="..\..\..\source\anim\DecalProvider.cpp" />
     <ClCompile Include="..\..\..\source\anim\dllmain.cpp" />
     <ClCompile Include="..\..\..\source\anim\DynamicModel.cpp" />
     <ClCompile Include="..\..\..\source\anim\DynamicModelProvider.cpp" />
     <ClCompile Include="..\..\..\source\anim\DynamicModelShared.cpp" />
+    <ClCompile Include="..\..\..\source\anim\ModelOverlay.cpp" />
     <ClCompile Include="..\..\..\source\anim\plugin_main.cpp" />
     <ClCompile Include="..\..\..\source\anim\Renderable.cpp" />
     <ClCompile Include="..\..\..\source\anim\RenderableVisibility.cpp" />
@@ -194,13 +197,18 @@
     <ClInclude Include="..\..\..\source\anim\AnimatedModel.h" />
     <ClInclude Include="..\..\..\source\anim\AnimatedModelProvider.h" />
     <ClInclude Include="..\..\..\source\anim\AnimatedModelShared.h" />
+    <ClInclude Include="..\..\..\source\anim\Decal.h" />
+    <ClInclude Include="..\..\..\source\anim\DecalProvider.h" />
     <ClInclude Include="..\..\..\source\anim\DynamicModel.h" />
     <ClInclude Include="..\..\..\source\anim\DynamicModelProvider.h" />
     <ClInclude Include="..\..\..\source\anim\DynamicModelShared.h" />
+    <ClInclude Include="..\..\..\source\anim\ModelOverlay.h" />
     <ClInclude Include="..\..\..\source\anim\Renderable.h" />
     <ClInclude Include="..\..\..\source\anim\RenderableVisibility.h" />
     <ClInclude Include="..\..\..\source\anim\Updatable.h" />
     <ClInclude Include="..\..\..\source\xcommon\IXScene.h" />
+    <ClInclude Include="..\..\..\source\xcommon\resource\IXDecal.h" />
+    <ClInclude Include="..\..\..\source\xcommon\resource\IXDecalProvider.h" />
     <ClInclude Include="..\..\..\source\xcommon\resource\IXModelProvider.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

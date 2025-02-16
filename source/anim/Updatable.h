@@ -4,11 +4,12 @@
 #include <xcommon/IXUpdatable.h>
 #include "AnimatedModelProvider.h"
 #include "DynamicModelProvider.h"
+#include "DecalProvider.h"
 
 class CUpdatable: public IXUnknownImplementation<IXUpdatable>
 {
 public:
-	CUpdatable(CAnimatedModelProvider *pAnimatedModelProvider, CDynamicModelProvider *pDynamicModelProvider);
+	CUpdatable(CAnimatedModelProvider *pAnimatedModelProvider, CDynamicModelProvider *pDynamicModelProvider, CDecalProvider *pDecalProvider);
 
 	UINT startup() override;
 	void shutdown() override;
@@ -19,6 +20,7 @@ public:
 protected:
 	CAnimatedModelProvider *m_pAnimatedModelProvider;
 	CDynamicModelProvider *m_pDynamicModelProvider;
+	CDecalProvider *m_pDecalProvider;
 };
 
 #endif

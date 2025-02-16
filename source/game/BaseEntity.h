@@ -36,11 +36,13 @@ See the license in LICENSE
 
 #include <light/IXLightSystem.h>
 
+#include <xcommon/resource/IXDecalProvider.h>
+
 #pragma pointers_to_members(full_generality, virtual_inheritance)
 
 IXRender* GetRender();
 IXParticleSystem* GetParticleSystem();
-
+IXDecalProvider* GetDecalProvider();
 
 
 

@@ -2,14 +2,16 @@
 #define __RENDERABLE_VISIBILITY_H
 
 #include <xcommon/IXRenderable.h>
+#include <xcommon/resource/IXResourceModel.h>
 
 class CAnimatedModelProvider;
 class CDynamicModelProvider;
+class CDecalProvider;
 class CDynamicModel;
 class CRenderableVisibility final: public IXUnknownImplementation<IXRenderableVisibility>
 {
 public:
-	CRenderableVisibility(ID idPlugin, CAnimatedModelProvider *m_pProviderAnimated, CDynamicModelProvider *m_pProviderDynamic);
+	CRenderableVisibility(ID idPlugin, CAnimatedModelProvider *pProviderAnimated, CDynamicModelProvider *pProviderDynamic, CDecalProvider *pProviderDecal);
 	~CRenderableVisibility();
 
 	ID getPluginId() const override;
@@ -40,6 +42,24 @@ public:
 		UINT uLod;
 		IXMaterial *pMaterial;
 	};
+	
+	struct OverlaySubset
+	{
+		IXMaterial *pMaterial;
+		UINT uStartVertex;
+		UINT uStartIndex;
+		UINT uQuadCount;
+	};
+
+	struct OverlayData
+	{
+		Array<XResourceModelStaticVertexGPU> aVertices;
+		Array<OverlaySubset> aSubsets;
+		IGXVertexBuffer *pVB = NULL;
+		IGXRenderBuffer *pRB = NULL;
+		IGXIndexBuffer *pIB = NULL;
+		UINT uVertexBufferAllocSize = 0;
+	};
 
 	void setItemCount(UINT uCount);
 	item_s* getItem(UINT uIndex);
@@ -57,16 +77,18 @@ public:
 	Array<CDynamicModel*>& getRenderList();
 	Array<CDynamicModel*>& getTransparentList();
 	Array<CDynamicModel*>& getSelfillumList();
+	OverlayData& getOverlayData();
 
 	IXOcclusionCuller* getCuller()
 	{
 		return(m_pOcclusionCuller);
 	}
 
-protected:
+private:
 	ID m_idPlugin;
 	CAnimatedModelProvider *m_pProviderAnimated;
 	CDynamicModelProvider *m_pProviderDynamic;
+	CDecalProvider *m_pProviderDecal;
 	IXOcclusionCuller *m_pOcclusionCuller = NULL;
 
 	Array<item_s> m_aItems;
@@ -75,6 +97,8 @@ protected:
 	Array<CDynamicModel*> m_aRenderList;
 	Array<CDynamicModel*> m_aTransparentList;
 	Array<CDynamicModel*> m_aSelfillumList;
+	
+	OverlayData m_overlayData;
 };
 
 #endif

@@ -31,6 +31,8 @@ CDynamicModel::~CDynamicModel()
 	mem_release(m_pWorldBuffer);
 	mem_release(m_pColorBuffer);
 	mem_release(m_pSceneObject);
+
+	SAFE_CALL(m_pOverlay, onModelRemoved);
 }
 
 void CDynamicModel::initGPUresources()
@@ -209,11 +211,11 @@ void CDynamicModel::_updateAABB() const
 	m_vLocalMin = (float3)SMVectorMin(
 		SMVectorMin(SMVectorMin(vCurrent[0], vCurrent[1]), SMVectorMin(vCurrent[2], vCurrent[3])),
 		SMVectorMin(SMVectorMin(vCurrent[4], vCurrent[5]), SMVectorMin(vCurrent[6], vCurrent[7]))
-		);
+	);
 	m_vLocalMax = (float3)SMVectorMax(
 		SMVectorMax(SMVectorMax(vCurrent[0], vCurrent[1]), SMVectorMax(vCurrent[2], vCurrent[3])),
 		SMVectorMax(SMVectorMax(vCurrent[4], vCurrent[5]), SMVectorMax(vCurrent[6], vCurrent[7]))
-		);
+	);
 
 	m_isLocalAABBvalid = true;
 }
@@ -465,4 +467,20 @@ void XMETHODCALLTYPE CDynamicModel::setLayer(UINT uLayer)
 UINT XMETHODCALLTYPE CDynamicModel::getLayer()
 {
 	return(m_uLayer);
+}
+
+CModelOverlay* CDynamicModel::getOverlay()
+{
+	return(m_pOverlay);
+}
+
+void CDynamicModel::setOverlay(CModelOverlay *pOverlay)
+{
+	m_pOverlay = pOverlay;
+}
+
+bool CDynamicModel::isStatic()
+{
+	TODO("Implement me");
+	return(false);
 }

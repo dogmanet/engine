@@ -1,10 +1,12 @@
 #include "Renderable.h"
 #include "RenderableVisibility.h"
+#include "DecalProvider.h"
 
-CRenderable::CRenderable(ID idPlugin, CAnimatedModelProvider *pProviderAnimated, CDynamicModelProvider *pProviderDynamic):
+CRenderable::CRenderable(ID idPlugin, CAnimatedModelProvider *pProviderAnimated, CDynamicModelProvider *pProviderDynamic, CDecalProvider *pProviderDecal):
 	m_idPlugin(idPlugin),
 	m_pAnimatedModelProvider(pProviderAnimated),
-	m_pDynamicModelProvider(pProviderDynamic)
+	m_pDynamicModelProvider(pProviderDynamic),
+	m_pDecalProvider(pProviderDecal)
 {
 }
 
@@ -40,6 +42,7 @@ void XMETHODCALLTYPE CRenderable::renderStage(X_RENDER_STAGE stage, IXRenderable
 	case XRS_GBUFFER:
 		m_pAnimatedModelProvider->render(pVis);
 		m_pDynamicModelProvider->render(false, pVis);
+		m_pDecalProvider->render(pVis);
 		break;
 	case XRS_SHADOWS:
 		m_pAnimatedModelProvider->render(pVis);
@@ -89,6 +92,7 @@ void XMETHODCALLTYPE CRenderable::startup(IXRender *pRender, IXMaterialSystem *p
 
 	m_pAnimatedModelProvider->setDevice(m_pDevice);
 	m_pDynamicModelProvider->setDevice(m_pDevice);
+	m_pDecalProvider->setDevice(m_pDevice);
 }
 void XMETHODCALLTYPE CRenderable::shutdown()
 {
@@ -96,7 +100,7 @@ void XMETHODCALLTYPE CRenderable::shutdown()
 
 void XMETHODCALLTYPE CRenderable::newVisData(IXRenderableVisibility **ppVisibility)
 {
-	*ppVisibility = new CRenderableVisibility(m_idPlugin, m_pAnimatedModelProvider, m_pDynamicModelProvider);
+	*ppVisibility = new CRenderableVisibility(m_idPlugin, m_pAnimatedModelProvider, m_pDynamicModelProvider, m_pDecalProvider);
 }
 
 IXMaterialSystem* CRenderable::getMaterialSystem()

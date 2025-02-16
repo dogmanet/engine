@@ -7,7 +7,6 @@ See the license in LICENSE
 #include "BaseTool.h"
 
 #include <particles/sxparticles.h>
-#include <decals/sxdecals.h>
 #include "Player.h"
 
 /*! \skydocent base_tool
@@ -138,7 +137,8 @@ void CBaseTool::primaryAction(BOOL st)
 		if(cb.hasHit())
 		{
 			//shoot decal
-			SXDecals_ShootDecal(DECAL_TYPE_CONCRETE, BTVEC_F3(cb.m_hitPointWorld), BTVEC_F3(cb.m_hitNormalWorld));
+			SAFE_CALL(GetDecalProvider(), shootDecal, XDT_CONCRETE, cb.m_result.vHitPoint, cb.m_result.vHitNormal);
+			//SXDecals_ShootDecal(DECAL_TYPE_CONCRETE, BTVEC_F3(cb.m_hitPointWorld), BTVEC_F3(cb.m_hitNormalWorld));
 			SPE_EffectPlayByName("fire", &BTVEC_F3(cb.m_hitPointWorld), &BTVEC_F3(cb.m_hitNormalWorld));
 
 			IXRigidBody *pRB = cb.m_result.pCollisionObject->asRigidBody();

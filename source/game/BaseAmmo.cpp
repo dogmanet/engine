@@ -9,11 +9,10 @@ See the license in LICENSE
 #include "BaseTool.h"
 #include <particles/sxparticles.h>
 #include <mtrl/IXMaterial.h>
-#include <decals/sxdecals.h>
 //#include <BulletCollision/NarrowPhaseCollision/btRaycastCallback.h>
 
 //! TODO Reimplement me!
-#define SMtrl_MtlGetPhysicMaterial(id) MTLTYPE_PHYSIC_METAL
+#define SMtrl_MtlGetPhysicMaterial(id) MTLTYPE_PHYSIC_CONCRETE
 #define SMtrl_MtlGetDurability(id) 1.0f
 #define SMtrl_MtlGetDensity(id) 1.0f
 #define SMtrl_MtlGetHitChance(id) 1.0f
@@ -107,8 +106,7 @@ void CBaseAmmo::fire(const float3 &_vStart, const float3 &_vDir, CBaseCharacter 
 			});
 			for(int i = 0, l = aHitPoints.size(); i < l; ++i)
 			{
-
-				ID idMtl = -1; // SPhysics_GetMtlID(aHitPoints[i].pCollisionObject, &aHitPoints[i].shapeInfo);
+				ID idMtl = 0; // SPhysics_GetMtlID(aHitPoints[i].pCollisionObject, &aHitPoints[i].shapeInfo);
 				if(ID_VALID(idMtl) && !aHitPoints[i].isExit)
 				{
 					float fHitChance = SMtrl_MtlGetHitChance(idMtl);
@@ -184,6 +182,15 @@ void CBaseAmmo::fire(const float3 &_vStart, const float3 &_vDir, CBaseCharacter 
 					// restart fire with new dir and speed
 
 					float3 vStart2 = aHitPoints[i].vPosition + SMVector3Normalize(vDir) * 0.001f;
+					for(int j = i + 1; j < l; ++j)
+					{
+						if(aHitPoints[j].isExit)
+						{
+							// restart at exit point
+							vStart2 = aHitPoints[i].vPosition + SMVector3Normalize(vDir) * 0.001f;
+						}
+					}
+
 					vDir = vNewDir;
 					fSpeed = fNewSpeed;
 
@@ -240,26 +247,26 @@ void CBaseAmmo::shootDecal(const float3 &vPos, const float3 &vNormal, ID idMtl)
 	if(ID_VALID(idMtl))
 	{
 		MTLTYPE_PHYSIC type = SMtrl_MtlGetPhysicMaterial(idMtl);
-		DECAL_TYPE decalType = DECAL_TYPE_CONCRETE;
+		XDECAL_TYPE decalType = XDT_CONCRETE;
 		switch(type)
 		{
 		case MTLTYPE_PHYSIC_METAL:
-			decalType = DECAL_TYPE_METAL;
+			decalType = XDT_METAL;
 			break;
 		case MTLTYPE_PHYSIC_FLESH:
-			decalType = DECAL_TYPE_FLESH;
+			decalType = XDT_FLESH;
 			break;
 		case MTLTYPE_PHYSIC_GROUD_SAND:
-			decalType = DECAL_TYPE_EARTH;
+			decalType = XDT_EARTH;
 			break;
 		case MTLTYPE_PHYSIC_PLASTIC:
-			decalType = DECAL_TYPE_PLASTIC;
+			decalType = XDT_PLASTIC;
 			break;
 		case MTLTYPE_PHYSIC_TREE:
-			decalType = DECAL_TYPE_WOOD;
+			decalType = XDT_WOOD;
 			break;
 		}
-		SXDecals_ShootDecal(decalType, vPos, vNormal);
+		SAFE_CALL(GetDecalProvider(), shootDecal, decalType, vPos, vNormal);
 
 		//SPE_EffectPlayByName("create_decal_test", &aHitPoints[i].vPosition, &aHitPoints[i].vNormal);
 	}
@@ -267,7 +274,7 @@ void CBaseAmmo::shootDecal(const float3 &vPos, const float3 &vNormal, ID idMtl)
 
 void CBaseAmmo::shootBlood(const float3 &vPos, const float3 &vNormal)
 {
-	SXDecals_ShootDecal(DECAL_TYPE_BLOOD_BIG, vPos, vNormal);
+	SAFE_CALL(GetDecalProvider(), shootDecal, XDT_BLOOD_BIG, vPos, vNormal);
 }
 
 bool CBaseAmmo::shouldRecochet(const float3 &vPos, const float3 &vNormal, const float3 &vDir, ID idMtl, float fSpeed, float3 *pvNewDir, float *pfNewSpeed)

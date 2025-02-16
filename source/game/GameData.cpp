@@ -81,6 +81,7 @@ static IXPhysics *g_pPhysics = NULL;
 static IXPhysicsWorld *g_pPhysWorld = NULL;
 static IXRender *g_pRender = NULL;
 static IXParticleSystem *g_pParticleSystem = NULL;
+static IXDecalProvider *g_pDecalProvider = NULL;
 
 //##########################################################################
 
@@ -113,6 +114,10 @@ IXRender* GetRender()
 IXParticleSystem* GetParticleSystem()
 {
 	return(g_pParticleSystem);
+}
+IXDecalProvider* GetDecalProvider()
+{
+	return(g_pDecalProvider);
 }
 
 //##########################################################################
@@ -489,6 +494,7 @@ GameData::GameData(HWND hWnd, bool isGame):
 	g_pPhysics = (IXPhysics*)Core_GetIXCore()->getPluginManager()->getInterface(IXPHYSICS_GUID);
 	g_pPhysWorld = g_pPhysics->getWorld();
 	g_pParticleSystem = (IXParticleSystem*)Core_GetIXCore()->getPluginManager()->getInterface(IXPARTICLESYSTEM_GUID);
+	g_pDecalProvider = (IXDecalProvider*)Core_GetIXCore()->getPluginManager()->getInterface(IXDECALPROVIDER_GUID);
 
 	if(m_pLightSystem && false)
 	{

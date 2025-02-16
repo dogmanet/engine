@@ -1,7 +1,6 @@
 
 #include "ZombieHands.h"
 #include "BaseCharacter.h"
-#include <decals/sxdecals.h>
 #include "Tracer.h"
 
 /*! \skydocent wpn_zombie_hands
@@ -52,7 +51,7 @@ void CZombieHands::actualShoot(float dt)
 
 	if(cb.hasHit())
 	{
-		SXDecals_ShootDecal(DECAL_TYPE_BLOOD_BIG, BTVEC_F3(cb.m_hitPointWorld), BTVEC_F3(cb.m_hitNormalWorld));
+		SAFE_CALL(GetDecalProvider(), shootDecal, XDT_BLOOD_BIG, cb.m_result.vHitPoint, cb.m_result.vHitNormal);
 
 		if(cb.m_result.pCollisionObject->getUserPointer() && cb.m_result.pCollisionObject->getUserTypeId() == 1)
 		{

@@ -541,6 +541,8 @@ void CDynamicModelProvider::computeVisibility(const IXFrustum *pFrustum, const f
 {
 	XPROFILE_FUNCTION();
 
+	TODO("Make some hints to not to compute stages is not required for render. eg selfillum stage for shadows");
+
 	if(pCamera && pCamera->getProjectionMode() == XCPM_PERSPECTIVE)
 	{
 		FIXME("Use actual target width!");

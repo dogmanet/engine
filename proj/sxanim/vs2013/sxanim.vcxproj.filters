@@ -49,6 +49,15 @@
     <ClCompile Include="..\..\..\source\anim\dllmain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\source\anim\DecalProvider.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\anim\ModelOverlay.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\anim\Decal.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\source\anim\Renderable.h">
@@ -83,6 +92,21 @@
     </ClInclude>
     <ClInclude Include="..\..\..\source\xcommon\IXScene.h">
       <Filter>Header Files\xcommon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\xcommon\resource\IXDecalProvider.h">
+      <Filter>Header Files\xcommon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\xcommon\resource\IXDecal.h">
+      <Filter>Header Files\xcommon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\anim\DecalProvider.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\anim\ModelOverlay.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\anim\Decal.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
