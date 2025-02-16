@@ -515,7 +515,7 @@ INT_PTR CALLBACK CPropertyWindow::dlgProc(HWND hWnd, UINT msg, WPARAM wParam, LP
 
 			memset(&ofn, 0, sizeof(OPENFILENAMEW));
 			ofn.lStructSize = sizeof(OPENFILENAMEW);
-			ofn.hwndOwner = NULL;
+			ofn.hwndOwner = m_hDlgWnd;
 			ofn.lpstrFile = szFile;
 			ofn.nMaxFile = sizeof(szFile);
 			ofn.lpstrFilter = szFilter;
